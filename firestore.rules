@@ -1,0 +1,203 @@
+rules_version = '2';
+
+// =====================================================================
+// 在地文化知識型互動平台 — Firestore 安全規則
+// 對應功能規格書第 7、8 章 + 任務頁面通訊介面規格。
+//
+// ⚠️ 部署前請務必先用 Firebase Local Emulator Suite（firebase emulators:start）
+// 搭配測試資料驗證這份規則。
+// =====================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===================================================================
+    // 共用工具函式
+    // ===================================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // 以 UTC+8（台灣時區）為準，計算「今天是第幾天」的整數（epoch day）
+    function utc8DayNumber() {
+      return int((request.time.toMillis() + 8 * 60 * 60 * 1000) / (24 * 60 * 60 * 1000));
+    }
+
+    function changedKeys(before, after) {
+      return after.diff(before).affectedKeys();
+    }
+
+    // ===================================================================
+    // 使用者名稱唯一性：usernames/{username小寫}
+    // 文件 ID 本身就是使用者名稱，天然具備唯一性——
+    // 兩個人同時搶註冊同一個名稱時，Firestore 只會讓其中一個「create」成功，
+    // 另一個因為文件已存在會被歸類成「update」，而下面沒開放 update，因此失敗。
+    // ===================================================================
+
+    match /usernames/{username} {
+      allow read: if true;   // 前端可用來即時檢查名稱是否已被使用
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ===================================================================
+    // 內容資料：Banner／任務／公告／徽章／證書字典／頭像清單
+    // 任何人可讀；只有管理者可寫
+    // ===================================================================
+
+    match /banners/{bannerId}         { allow read: if true; allow write: if isAdmin(); }
+    match /tasks/{taskId}             { allow read: if true; allow write: if isAdmin(); }
+    match /news/{newsId}              { allow read: if true; allow write: if isAdmin(); }
+    match /badges/{badgeId}           { allow read: if true; allow write: if isAdmin(); }
+    match /certificates/{certId}      { allow read: if true; allow write: if isAdmin(); }
+    match /avatarPresets/{avatarId}   { allow read: if true; allow write: if isAdmin(); }
+
+    // 管理者白名單：不開放任何用戶端讀寫，只能由開發者在 Firebase 主控台手動維護
+    // 管理者白名單：允許登入者讀取「自己」是否在白名單內（供後台判斷登入者身分用），
+    // 不允許讀取別人的、也不允許任何用戶端寫入，只能由開發者在 Firebase 主控台手動維護
+    match /admins/{adminUid} {
+      allow read: if isOwner(adminUid);
+      allow write: if false;
+    }
+
+    // ===================================================================
+    // 使用者資料：users/{uid}
+    // ===================================================================
+
+    match /users/{uid} {
+      allow read: if true;
+
+      allow create: if isOwner(uid)
+        && request.resource.data.level == 1
+        && request.resource.data.coins == 0
+        && request.resource.data.badges == []
+        && request.resource.data.certificates == []
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() <= 20;
+
+      // 管理者：可自由編修任何使用者資料
+      allow update: if isAdmin();
+
+      // 一般使用者：僅限本人，且只能是下列其中一種「合法異動樣式」
+      allow update: if isOwner(uid) && (
+        isProfileOnlyEdit(resource.data, request.resource.data) ||
+        isDailyLoginClaim(resource.data, request.resource.data) ||
+        isTaskCostDeduction(resource.data, request.resource.data) ||
+        isTaskRewardClaim(resource.data, request.resource.data) ||
+        isCollectibleClaim(resource.data, request.resource.data)
+      );
+
+      function isProfileOnlyEdit(before, after) {
+        return changedKeys(before, after).hasOnly(['nickname', 'avatarId', 'lastNewsViewedAt'])
+          && (!('nickname' in after) || (after.nickname is string && after.nickname.size() <= 20));
+      }
+
+      function isDailyLoginClaim(before, after) {
+        let today = utc8DayNumber();
+        return before.get('lastDailyLoginDay', -1) != today
+          && after.lastDailyLoginDay == today
+          && after.coins == before.coins + 10
+          && changedKeys(before, after).hasOnly(['lastDailyLoginDay', 'coins', 'lastTransaction'])
+          && after.lastTransaction.type == 'daily_login'
+          && after.lastTransaction.amount == 10;
+      }
+
+      function isTaskCostDeduction(before, after) {
+        let tx = after.lastTransaction;
+        let cost = get(/databases/$(database)/documents/tasks/$(tx.taskId)).data.entryCost;
+        return tx.type == 'task_cost'
+          && cost > 0
+          && after.coins == before.coins - cost
+          && after.coins >= 0
+          && changedKeys(before, after).hasOnly(['coins', 'lastTransaction'])
+          && tx.amount == cost;
+      }
+
+      function isTaskRewardClaim(before, after) {
+        let tx = after.lastTransaction;
+        let today = utc8DayNumber();
+        let trackingId = tx.taskId + '_' + string(today);
+        let trackingAfter = getAfter(
+          /databases/$(database)/documents/users/$(uid)/taskRewardTracking/$(trackingId)
+        ).data;
+        let cap = get(/databases/$(database)/documents/tasks/$(tx.taskId)).data.dailyRewardCap;
+
+        return tx.type == 'task_reward'
+          && tx.amount > 0
+          && after.coins == before.coins + tx.amount
+          && trackingAfter.totalRewarded <= cap
+          && changedKeys(before, after).hasOnly(['coins', 'lastTransaction']);
+      }
+
+      function isCollectibleClaim(before, after) {
+        let tx = after.lastTransaction;
+        let changedBadges = changedKeys(before, after).hasOnly(['badges', 'lastTransaction'])
+          && after.badges.size() == before.badges.size() + 1
+          && get(/databases/$(database)/documents/badges/$(after.badges[after.badges.size() - 1]))
+               .data.sourceTaskId == tx.taskId;
+        let changedCerts = changedKeys(before, after).hasOnly(['certificates', 'lastTransaction'])
+          && after.certificates.size() == before.certificates.size() + 1
+          && get(/databases/$(database)/documents/certificates/$(after.certificates[after.certificates.size() - 1]))
+               .data.sourceTaskId == tx.taskId;
+        return tx.type == 'collectible_award' && (changedBadges || changedCerts);
+      }
+    }
+
+    match /users/{uid}/taskRewardTracking/{trackingId} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update: if isOwner(uid) && isValidRewardTracking();
+      allow delete: if false;
+
+      function isValidRewardTracking() {
+        let cap = get(/databases/$(database)/documents/tasks/$(request.resource.data.taskId)).data.dailyRewardCap;
+        let prevTotal = resource == null ? 0 : resource.data.totalRewarded;
+        let newTotal = request.resource.data.totalRewarded;
+        return newTotal > prevTotal && newTotal <= cap;
+      }
+    }
+
+    // ===================================================================
+    // 通行金幣收支明細：唯讀帳本，只能新增、不能修改或刪除
+    // ===================================================================
+
+    match /coinLedger/{uid}/entries/{entryId} {
+      allow read: if isOwner(uid) || isAdmin();
+
+      allow create: if (isOwner(uid) || isAdmin())
+        && request.resource.data.type in ['daily_login', 'task_cost', 'task_reward', 'admin_adjust']
+        && (request.resource.data.type != 'admin_adjust' || isAdmin())
+        && request.resource.data.amount is number
+        && request.resource.data.balanceAfter ==
+             getAfter(/databases/$(database)/documents/users/$(uid)).data.coins;
+
+      allow update, delete: if false;
+    }
+
+    // ===================================================================
+    // 排行榜：leaderboard/{taskId}/entries/{uid}
+    // ===================================================================
+
+    match /leaderboard/{taskId}/entries/{entryUid} {
+      allow read: if true;
+
+      allow create: if isOwner(entryUid)
+        && request.resource.data.scoreValue is number;
+
+      allow update: if isOwner(entryUid)
+        && request.resource.data.scoreValue is number
+        && request.resource.data.scoreValue > resource.data.scoreValue;
+
+      allow delete: if false;
+    }
+  }
+}

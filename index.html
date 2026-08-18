@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>在地文化知識型互動平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div id="portrait-warning" class="portrait-warning">
+        <div class="portrait-warning-icon">📱↻</div>
+        <h2>請將手機轉為直式</h2>
+        <p>本平台專為直式螢幕設計，以提供最佳體驗。</p>
+    </div>
+
+    <!-- 登入 / 註冊 -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="auth-title">通行證登記</h2>
+                <p class="modal-sub">加入探索隊，蒐集在地文化的每一段故事</p>
+            </div>
+
+            <div id="auth-avatar-wrap" class="hidden">
+                <p class="field-label">選擇你的頭像</p>
+                <div id="avatar-picker" class="avatar-picker"></div>
+            </div>
+
+            <div class="field-group">
+                <input id="auth-username" type="text" placeholder="使用者名稱（中英文數字，最長20字）" class="text-input">
+                <input id="auth-password" type="password" placeholder="密碼（至少6碼）" class="text-input">
+            </div>
+
+            <div id="auth-notice-wrap" class="hidden notice-box">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="auth-notice-checkbox">
+                    <span>我了解本平台<strong>沒有密碼救援服務</strong>，遺失密碼將無法找回，需重新註冊</span>
+                </label>
+            </div>
+
+            <p id="auth-error" class="error-text hidden"></p>
+            <button onclick="handleAuthSubmit()" class="btn-primary">核發通行證</button>
+            <p class="link-text" onclick="toggleAuthMode()">還沒有通行證？點此申請加入</p>
+        </div>
+    </div>
+
+    <!-- 修改密碼 -->
+    <div id="pwd-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header"><h2>修改密碼</h2></div>
+            <div class="field-group">
+                <input id="pwd-current" type="password" placeholder="目前密碼" class="text-input">
+                <input id="pwd-new" type="password" placeholder="新密碼（至少6碼）" class="text-input">
+            </div>
+            <p id="pwd-error" class="error-text hidden"></p>
+            <button onclick="handleChangePassword()" class="btn-primary">更新密碼</button>
+            <p class="link-text" onclick="closeChangePasswordModal()">取消</p>
+        </div>
+    </div>
+
+    <!-- 徽章/證書詳情 -->
+    <div id="detail-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header"><h2 id="detail-modal-title"></h2></div>
+            <div id="detail-modal-body"></div>
+            <p class="link-text" onclick="closeDetailModal()">關閉</p>
+        </div>
+    </div>
+
+    <header class="topbar">
+        <div class="user-brief" onclick="toggleUserMenu()">
+            <div id="user-avatar" class="avatar-circle">🧭</div>
+            <div class="user-text">
+                <h1 id="user-name">未登記隊員</h1>
+                <span id="user-level" class="level-pill">等級 Lv.0</span>
+            </div>
+        </div>
+        <div class="coin-pill">
+            <span class="coin-icon">●</span>
+            <span id="user-coins">0</span>
+        </div>
+
+        <div id="user-menu" class="user-menu hidden">
+            <button onclick="openChangePasswordModal()">修改密碼</button>
+            <button onclick="handleLogout()">登出</button>
+        </div>
+    </header>
+
+    <main class="content-area">
+
+        <section id="tab-home" class="tab-panel">
+            <div class="banner-carousel">
+                <div id="banner-track" class="banner-track"></div>
+                <div id="banner-dots" class="banner-dots"></div>
+            </div>
+
+            <h3 class="section-label">任務清單</h3>
+            <div id="task-list" class="task-list"></div>
+        </section>
+
+        <section id="tab-news" class="tab-panel hidden">
+            <h2 class="page-title">公告欄</h2>
+            <div id="news-list" class="news-list"></div>
+        </section>
+
+        <section id="tab-bag" class="tab-panel hidden">
+            <h2 class="page-title">探索背包</h2>
+            <div class="bag-section">
+                <h3 class="section-label">已蒐集徽章</h3>
+                <div id="badge-grid" class="collectible-grid"></div>
+            </div>
+            <div class="bag-section">
+                <h3 class="section-label">已取得證書</h3>
+                <div id="cert-grid" class="collectible-grid"></div>
+            </div>
+        </section>
+
+        <section id="tab-leaderboard" class="tab-panel hidden">
+            <h2 class="page-title">任務排行榜</h2>
+            <select id="leaderboard-task-select" onchange="renderLeaderboard()" class="select-input"></select>
+            <div id="leaderboard-list" class="leaderboard-list"></div>
+        </section>
+
+    </main>
+
+    <nav class="bottom-nav">
+        <button id="nav-home" class="nav-item tab-active" onclick="switchTab('home')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+            <span>任務大廳</span>
+        </button>
+        <button id="nav-news" class="nav-item" onclick="switchTab('news')">
+            <span id="nav-news-dot" class="nav-dot hidden"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3a6 6 0 0 1 6 6v4l2 4H4l2-4V9a6 6 0 0 1 6-6z"/></svg>
+            <span>公告</span>
+        </button>
+        <button id="nav-bag" class="nav-item" onclick="switchTab('bag')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+            <span>背包</span>
+        </button>
+        <button id="nav-leaderboard" class="nav-item" onclick="switchTab('leaderboard')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/></svg>
+            <span>排行榜</span>
+        </button>
+    </nav>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

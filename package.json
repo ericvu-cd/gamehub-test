@@ -1,0 +1,12 @@
+{
+  "name": "local-culture-platform-seed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "一次性資料初始化腳本，本機執行，不部署",
+  "scripts": {
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.3.1"
+  }
+}
