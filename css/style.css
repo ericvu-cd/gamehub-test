@@ -20,9 +20,10 @@ html, body {
 body {
     max-width: 480px;
     margin: 0 auto;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh; /* 手機瀏覽器網址列縮合時，用動態視窗高度更準確 */
+    overflow: hidden;
     position: relative;
-    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     background:
@@ -99,7 +100,22 @@ body::before {
     box-shadow: 0 14px 26px -12px rgba(166,61,64,0.55);
 }
 .btn-primary:active { transform: scale(0.98); }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.btn-primary:disabled { opacity: 0.75; cursor: not-allowed; transform: none; }
+
+.spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2.5px solid rgba(255,255,255,0.4); border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.password-field-wrap { position: relative; }
+.password-field-wrap .text-input { padding-right: 60px; }
+.password-toggle-btn {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    border: none; background: none; color: var(--ink-soft); font-size: 12px;
+    font-weight: 700; padding: 6px 8px; cursor: pointer;
+}
 
 .avatar-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .avatar-choice {
@@ -110,9 +126,21 @@ body::before {
 .avatar-choice.selected { border-color: var(--glow, var(--gold)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--glow, var(--gold)) 25%, transparent); }
 
 /* ---------------- Topbar ---------------- */
+/* ---------------- 頂端品牌橫幅 + Topbar（固定不捲動） ---------------- */
+.brand-bar {
+    flex-shrink: 0;
+    text-align: center;
+    padding: 10px 16px 2px;
+    position: relative; z-index: 10;
+}
+.brand-bar h1 {
+    font-size: 15px; font-weight: 900; letter-spacing: 0.5px; color: var(--ink);
+}
+
 .topbar {
+    flex-shrink: 0;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 18px; position: relative; z-index: 10;
+    padding: 10px 18px 14px; position: relative; z-index: 10;
 }
 .user-brief { display: flex; align-items: center; gap: 10px; cursor: pointer; min-width: 0; }
 .avatar-circle {

@@ -103,10 +103,35 @@ function showToast(text) {
 /* ---------------- Auth UI ---------------- */
 window.toggleAuthMode = function () {
     isRegisterMode = !isRegisterMode;
-    document.getElementById('auth-title').innerText = isRegisterMode ? '申請加入' : '通行證登記';
+
+    document.getElementById('auth-title').innerText = isRegisterMode ? '申請加入探索隊' : '通行證登記';
+    document.getElementById('auth-sub').innerText = isRegisterMode
+        ? '第一次來嗎？建立你自己的通行證'
+        : '已有帳號的隊員，請在這裡登入';
+    document.getElementById('auth-submit-text').innerText = isRegisterMode ? '核發通行證' : '登記';
+    document.getElementById('auth-toggle-link').innerText = isRegisterMode
+        ? '已經有通行證了？點此登入'
+        : '還沒有通行證？點此申請加入';
+
     document.getElementById('auth-avatar-wrap').classList.toggle('hidden', !isRegisterMode);
     document.getElementById('auth-notice-wrap').classList.toggle('hidden', !isRegisterMode);
+
+    // 註冊時密碼預設可視，方便確認輸入正確；登入時維持遮蔽保護隱私
+    const pwdInput = document.getElementById('auth-password');
+    const pwdToggleBtn = document.getElementById('auth-password-toggle');
+    pwdInput.type = isRegisterMode ? 'text' : 'password';
+    pwdToggleBtn.classList.toggle('hidden', !isRegisterMode);
+    pwdToggleBtn.innerText = '隱藏';
+
     if (isRegisterMode) renderAvatarPicker();
+};
+
+window.togglePasswordVisibility = function () {
+    const pwdInput = document.getElementById('auth-password');
+    const btn = document.getElementById('auth-password-toggle');
+    const showing = pwdInput.type === 'text';
+    pwdInput.type = showing ? 'password' : 'text';
+    btn.innerText = showing ? '顯示' : '隱藏';
 };
 
 function renderAvatarPicker() {
@@ -141,9 +166,12 @@ window.handleAuthSubmit = async function () {
     if (!password) { showAuthError('請輸入密碼'); return; }
 
     const submitBtn = document.getElementById('auth-submit-btn');
+    const submitText = document.getElementById('auth-submit-text');
+    const submitSpinner = document.getElementById('auth-submit-spinner');
     isSubmitting = true;
     submitBtn.disabled = true;
-    submitBtn.innerText = '處理中...';
+    submitText.classList.add('hidden');
+    submitSpinner.classList.remove('hidden');
 
     try {
         if (isRegisterMode) {
@@ -162,7 +190,8 @@ window.handleAuthSubmit = async function () {
     } finally {
         isSubmitting = false;
         submitBtn.disabled = false;
-        submitBtn.innerText = '核發通行證';
+        submitText.classList.remove('hidden');
+        submitSpinner.classList.add('hidden');
     }
 };
 

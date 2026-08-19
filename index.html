@@ -24,7 +24,7 @@
         <div class="modal-card">
             <div class="modal-header">
                 <h2 id="auth-title">通行證登記</h2>
-                <p class="modal-sub">加入探索隊，蒐集在地文化的每一段故事</p>
+                <p id="auth-sub" class="modal-sub">已有帳號的隊員，請在這裡登入</p>
             </div>
 
             <div id="auth-avatar-wrap" class="hidden">
@@ -34,7 +34,10 @@
 
             <div class="field-group">
                 <input id="auth-username" type="text" placeholder="使用者名稱（中英文數字，最長20字）" class="text-input">
-                <input id="auth-password" type="password" placeholder="密碼（至少6碼）" class="text-input">
+                <div class="password-field-wrap">
+                    <input id="auth-password" type="password" placeholder="密碼（至少6碼）" class="text-input">
+                    <button type="button" id="auth-password-toggle" class="password-toggle-btn hidden" onclick="window.togglePasswordVisibility()">顯示</button>
+                </div>
             </div>
 
             <div id="auth-notice-wrap" class="hidden notice-box">
@@ -45,8 +48,11 @@
             </div>
 
             <p id="auth-error" class="error-text hidden"></p>
-            <button id="auth-submit-btn" onclick="handleAuthSubmit()" class="btn-primary">核發通行證</button>
-            <p class="link-text" onclick="toggleAuthMode()">還沒有通行證？點此申請加入</p>
+            <button id="auth-submit-btn" onclick="handleAuthSubmit()" class="btn-primary">
+                <span id="auth-submit-text">登記</span>
+                <span id="auth-submit-spinner" class="spinner hidden"></span>
+            </button>
+            <p id="auth-toggle-link" class="link-text" onclick="toggleAuthMode()">還沒有通行證？點此申請加入</p>
         </div>
     </div>
 
@@ -71,6 +77,10 @@
             <div id="detail-modal-body"></div>
             <p class="link-text" onclick="closeDetailModal()">關閉</p>
         </div>
+    </div>
+
+    <div class="brand-bar">
+        <h1>在地文化知識型互動平台</h1>
     </div>
 
     <header class="topbar">
