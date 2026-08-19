@@ -99,6 +99,7 @@ body::before {
     box-shadow: 0 14px 26px -12px rgba(166,61,64,0.55);
 }
 .btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
 .avatar-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .avatar-choice {

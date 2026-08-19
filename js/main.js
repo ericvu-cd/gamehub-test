@@ -126,7 +126,11 @@ window.selectAvatar = function (avatarId) {
     renderAvatarPicker();
 };
 
+let isSubmitting = false;
+
 window.handleAuthSubmit = async function () {
+    if (isSubmitting) return; // 防止連點造成重複送出
+
     const username = document.getElementById('auth-username').value.trim();
     const password = document.getElementById('auth-password').value;
     const errorEl = document.getElementById('auth-error');
@@ -136,16 +140,29 @@ window.handleAuthSubmit = async function () {
     if (usernameErr) { showAuthError(usernameErr); return; }
     if (!password) { showAuthError('請輸入密碼'); return; }
 
+    const submitBtn = document.getElementById('auth-submit-btn');
+    isSubmitting = true;
+    submitBtn.disabled = true;
+    submitBtn.innerText = '處理中...';
+
     try {
         if (isRegisterMode) {
             const notice = document.getElementById('auth-notice-checkbox');
             if (!notice.checked) { showAuthError('請先勾選確認已知悉沒有密碼救援服務'); return; }
+            // registerUser() 內部的 createUserWithEmailAndPassword 本身就會讓使用者
+            // 直接處於登入狀態，不需要再多呼叫一次 loginUser()（原本這裡多打一次，
+            // 是造成註冊流程變慢的主因之一）。
             await registerUser(username, password, siteData.avatarPresets.map(a => a.id));
+        } else {
+            await loginUser(username, password);
         }
-        await loginUser(username, password);
         document.getElementById('auth-modal').classList.add('hidden');
     } catch (err) {
         showAuthError(err.message);
+    } finally {
+        isSubmitting = false;
+        submitBtn.disabled = false;
+        submitBtn.innerText = '核發通行證';
     }
 };
 

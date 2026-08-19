@@ -6,6 +6,9 @@
 <title>在地文化知識型互動平台</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com">
+<link rel="preconnect" href="https://firestore.googleapis.com">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -42,7 +45,7 @@
             </div>
 
             <p id="auth-error" class="error-text hidden"></p>
-            <button onclick="handleAuthSubmit()" class="btn-primary">核發通行證</button>
+            <button id="auth-submit-btn" onclick="handleAuthSubmit()" class="btn-primary">核發通行證</button>
             <p class="link-text" onclick="toggleAuthMode()">還沒有通行證？點此申請加入</p>
         </div>
     </div>
