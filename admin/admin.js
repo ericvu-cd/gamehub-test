@@ -63,15 +63,26 @@ window.toggleBannerActive = async function (id, setActive) {
     loadBannersTable();
 };
 
+window.onBannerActionTypeChange = function (selectEl) {
+    const type = selectEl.value;
+    const form = selectEl.closest('form');
+    form.querySelector('[data-action-field="URL"]').classList.toggle('hidden', type !== 'URL');
+    form.querySelector('[data-action-field="TASK"]').classList.toggle('hidden', type !== 'TASK');
+};
+
 window.submitBanner = async function (e) {
     e.preventDefault();
     const f = new FormData(e.target);
+    const actionType = f.get('actionType') || 'NONE';
+    const actionValue = actionType === 'URL' ? f.get('actionValueUrl')
+        : actionType === 'TASK' ? f.get('actionValueTask') : null;
     try {
         await addDoc(collection(db, 'banners'), {
             title: f.get('title'), subtitle: f.get('subtitle') || '',
             imageUrl: f.get('imageUrl') || null,
             sortOrder: Number(f.get('sortOrder')) || 0,
             startAt: dateToMs(f.get('startAt')), endAt: dateToMs(f.get('endAt')),
+            actionType, actionValue,
             isActive: true
         });
         e.target.reset();
@@ -119,7 +130,7 @@ window.submitTask = async function (e) {
     try {
         await setDoc(doc(db, 'tasks', f.get('id')), {
             title: f.get('title'), description: f.get('description') || '',
-            imageUrl: f.get('imageUrl') || null, colorTheme: f.get('colorTheme'),
+            colorTheme: f.get('colorTheme'),
             link: f.get('link'),
             entryCost: Number(f.get('entryCost')) || 0,
             dailyRewardCap: Number(f.get('dailyRewardCap')) || 0,

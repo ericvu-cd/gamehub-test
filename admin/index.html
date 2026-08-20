@@ -33,6 +33,7 @@
     .msg.ok { background: #E4F5EC; color: #1E6B45; }
     .msg.err { background: #FBE7E5; color: #A63D40; }
     .not-admin { text-align: center; padding: 60px 20px; color: #A63D40; }
+    .hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -74,6 +75,15 @@
             <div class="field"><label>排序（數字，越小越前）</label><input name="sortOrder" type="number" value="0"></div>
             <div class="field"><label>上架日期（選填）</label><input name="startAt" type="date"></div>
             <div class="field"><label>下架日期（選填）</label><input name="endAt" type="date"></div>
+            <div class="field"><label>點擊後執行（選填）</label>
+                <select name="actionType" onchange="window.onBannerActionTypeChange(this)">
+                    <option value="NONE">不設定（點擊無反應）</option>
+                    <option value="URL">開啟外部網址</option>
+                    <option value="TASK">開啟指定任務</option>
+                </select>
+            </div>
+            <div class="field" data-action-field="URL"><label>網址</label><input name="actionValueUrl" placeholder="https://..."></div>
+            <div class="field hidden" data-action-field="TASK"><label>任務 ID</label><input name="actionValueTask" placeholder="例如 g1"></div>
             <button class="submit-btn" type="submit">新增 Banner</button>
         </form>
     </section>
@@ -83,10 +93,14 @@
         <div id="tasks-msg"></div>
         <table id="tasks-table"><thead><tr><th>ID</th><th>標題</th><th>扣款/上限</th><th>狀態</th><th></th></tr></thead><tbody></tbody></table>
         <form class="inline-form" onsubmit="return submitTask(event)">
+            <p style="grid-column:1/-1;font-size:12px;color:#8B8577;background:#FBF8F0;padding:8px 10px;border-radius:6px;margin:0 0 4px;">
+                💡 任務卡片的縮圖不用在這裡設定，平台會自動讀取任務網址那個 HTML 檔案
+                <code>&lt;head&gt;</code> 裡的 <code>&lt;link rel="icon" href="..."&gt;</code> 設定，
+                請直接在任務自己的 HTML 裡加這個標籤即可。
+            </p>
             <div class="field"><label>任務 ID（英數，如 g1）</label><input name="id" required></div>
             <div class="field"><label>標題</label><input name="title" required></div>
             <div class="field"><label>簡介</label><input name="description"></div>
-            <div class="field"><label>縮圖網址（選填）</label><input name="imageUrl"></div>
             <div class="field"><label>色系</label>
                 <select name="colorTheme"><option>mint</option><option>peach</option><option>gold</option><option>sky</option><option>lilac</option></select>
             </div>

@@ -263,19 +263,36 @@ function renderBanners() {
         dotsWrap.innerHTML = '';
         return;
     }
-    track.innerHTML = siteData.banners.map(b => `
-        <div class="banner-slide" style="background-image:${b.imageUrl ? `url('${b.imageUrl}')` : 'var(--banner-gradient)'}">
+    track.innerHTML = siteData.banners.map((b, i) => {
+        const clickable = b.actionType && b.actionType !== 'NONE' && b.actionValue;
+        return `
+        <div class="banner-slide ${clickable ? 'banner-clickable' : ''}"
+             style="background-image:${b.imageUrl ? `url('${b.imageUrl}')` : 'var(--banner-gradient)'}"
+             onclick="window.handleBannerClick(${i})">
             <span class="banner-eyebrow">本週特別任務</span>
             <h2 class="banner-title">${b.title}</h2>
             <p class="banner-sub">${b.subtitle || ''}</p>
+            ${clickable ? '<span class="banner-tap-hint">點擊查看 ›</span>' : ''}
         </div>
-    `).join('');
+    `;
+    }).join('');
     dotsWrap.innerHTML = siteData.banners.map((_, i) =>
         `<span class="banner-dot ${i === bannerIndex ? 'active' : ''}"></span>`
     ).join('');
     updateBannerPosition();
     resetBannerTimer();
 }
+
+window.handleBannerClick = function (index) {
+    const b = siteData.banners[index];
+    if (!b || !b.actionType || b.actionType === 'NONE' || !b.actionValue) return;
+
+    if (b.actionType === 'URL') {
+        window.open(b.actionValue, '_blank');
+    } else if (b.actionType === 'TASK') {
+        window.handleTaskClick(b.actionValue);
+    }
+};
 
 function updateBannerPosition() {
     const track = document.getElementById('banner-track');
@@ -319,8 +336,8 @@ function renderTasks() {
     container.innerHTML = siteData.tasks.map((task, i) => {
         const status = computeUnlockStatus(task, currentUser);
         const gradClass = status.canPlay ? CARD_GRADIENTS[i % CARD_GRADIENTS.length] : 'grad-locked';
-        const thumbHtml = task.imageUrl
-            ? `<img src="${task.imageUrl}" alt="" class="task-thumb-img ${status.canPlay ? '' : 'grayscale'}">`
+        const thumbHtml = task.iconUrl
+            ? `<img src="${task.iconUrl}" alt="" class="task-thumb-img ${status.canPlay ? '' : 'grayscale'}">`
             : `<div class="task-thumb-fallback"></div>`;
         return `
             <div class="task-card ${gradClass}">
