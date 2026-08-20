@@ -31,6 +31,18 @@ body {
 
 .hidden { display: none !important; }
 
+/* ---------------- 徹底封鎖「轉為直式」警告區塊 ---------------- */
+.portrait-warning,
+#portrait-warning,
+div[class*="portrait"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    height: 0 !important;
+    width: 0 !important;
+}
+
 /* ---------------- 頂端品牌與狀態欄 ---------------- */
 .brand-bar {
     flex-shrink: 0; text-align: center; padding: 12px 16px 6px;
