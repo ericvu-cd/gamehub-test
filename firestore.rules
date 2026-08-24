@@ -1,8 +1,16 @@
 rules_version = '2';
 
 // =====================================================================
-// 在地文化知識型互動平台 — Firestore 安全規則
-// 對應功能規格書第 7、8 章 + 任務頁面通訊介面規格。
+// 在地文化知識型互動平台 — Firestore 安全規則（GitHub 遷移版）
+//
+// 內容資料（Banner／任務／公告／徽章／證書字典／頭像清單）已搬到 GitHub，
+// 不再存於 Firestore，因此本檔案不再有這些 collection 的規則。
+//
+// 金幣防作弊機制也跟著調整：因為任務的 entryCost／dailyRewardCap 已經
+// 不在 Firestore，規則無法再逐筆核對交易金額是否正確，改用「每人每日
+// 總量防護」（dailyGuard）——不管單筆金額多少，只要今天累計的淨變動量
+// 或交易次數超過上限就擋下來。這是刻意的取捨，詳見「架構調整討論記錄.md」
+// 第三輪確認的風險評估。
 //
 // ⚠️ 部署前請務必先用 Firebase Local Emulator Suite（firebase emulators:start）
 // 搭配測試資料驗證這份規則。
@@ -39,32 +47,20 @@ service cloud.firestore {
 
     // ===================================================================
     // 使用者名稱唯一性：usernames/{username小寫}
-    // 文件 ID 本身就是使用者名稱，天然具備唯一性——
-    // 兩個人同時搶註冊同一個名稱時，Firestore 只會讓其中一個「create」成功，
-    // 另一個因為文件已存在會被歸類成「update」，而下面沒開放 update，因此失敗。
     // ===================================================================
 
     match /usernames/{username} {
-      allow read: if true;   // 前端可用來即時檢查名稱是否已被使用
+      allow read: if true;
       allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
       allow update, delete: if false;
     }
 
     // ===================================================================
-    // 內容資料：Banner／任務／公告／徽章／證書字典／頭像清單
-    // 任何人可讀；只有管理者可寫
+    // 管理者白名單：僅本人可讀自己的白名單狀態，任何人不可寫
+    // （內容資料維護已改走 GitHub API，這裡的管理者權限現在只用於
+    //  「編修使用者資料」這一項，見 8.3 節精神延續）
     // ===================================================================
 
-    match /banners/{bannerId}         { allow read: if true; allow write: if isAdmin(); }
-    match /tasks/{taskId}             { allow read: if true; allow write: if isAdmin(); }
-    match /news/{newsId}              { allow read: if true; allow write: if isAdmin(); }
-    match /badges/{badgeId}           { allow read: if true; allow write: if isAdmin(); }
-    match /certificates/{certId}      { allow read: if true; allow write: if isAdmin(); }
-    match /avatarPresets/{avatarId}   { allow read: if true; allow write: if isAdmin(); }
-
-    // 管理者白名單：不開放任何用戶端讀寫，只能由開發者在 Firebase 主控台手動維護
-    // 管理者白名單：允許登入者讀取「自己」是否在白名單內（供後台判斷登入者身分用），
-    // 不允許讀取別人的、也不允許任何用戶端寫入，只能由開發者在 Firebase 主控台手動維護
     match /admins/{adminUid} {
       allow read: if isOwner(adminUid);
       allow write: if false;
@@ -85,7 +81,7 @@ service cloud.firestore {
         && request.resource.data.nickname is string
         && request.resource.data.nickname.size() <= 20;
 
-      // 管理者：可自由編修任何使用者資料
+      // 管理者：可自由編修任何使用者資料（金幣調整等人工修正用途）
       allow update: if isAdmin();
 
       // 一般使用者：僅限本人，且只能是下列其中一種「合法異動樣式」
@@ -97,72 +93,79 @@ service cloud.firestore {
         isCollectibleClaim(resource.data, request.resource.data)
       );
 
+      // --- 樣式 1：只改暱稱／頭像／公告已讀時間，不動金幣與 dailyGuard ---
       function isProfileOnlyEdit(before, after) {
         return changedKeys(before, after).hasOnly(['nickname', 'avatarId', 'lastNewsViewedAt'])
           && (!('nickname' in after) || (after.nickname is string && after.nickname.size() <= 20));
       }
 
+      // --- 每日總量防護核心邏輯：驗證 dailyGuard 是否正確地反映了這次異動 ---
+      // netDelta：這次異動造成 coins 的淨變化量（登入/獎勵為正，扣款為負，
+      //           徽章證書核發等非金幣異動傳 0）
+      function isValidDailyGuardUpdate(before, after, netDelta) {
+        let today = utc8DayNumber();
+        let prevGuard = before.get('dailyGuard', null);
+        let isNewDay = prevGuard == null || prevGuard.day != today;
+        let prevNet = isNewDay ? 0 : prevGuard.netChange;
+        let prevTx = isNewDay ? 0 : prevGuard.txCount;
+        let g = after.dailyGuard;
+
+        return g.day == today
+          && g.netChange == prevNet + netDelta
+          && g.txCount == prevTx + 1
+          && g.netChange <= 200   // DAILY_CAP
+          && g.txCount <= 100;    // MAX_TX_PER_DAY
+      }
+
+      // --- 樣式 2：每日登入獎勵，同一自然日（UTC+8）只能領一次，固定 +10 ---
       function isDailyLoginClaim(before, after) {
         let today = utc8DayNumber();
         return before.get('lastDailyLoginDay', -1) != today
           && after.lastDailyLoginDay == today
           && after.coins == before.coins + 10
-          && changedKeys(before, after).hasOnly(['lastDailyLoginDay', 'coins', 'lastTransaction'])
+          && changedKeys(before, after).hasOnly(['lastDailyLoginDay', 'coins', 'dailyGuard', 'lastTransaction'])
           && after.lastTransaction.type == 'daily_login'
-          && after.lastTransaction.amount == 10;
+          && after.lastTransaction.amount == 10
+          && isValidDailyGuardUpdate(before, after, 10);
       }
 
+      // --- 樣式 3：進入任務扣款。因任務資料不在 Firestore，無法核對金額
+      //     是否等於任務真實設定的 entryCost，只驗證餘額不會變負數，
+      //     並受 dailyGuard 總量防護限制 ---
       function isTaskCostDeduction(before, after) {
         let tx = after.lastTransaction;
-        let cost = get(/databases/$(database)/documents/tasks/$(tx.taskId)).data.entryCost;
+        let cost = before.coins - after.coins;
         return tx.type == 'task_cost'
           && cost > 0
-          && after.coins == before.coins - cost
           && after.coins >= 0
-          && changedKeys(before, after).hasOnly(['coins', 'lastTransaction'])
-          && tx.amount == cost;
+          && tx.amount == cost
+          && changedKeys(before, after).hasOnly(['coins', 'dailyGuard', 'lastTransaction'])
+          && isValidDailyGuardUpdate(before, after, -cost);
       }
 
+      // --- 樣式 4：任務獎勵。同樣因任務資料不在 Firestore，
+      //     不再核對個別任務的每日上限，改受全域 dailyGuard 限制 ---
       function isTaskRewardClaim(before, after) {
         let tx = after.lastTransaction;
-        let today = utc8DayNumber();
-        let trackingId = tx.taskId + '_' + string(today);
-        let trackingAfter = getAfter(
-          /databases/$(database)/documents/users/$(uid)/taskRewardTracking/$(trackingId)
-        ).data;
-        let cap = get(/databases/$(database)/documents/tasks/$(tx.taskId)).data.dailyRewardCap;
-
+        let amount = after.coins - before.coins;
         return tx.type == 'task_reward'
-          && tx.amount > 0
-          && after.coins == before.coins + tx.amount
-          && trackingAfter.totalRewarded <= cap
-          && changedKeys(before, after).hasOnly(['coins', 'lastTransaction']);
+          && amount > 0
+          && tx.amount == amount
+          && changedKeys(before, after).hasOnly(['coins', 'dailyGuard', 'lastTransaction'])
+          && isValidDailyGuardUpdate(before, after, amount);
       }
 
+      // --- 樣式 5：任務授予的徽章／證書。不再核對來源任務是否正確
+      //     （字典已搬到 GitHub，無法核對），僅受 dailyGuard 交易次數限制 ---
       function isCollectibleClaim(before, after) {
         let tx = after.lastTransaction;
-        let changedBadges = changedKeys(before, after).hasOnly(['badges', 'lastTransaction'])
-          && after.badges.size() == before.badges.size() + 1
-          && get(/databases/$(database)/documents/badges/$(after.badges[after.badges.size() - 1]))
-               .data.sourceTaskId == tx.taskId;
-        let changedCerts = changedKeys(before, after).hasOnly(['certificates', 'lastTransaction'])
-          && after.certificates.size() == before.certificates.size() + 1
-          && get(/databases/$(database)/documents/certificates/$(after.certificates[after.certificates.size() - 1]))
-               .data.sourceTaskId == tx.taskId;
-        return tx.type == 'collectible_award' && (changedBadges || changedCerts);
-      }
-    }
-
-    match /users/{uid}/taskRewardTracking/{trackingId} {
-      allow read: if isOwner(uid) || isAdmin();
-      allow create, update: if isOwner(uid) && isValidRewardTracking();
-      allow delete: if false;
-
-      function isValidRewardTracking() {
-        let cap = get(/databases/$(database)/documents/tasks/$(request.resource.data.taskId)).data.dailyRewardCap;
-        let prevTotal = resource == null ? 0 : resource.data.totalRewarded;
-        let newTotal = request.resource.data.totalRewarded;
-        return newTotal > prevTotal && newTotal <= cap;
+        let changedBadges = changedKeys(before, after).hasOnly(['badges', 'dailyGuard', 'lastTransaction'])
+          && after.badges.size() == before.badges.size() + 1;
+        let changedCerts = changedKeys(before, after).hasOnly(['certificates', 'dailyGuard', 'lastTransaction'])
+          && after.certificates.size() == before.certificates.size() + 1;
+        return tx.type == 'collectible_award'
+          && (changedBadges || changedCerts)
+          && isValidDailyGuardUpdate(before, after, 0);
       }
     }
 

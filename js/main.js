@@ -84,11 +84,13 @@ async function maybeClaimDailyLogin() {
     if (!currentUser) return;
     const today = utc8DayNumber();
     if (currentUser.lastDailyLoginDay === today) return;
-    const result = await claimDailyLogin(currentUser.uid, currentUser.coins);
+    const result = await claimDailyLogin(currentUser.uid, currentUser.coins, currentUser.dailyGuard);
     if (result.ok) {
-        currentUser = { ...currentUser, coins: result.newCoins, lastDailyLoginDay: today };
+        currentUser = { ...currentUser, coins: result.newCoins, lastDailyLoginDay: today, dailyGuard: result.guard };
         renderUserBar();
         showToast('每日登入獎勵 +10 通行金幣！');
+    } else {
+        console.warn('每日登入獎勵領取失敗：', result.reason);
     }
 }
 
@@ -357,8 +359,8 @@ function renderTasks() {
 window.handleTaskClick = async function (taskId) {
     const task = siteData.tasks.find(t => t.id === taskId);
     if (!task) return;
-    await openTask(task, currentUser, (newCoins) => {
-        currentUser = { ...currentUser, coins: newCoins };
+    await openTask(task, currentUser, (newCoins, guard) => {
+        currentUser = { ...currentUser, coins: newCoins, dailyGuard: guard ?? currentUser.dailyGuard };
         renderUserBar();
         renderTasks();
     });

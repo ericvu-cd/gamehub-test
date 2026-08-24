@@ -1,0 +1,14 @@
+[
+  {
+    "id": "banner1",
+    "title": "巷弄尋寶季開跑",
+    "subtitle": "累積通行金幣，兌換限量職人手作課程！",
+    "imageUrl": null,
+    "sortOrder": 1,
+    "startAt": null,
+    "endAt": null,
+    "actionType": "NONE",
+    "actionValue": null,
+    "isActive": true
+  }
+]

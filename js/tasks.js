@@ -21,12 +21,12 @@ export async function openTask(task, currentUser, onCoinsChanged) {
         return { ok: false };
     }
 
-    const costResult = await deductTaskCost(currentUser.uid, task.id, currentUser.coins);
+    const costResult = await deductTaskCost(currentUser.uid, task, currentUser.coins, currentUser.dailyGuard);
     if (!costResult.ok) {
         alert(costResult.reason);
         return { ok: false };
     }
-    if (costResult.newCoins !== undefined) onCoinsChanged(costResult.newCoins);
+    if (costResult.newCoins !== undefined) onCoinsChanged(costResult.newCoins, costResult.guard);
 
     // 務必在使用者點擊事件的同一個呼叫堆疊中直接呼叫 window.open，
     // 不要包在 await 之後，否則容易被手機瀏覽器的彈出視窗攔截器擋下。
@@ -66,24 +66,26 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                 let user = currentUser;
 
                 if (msg.payload?.coins > 0) {
-                    const r = await claimTaskReward(user.uid, msg.taskId, msg.payload.coins, user.coins);
+                    const r = await claimTaskReward(user.uid, msg.taskId, msg.payload.coins, user.coins, user.dailyGuard);
                     if (r.ok) {
                         detail.coinsAwarded = r.coinsAwarded;
-                        user = { ...user, coins: r.newCoins ?? user.coins };
+                        user = { ...user, coins: r.newCoins ?? user.coins, dailyGuard: r.guard ?? user.dailyGuard };
+                    } else {
+                        detail.rejectedReason = r.reason;
                     }
                 }
                 for (const badgeId of msg.payload?.badgeIds || []) {
-                    const r = await awardBadge(user.uid, msg.taskId, badgeId, user.badges);
+                    const r = await awardBadge(user.uid, msg.taskId, badgeId, user.badges, user.dailyGuard);
                     if (r.ok && !r.alreadyOwned) {
                         detail.badgesAwarded.push(badgeId);
-                        user = { ...user, badges: r.badges };
+                        user = { ...user, badges: r.badges, dailyGuard: r.guard ?? user.dailyGuard };
                     }
                 }
                 for (const certId of msg.payload?.certificateIds || []) {
-                    const r = await awardCertificate(user.uid, msg.taskId, certId, user.certificates);
+                    const r = await awardCertificate(user.uid, msg.taskId, certId, user.certificates, user.dailyGuard);
                     if (r.ok && !r.alreadyOwned) {
                         detail.certificatesAwarded.push(certId);
-                        user = { ...user, certificates: r.certificates };
+                        user = { ...user, certificates: r.certificates, dailyGuard: r.guard ?? user.dailyGuard };
                     }
                 }
 

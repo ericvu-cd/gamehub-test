@@ -1,0 +1,8 @@
+[
+  { "id": "cat", "name": "貓", "emoji": "🐱", "glowColor": "#F0997B" },
+  { "id": "dog", "name": "狗", "emoji": "🐶", "glowColor": "#EF9F27" },
+  { "id": "rabbit", "name": "兔子", "emoji": "🐰", "glowColor": "#B980F0" },
+  { "id": "fox", "name": "狐狸", "emoji": "🦊", "glowColor": "#F4735A" },
+  { "id": "owl", "name": "貓頭鷹", "emoji": "🦉", "glowColor": "#5DCAA5" },
+  { "id": "panda", "name": "熊貓", "emoji": "🐼", "glowColor": "#6E93D9" }
+]
