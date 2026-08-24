@@ -41,5 +41,21 @@
     ],
     "sortOrder": 1,
     "isActive": true
+  },
+  {
+    "id": "mlhbtrip",
+    "title": "苗栗漁港一日遊LBS",
+    "description": "LBS定址服務",
+    "colorTheme": "peach",
+    "link": "https://ericvu-cd.github.io/lbsgame/mlhbtrip.html",
+    "entryCost": 0,
+    "unlockConditions": [
+      {
+        "type": "COIN",
+        "value": 1
+      }
+    ],
+    "sortOrder": 2,
+    "isActive": true
   }
 ]
