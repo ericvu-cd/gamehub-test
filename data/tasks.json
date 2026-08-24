@@ -1,21 +1,5 @@
 [
   {
-    "id": "g2",
-    "title": "廟埕故事所",
-    "description": "聆聽耆老口述，解鎖廟埕傳說",
-    "colorTheme": "peach",
-    "link": "tasks/sample-task.html",
-    "entryCost": 0,
-    "unlockConditions": [
-      {
-        "type": "LEVEL",
-        "value": 1
-      }
-    ],
-    "sortOrder": 2,
-    "isActive": true
-  },
-  {
     "id": "6htw",
     "title": "海紋守護團",
     "description": "台灣海線任務",
