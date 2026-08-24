@@ -1,16 +1,5 @@
 [
   {
-    "id": "g1",
-    "title": "老街早市尋寶",
-    "description": "走訪早市攤商，認識在地小吃與人情味",
-    "colorTheme": "mint",
-    "link": "tasks/sample-task.html",
-    "entryCost": 0,
-    "unlockConditions": [],
-    "sortOrder": 1,
-    "isActive": true
-  },
-  {
     "id": "g2",
     "title": "廟埕故事所",
     "description": "聆聽耆老口述，解鎖廟埕傳說",
