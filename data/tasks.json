@@ -17,8 +17,29 @@
     "colorTheme": "peach",
     "link": "tasks/sample-task.html",
     "entryCost": 0,
-    "unlockConditions": [{ "type": "LEVEL", "value": 1 }],
+    "unlockConditions": [
+      {
+        "type": "LEVEL",
+        "value": 1
+      }
+    ],
     "sortOrder": 2,
+    "isActive": true
+  },
+  {
+    "id": "6htw",
+    "title": "海紋守護團",
+    "description": "台灣海線任務",
+    "colorTheme": "mint",
+    "link": "https://ericvu-cd.github.io/6htw/",
+    "entryCost": 0,
+    "unlockConditions": [
+      {
+        "type": "LEVEL",
+        "value": 1
+      }
+    ],
+    "sortOrder": 1,
     "isActive": true
   }
 ]
