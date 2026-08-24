@@ -41,5 +41,16 @@
     "unlockConditions": [],
     "sortOrder": 3,
     "isActive": true
+  },
+  {
+    "id": "stoneweir",
+    "title": "石滬修復",
+    "description": "走讀外埔漁港",
+    "colorTheme": "peach",
+    "link": "https://ericvu-cd.github.io/lbsgame/stoneweir.html",
+    "entryCost": 0,
+    "unlockConditions": [],
+    "sortOrder": 0,
+    "isActive": true
   }
 ]
