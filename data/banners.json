@@ -10,5 +10,17 @@
     "actionType": "NONE",
     "actionValue": null,
     "isActive": true
+  },
+  {
+    "id": "banner_1787568910357",
+    "title": "我們的官網",
+    "subtitle": "",
+    "imageUrl": null,
+    "sortOrder": 0,
+    "startAt": null,
+    "endAt": null,
+    "actionType": "URL",
+    "actionValue": "https://huansia30.home.blog/",
+    "isActive": true
   }
 ]
