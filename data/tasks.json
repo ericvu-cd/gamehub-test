@@ -30,5 +30,16 @@
     ],
     "sortOrder": 2,
     "isActive": true
+  },
+  {
+    "id": "fishmarket",
+    "title": "永續魚市拍賣",
+    "description": "走讀龍鳳漁港",
+    "colorTheme": "sky",
+    "link": "https://ericvu-cd.github.io/lbsgame/fishmarket.html",
+    "entryCost": 0,
+    "unlockConditions": [],
+    "sortOrder": 3,
+    "isActive": true
   }
 ]
