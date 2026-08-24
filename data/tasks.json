@@ -52,5 +52,16 @@
     "unlockConditions": [],
     "sortOrder": 0,
     "isActive": true
+  },
+  {
+    "id": "fishball",
+    "title": "魚丸追追樂",
+    "description": "走讀苑港漁港",
+    "colorTheme": "gold",
+    "link": "https://ericvu-cd.github.io/lbsgame/fishball.html",
+    "entryCost": 0,
+    "unlockConditions": [],
+    "sortOrder": 0,
+    "isActive": true
   }
 ]
