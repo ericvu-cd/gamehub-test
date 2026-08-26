@@ -327,22 +327,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ---------------- 任務清單 ---------------- */
-const CARD_GRADIENTS = ['grad-mint', 'grad-peach', 'grad-gold', 'grad-sky', 'grad-lilac'];
-
 function renderTasks() {
     const container = document.getElementById('task-list');
     if (siteData.tasks.length === 0) {
         container.innerHTML = `<p class="empty-hint">目前尚未上架任何任務</p>`;
         return;
     }
-    container.innerHTML = siteData.tasks.map((task, i) => {
+    container.innerHTML = siteData.tasks.map((task) => {
         const status = computeUnlockStatus(task, currentUser);
-        const gradClass = status.canPlay ? CARD_GRADIENTS[i % CARD_GRADIENTS.length] : 'grad-locked';
+        const themeClass = `theme-${task.colorTheme || 'mint'}`;
+        const lockedClass = status.canPlay ? '' : 'grad-locked';
         const thumbHtml = task.iconUrl
             ? `<img src="${task.iconUrl}" alt="" class="task-thumb-img ${status.canPlay ? '' : 'grayscale'}">`
-            : `<div class="task-thumb-fallback"></div>`;
+            : `<div class="task-thumb-fallback ${status.canPlay ? themeClass : ''}"></div>`;
         return `
-            <div class="task-card ${gradClass}">
+            <div class="task-card ${lockedClass}">
                 <div class="task-thumb">${thumbHtml}</div>
                 <div class="task-info">
                     <h4 class="task-title">${task.title}</h4>

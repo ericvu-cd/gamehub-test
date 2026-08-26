@@ -9,8 +9,9 @@ import {
     GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-    doc, getDoc, updateDoc
+    doc, getDoc, updateDoc, collection, getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { resolveTaskIcon } from '../js/content.js';
 
 /* =====================================================
    GitHub Contents API 連線層
@@ -100,6 +101,14 @@ async function uploadImageToGithub(file, folder) {
 /* =====================================================
    GitHub 連線設定畫面
 ===================================================== */
+window.toggleGhTokenVisibility = function (event) {
+    const input = document.getElementById('gh-token');
+    const btn = event.currentTarget;
+    const isMasked = input.classList.contains('masked');
+    if (isMasked) { input.classList.remove('masked'); btn.innerText = '隱藏'; }
+    else { input.classList.add('masked'); btn.innerText = '顯示'; }
+};
+
 window.saveGhSetup = async function () {
     const owner = document.getElementById('gh-owner').value.trim();
     const repo = document.getElementById('gh-repo').value.trim();
@@ -368,7 +377,7 @@ function renderTasksList() {
     const items = editState.tasks.items;
     if (items.length === 0) { wrap.innerHTML = `<p class="empty-note">尚無資料</p>`; return; }
     wrap.innerHTML = items.map((t, i) => `<div class="item-row ${t.isActive === false ? 'inactive' : ''}">
-        <div class="item-thumb"></div>
+        <div class="item-thumb" id="task-thumb-${i}"></div>
         <div class="item-info"><div class="item-title">${t.title} <span style="color:#999;font-weight:400;">(${t.id})</span></div>
             <div class="item-meta">扣 ${t.entryCost || 0} 金幣 · ${t.isActive === false ? '已下架' : '上架中'}</div></div>
         <div class="item-actions">
@@ -377,6 +386,16 @@ function renderTasksList() {
             <button class="icon-btn danger" onclick="window.deleteTask(${i})">刪除</button>
         </div>
     </div>`).join('');
+
+    // 縮圖是去抓任務網址的 <link rel="icon">，需要非同步，不擋列表顯示，抓到後再各自補上
+    items.forEach((t, i) => {
+        if (!t.link) return;
+        resolveTaskIcon(t.link).then(iconUrl => {
+            if (!iconUrl) return;
+            const el = document.getElementById(`task-thumb-${i}`);
+            if (el) el.innerHTML = `<img src="${iconUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`;
+        }).catch(() => { /* 抓不到就維持空白縮圖，不擋後台其他功能 */ });
+    });
 }
 
 window.editTask = function (index) {
@@ -669,16 +688,29 @@ window.handleGoogleLogout = async function () { await signOut(auth); };
 window.searchUser = async function (e) {
     e.preventDefault();
     const username = document.getElementById('user-search-input').value.trim().toLowerCase();
+    await loadUserIntoForm(username);
+    return false;
+};
+
+// 直接用 uid 載入（清單點擊用，不用再多查一次 usernames）
+async function loadUserByUid(uid) {
     const area = document.getElementById('user-edit-area');
     area.innerHTML = '查詢中...';
-
-    const unameSnap = await getDoc(doc(db, 'usernames', username));
-    if (!unameSnap.exists()) { area.innerHTML = '<p style="font-size:13px;">查無此使用者</p>'; return false; }
-    const uid = unameSnap.data().uid;
     const userSnap = await getDoc(doc(db, 'users', uid));
-    if (!userSnap.exists()) { area.innerHTML = '<p style="font-size:13px;">查無使用者資料</p>'; return false; }
-    const u = userSnap.data();
+    if (!userSnap.exists()) { area.innerHTML = '<p style="font-size:13px;">查無使用者資料</p>'; return; }
+    renderUserEditForm(uid, userSnap.data());
+}
 
+async function loadUserIntoForm(username) {
+    const area = document.getElementById('user-edit-area');
+    area.innerHTML = '查詢中...';
+    const unameSnap = await getDoc(doc(db, 'usernames', username));
+    if (!unameSnap.exists()) { area.innerHTML = '<p style="font-size:13px;">查無此使用者</p>'; return; }
+    await loadUserByUid(unameSnap.data().uid);
+}
+
+function renderUserEditForm(uid, u) {
+    const area = document.getElementById('user-edit-area');
     area.innerHTML = `
         <form class="entity-form" onsubmit="return window.submitUserEdit(event, '${uid}')">
             <div class="field"><label>暱稱</label><input name="nickname" value="${u.nickname || ''}"></div>
@@ -690,8 +722,41 @@ window.searchUser = async function (e) {
             <div class="field"><label>證書（逗號分隔ID）</label><input name="certificates" value="${(u.certificates || []).join(',')}"></div>
             <button class="btn-save" type="submit">儲存變更</button>
         </form>`;
-    return false;
+}
+
+// 瀏覽全部使用者（Firestore users collection 目前設定任何人可讀，
+// 這裡仍限定要先通過管理者 Google 登入才看得到這個畫面）
+window.loadUsersList = async function () {
+    const listEl = document.getElementById('users-list');
+    const loadingEl = document.getElementById('users-list-loading');
+    loadingEl.classList.remove('hidden');
+    listEl.innerHTML = '';
+    try {
+        const snap = await getDocs(collection(db, 'users'));
+        loadingEl.classList.add('hidden');
+        if (snap.empty) { listEl.innerHTML = `<p class="empty-note">目前沒有任何使用者</p>`; return; }
+        const rows = snap.docs
+            .map(d => ({ uid: d.id, ...d.data() }))
+            .sort((a, b) => (a.nickname || '').localeCompare(b.nickname || ''));
+        listEl.innerHTML = rows.map(u => `
+            <div class="item-row">
+                <div class="item-thumb"></div>
+                <div class="item-info">
+                    <div class="item-title">${u.nickname || '（未命名）'}</div>
+                    <div class="item-meta">Lv.${u.level ?? 1} · ${u.coins ?? 0} 金幣</div>
+                </div>
+                <div class="item-actions">
+                    <button class="icon-btn edit" onclick="window.loadUserByUidFromList('${u.uid}')">編輯</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (err) {
+        loadingEl.classList.add('hidden');
+        listEl.innerHTML = `<p class="empty-note">載入失敗：${err.message}</p>`;
+    }
 };
+
+window.loadUserByUidFromList = function (uid) { loadUserByUid(uid); };
 
 window.submitUserEdit = async function (e, uid) {
     e.preventDefault();
@@ -705,6 +770,7 @@ window.submitUserEdit = async function (e, uid) {
             certificates: f.get('certificates').split(',').map(s => s.trim()).filter(Boolean)
         });
         showMsg('users', '已儲存');
+        window.loadUsersList(); // 存檔後刷新左側清單，讓等級/金幣顯示同步最新
     } catch (err) { showMsg('users', err.message, true); }
     return false;
 };
@@ -720,6 +786,7 @@ onAuthStateChanged(auth, async (user) => {
     if (!adminSnap.exists()) { document.getElementById('users-not-admin').classList.remove('hidden'); return; }
 
     document.getElementById('users-panel-content').classList.remove('hidden');
+    window.loadUsersList();
 });
 
 /* =====================================================

@@ -71,6 +71,7 @@
     #login-screen { display: none; align-items: center; justify-content: center; height: 60vh; flex-direction: column; gap: 16px; }
     .google-btn { padding: 10px 20px; border-radius: 8px; border: 1px solid #ccc; background: #fff; font-size: 14px; }
     .not-admin { text-align: center; padding: 40px 20px; color: #A63D40; }
+    #gh-token.masked { -webkit-text-security: disc; text-security: disc; }
 </style>
 </head>
 <body>
@@ -95,7 +96,20 @@
         <div class="field"><label>GitHub 帳號／組織名稱</label><input id="gh-owner" placeholder="例如 ericvu-cd"></div>
         <div class="field"><label>Repository 名稱</label><input id="gh-repo" placeholder="例如 gamehub-test"></div>
         <div class="field"><label>分支名稱</label><input id="gh-branch" value="main"></div>
-        <div class="field"><label>Personal Access Token</label><input id="gh-token" type="password" placeholder="github_pat_..."></div>
+        <div class="field">
+            <label>Personal Access Token</label>
+            <div style="position:relative;">
+                <input id="gh-token" type="text" autocomplete="off" autocorrect="off" autocapitalize="off"
+                    spellcheck="false" data-lpignore="true" data-1p-ignore
+                    placeholder="github_pat_..." style="padding-right:60px;" class="masked">
+                <button type="button" onclick="window.toggleGhTokenVisibility(event)"
+                    style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:none;font-size:11px;font-weight:700;color:#6B6255;cursor:pointer;padding:6px 8px;">隱藏</button>
+            </div>
+            <p style="font-size:11px;color:#8B8577;margin-top:4px;">
+                這裡刻意不用瀏覽器的密碼欄位型態，避免瀏覽器把它當一般密碼儲存，
+                自動帶到別的網頁的密碼欄位去（例如玩家登入畫面）。
+            </p>
+        </div>
         <p id="gh-setup-error" class="msg err hidden"></p>
         <button class="btn-save" onclick="window.saveGhSetup()">連線並儲存（存在這台瀏覽器裡）</button>
     </div>
@@ -310,18 +324,31 @@
                 <p>此 Google 帳號不在管理者名單內。</p>
                 <button class="google-btn" onclick="handleGoogleLogout()">登出</button>
             </div>
-            <div id="users-panel-content" class="card hidden" style="max-width:480px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <h2 style="margin:0;">使用者資料編修</h2>
+            <div id="users-panel-content" class="hidden">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
                     <button class="icon-btn" onclick="handleGoogleLogout()">登出</button>
                 </div>
-                <p style="font-size:12px;color:#8B8577;margin-top:-6px;">用於人工修正異常資料。金幣調整會記錄一筆 admin_adjust 收支明細。</p>
-                <div id="users-msg"></div>
-                <form class="entity-form" onsubmit="return searchUser(event)">
-                    <div class="field"><label>使用者名稱</label><input id="user-search-input" required></div>
-                    <button class="btn-save" type="submit" style="max-width:120px;">查詢</button>
-                </form>
-                <div id="user-edit-area" style="margin-top:16px;"></div>
+                <div class="panel-layout">
+                    <div class="card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                            <h2 style="margin:0;">使用者清單</h2>
+                            <button class="icon-btn" onclick="window.loadUsersList()">重新整理</button>
+                        </div>
+                        <p style="font-size:11px;color:#8B8577;margin-top:-6px;">點名稱可直接載入編輯，或用右側搜尋框輸入完整使用者名稱查詢。</p>
+                        <div id="users-list-loading" class="empty-note hidden">載入中...</div>
+                        <div id="users-list"></div>
+                    </div>
+                    <div class="card">
+                        <h2>使用者資料編修</h2>
+                        <p style="font-size:12px;color:#8B8577;margin-top:-6px;">用於人工修正異常資料。金幣調整會記錄一筆 admin_adjust 收支明細。</p>
+                        <div id="users-msg"></div>
+                        <form class="entity-form" onsubmit="return searchUser(event)">
+                            <div class="field"><label>使用者名稱（完整、大小寫不拘）</label><input id="user-search-input" required></div>
+                            <button class="btn-save" type="submit">查詢</button>
+                        </form>
+                        <div id="user-edit-area" style="margin-top:16px;"></div>
+                    </div>
+                </div>
             </div>
         </section>
     </div>

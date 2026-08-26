@@ -15,7 +15,7 @@ async function fetchJson(path) {
 // --- 任務縮圖：直接讀取任務自己 HTML 裡 <link rel="icon"> 設定的圖示 ---
 const taskIconCache = new Map();
 
-async function resolveTaskIcon(taskUrl) {
+export async function resolveTaskIcon(taskUrl) {
     if (!taskUrl) return null;
     const absoluteUrl = new URL(taskUrl, location.href).href;
     if (taskIconCache.has(absoluteUrl)) return taskIconCache.get(absoluteUrl);

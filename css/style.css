@@ -123,6 +123,11 @@ body {
 }
 .task-thumb-img { width: 100%; height: 100%; object-fit: cover; }
 .task-thumb-fallback { width: 100%; height: 100%; background: #E2F0D9; }
+.theme-mint  { background: #E2F0D9; }
+.theme-peach { background: #FFE0D0; }
+.theme-gold  { background: #FFE29A; }
+.theme-sky   { background: #CDEAF5; }
+.theme-lilac { background: #EAD9F5; }
 .grayscale { filter: grayscale(1) brightness(0.9); }
 .grad-locked { opacity: 0.5; filter: grayscale(0.7); }
 
