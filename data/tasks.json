@@ -1,24 +1,67 @@
 [
   {
-    "id": "g1",
-    "title": "老街早市尋寶",
-    "description": "走訪早市攤商，認識在地小吃與人情味",
+    "id": "6htw",
+    "title": "海紋守護團",
+    "description": "台灣海線任務",
     "colorTheme": "mint",
-    "link": "tasks/sample-task.html",
+    "link": "https://ericvu-cd.github.io/6htw/",
     "entryCost": 0,
-    "unlockConditions": [],
+    "unlockConditions": [
+      {
+        "type": "LEVEL",
+        "value": 1
+      }
+    ],
     "sortOrder": 1,
     "isActive": true
   },
   {
-    "id": "g2",
-    "title": "廟埕故事所",
-    "description": "聆聽耆老口述，解鎖廟埕傳說",
+    "id": "mlhbtrip",
+    "title": "苗栗漁港一日遊",
+    "description": "LBS定址服務",
     "colorTheme": "peach",
-    "link": "tasks/sample-task.html",
+    "link": "https://ericvu-cd.github.io/lbsgame/mlhbtrip.html",
     "entryCost": 0,
-    "unlockConditions": [{ "type": "LEVEL", "value": 1 }],
+    "unlockConditions": [
+      {
+        "type": "COIN",
+        "value": 1
+      }
+    ],
     "sortOrder": 2,
+    "isActive": true
+  },
+  {
+    "id": "fishmarket",
+    "title": "永續魚市拍賣",
+    "description": "走讀龍鳳漁港",
+    "colorTheme": "sky",
+    "link": "https://ericvu-cd.github.io/lbsgame/fishmarket.html",
+    "entryCost": 0,
+    "unlockConditions": [],
+    "sortOrder": 3,
+    "isActive": true
+  },
+  {
+    "id": "stoneweir",
+    "title": "石滬修復",
+    "description": "走讀外埔漁港",
+    "colorTheme": "peach",
+    "link": "https://ericvu-cd.github.io/lbsgame/stoneweir.html",
+    "entryCost": 0,
+    "unlockConditions": [],
+    "sortOrder": 4,
+    "isActive": true
+  },
+  {
+    "id": "fishball",
+    "title": "魚丸追追樂",
+    "description": "走讀苑港漁港",
+    "colorTheme": "gold",
+    "link": "https://ericvu-cd.github.io/lbsgame/fishball.html",
+    "entryCost": 0,
+    "unlockConditions": [],
+    "sortOrder": 5,
     "isActive": true
   }
 ]

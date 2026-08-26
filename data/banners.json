@@ -1,14 +1,26 @@
 [
   {
     "id": "banner1",
-    "title": "巷弄尋寶季開跑",
-    "subtitle": "累積通行金幣，兌換限量職人手作課程！",
+    "title": "食魚教育平台上線",
+    "subtitle": "歡迎大家一起來玩",
     "imageUrl": null,
     "sortOrder": 1,
     "startAt": null,
     "endAt": null,
     "actionType": "NONE",
     "actionValue": null,
+    "isActive": true
+  },
+  {
+    "id": "banner_1787568910357",
+    "title": "我們的官網",
+    "subtitle": "",
+    "imageUrl": null,
+    "sortOrder": 2,
+    "startAt": null,
+    "endAt": null,
+    "actionType": "URL",
+    "actionValue": "https://huansia30.home.blog/",
     "isActive": true
   }
 ]
