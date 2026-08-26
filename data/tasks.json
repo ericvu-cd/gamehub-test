@@ -10,6 +10,10 @@
       {
         "type": "LEVEL",
         "value": 1
+      },
+      {
+        "type": "COIN",
+        "value": 1
       }
     ],
     "sortOrder": 1,
