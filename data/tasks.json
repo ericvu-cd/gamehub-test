@@ -86,7 +86,16 @@
     "colorTheme": "gold",
     "link": "https://ericvu-cd.github.io/lbsgame/fishball.html",
     "entryCost": 0,
-    "unlockConditions": [],
+    "unlockConditions": [
+      {
+        "type": "LEVEL",
+        "value": 1
+      },
+      {
+        "type": "COIN",
+        "value": 1
+      }
+    ],
     "sortOrder": 5,
     "isActive": true
   }
