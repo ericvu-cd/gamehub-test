@@ -28,6 +28,10 @@
     "entryCost": 0,
     "unlockConditions": [
       {
+        "type": "LEVEL",
+        "value": 1
+      },
+      {
         "type": "COIN",
         "value": 1
       }
