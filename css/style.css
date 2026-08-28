@@ -8,6 +8,7 @@
     --card-bg: #FFFDF8;
     --radius-lg: 18px;
     --radius-md: 12px;
+    --banner-gradient: linear-gradient(135deg, #84C1D9 0%, #6FA8C9 100%);
 }
 
 html, body {
@@ -35,13 +36,16 @@ body {
 /* ---------------- 頂端品牌與狀態欄 ---------------- */
 .brand-bar {
     flex-shrink: 0; text-align: center; padding: 12px 16px 6px;
-    background: transparent; color: var(--ink);
+    background: #FDF3E1; color: var(--ink);
+    border-bottom: 3px solid var(--ink);
 }
 .brand-bar h1 { font-size: 18px; font-weight: 900; letter-spacing: 1.5px; }
 
 .topbar {
     flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
-    padding: 6px 20px 12px; background: transparent;
+    padding: 10px 20px 12px; background: #FDF3E1;
+    border-bottom: 3px solid var(--ink);
+    box-shadow: 0 4px 0 rgba(0,0,0,0.05);
 }
 .user-brief { display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .avatar-circle {
@@ -81,9 +85,14 @@ body {
 }
 .banner-track { display: flex; transition: transform 0.3s ease; }
 .banner-slide {
-    min-width: 100%; padding: 22px 18px;
+    min-width: 100%; min-height: 140px; padding: 22px 18px;
     color: var(--ink); position: relative;
+    background-size: cover; background-position: center; background-repeat: no-repeat;
 }
+.banner-slide.has-image .banner-title,
+.banner-slide.has-image .banner-sub,
+.banner-slide.has-image .banner-eyebrow,
+.banner-slide.has-image .banner-tap-hint { display: none; }
 .banner-title { font-size: 24px; font-weight: 900; margin-top: 4px; }
 .banner-sub { font-size: 13px; font-weight: 700; margin-top: 6px; }
 .banner-dots { display: flex; justify-content: center; gap: 6px; padding: 6px 0; background: rgba(0,0,0,0.05); }
@@ -191,6 +200,20 @@ body {
 @media screen and (orientation: landscape) {
     .portrait-warning { display: flex; }
 }
+
+/* ---------------- 連線中載入畫面 ---------------- */
+#loading-screen {
+    position: fixed; inset: 0; z-index: 500;
+    background: var(--paper-bg); color: var(--ink);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px;
+}
+#loading-screen .loading-spinner {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 4px solid #E0D5C5; border-top-color: var(--ink);
+    animation: spin 0.8s linear infinite;
+}
+#loading-screen p { font-size: 14px; font-weight: 700; color: #66554B; }
 
 /* ---------------- 彈出視窗（登入/註冊/改密碼/詳情） ---------------- */
 .modal-overlay {

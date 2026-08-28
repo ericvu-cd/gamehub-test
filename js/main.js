@@ -267,9 +267,10 @@ function renderBanners() {
     }
     track.innerHTML = siteData.banners.map((b, i) => {
         const clickable = b.actionType && b.actionType !== 'NONE' && b.actionValue;
+        const hasImage = !!b.imageUrl;
         return `
-        <div class="banner-slide ${clickable ? 'banner-clickable' : ''}"
-             style="background-image:${b.imageUrl ? `url('${b.imageUrl}')` : 'var(--banner-gradient)'}"
+        <div class="banner-slide ${clickable ? 'banner-clickable' : ''} ${hasImage ? 'has-image' : ''}"
+             style="background-image:${hasImage ? `url('${b.imageUrl}')` : 'var(--banner-gradient)'}"
              onclick="window.handleBannerClick(${i})">
             <span class="banner-eyebrow">本週特別任務</span>
             <h2 class="banner-title">${b.title}</h2>
@@ -340,13 +341,14 @@ function renderTasks() {
         const thumbHtml = task.iconUrl
             ? `<img src="${task.iconUrl}" alt="" class="task-thumb-img ${status.canPlay ? '' : 'grayscale'}">`
             : `<div class="task-thumb-fallback ${status.canPlay ? themeClass : ''}"></div>`;
+        const statusHtml = status.canPlay ? '' : `<span class="task-status">${status.reason}</span>`;
         return `
             <div class="task-card ${lockedClass}">
                 <div class="task-thumb">${thumbHtml}</div>
                 <div class="task-info">
                     <h4 class="task-title">${task.title}</h4>
                     <p class="task-desc">${task.description || ''}</p>
-                    <span class="task-status">${status.reason}</span>
+                    ${statusHtml}
                 </div>
                 <button class="task-btn" ${status.canPlay ? '' : 'disabled'}
                     onclick="window.handleTaskClick('${task.id}')">${status.canPlay ? '出發' : '未解鎖'}</button>
@@ -493,6 +495,16 @@ async function loadAllContent() {
     siteData = { banners, tasks, news, badges, certificates, avatarPresets };
 }
 
+function hideLoadingScreen() {
+    const el = document.getElementById('loading-screen');
+    if (el) el.classList.add('hidden');
+}
+
+// 安全機制：正常情況下 watchAuthState 的第一次回呼就會收起載入畫面，
+// 但如果網路異常、Firebase 遲遲沒回應，不能讓畫面永遠卡住，
+// 10 秒後強制收起，讓使用者至少看得到（可能還沒登入狀態的）畫面可以操作。
+setTimeout(hideLoadingScreen, 10000);
+
 async function init() {
     try {
         await loadAllContent();
@@ -514,6 +526,7 @@ async function init() {
         renderTasks();
         renderNewsBadgeDot();
         document.getElementById('auth-modal').classList.toggle('hidden', !!user);
+        hideLoadingScreen(); // 內容跟登入狀態都確認完了，這時候才收起「連線中」畫面
         if (user) await maybeClaimDailyLogin();
     });
 }
