@@ -4,5 +4,11 @@
     "description": "",
     "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/certificates/1788056631942_lfhb.jpg",
     "sourceTaskId": "mlhbtrip"
+  },
+  "mlhbtrip_waipu": {
+    "name": "後龍外埔漁港通行證",
+    "description": "",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/certificates/1788056687888_wphb.jpg",
+    "sourceTaskId": "mlhbtrip"
   }
 }
