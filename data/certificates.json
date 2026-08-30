@@ -10,5 +10,11 @@
     "description": "",
     "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/certificates/1788056687888_wphb.jpg",
     "sourceTaskId": "mlhbtrip"
+  },
+  "mlhbtrip_yuangang": {
+    "name": "苑港觀光漁港通行證",
+    "description": "",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/certificates/1788056756071_yghb.jpg",
+    "sourceTaskId": "mlhbtrip"
   }
 }
