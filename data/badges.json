@@ -1,14 +1,1 @@
-{
-  "b1": {
-    "name": "職人認證",
-    "description": "完成手作工藝體驗坊授予",
-    "iconUrl": null,
-    "sourceTaskId": "g3"
-  },
-  "b2": {
-    "name": "老街達人",
-    "description": "完成老街早市尋寶授予",
-    "iconUrl": null,
-    "sourceTaskId": "g1"
-  }
-}
+{}

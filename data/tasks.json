@@ -37,6 +37,7 @@
       }
     ],
     "sortOrder": 2,
+    "hasLeaderboard": false,
     "isActive": true
   },
   {
@@ -54,9 +55,16 @@
       {
         "type": "COIN",
         "value": 1
+      },
+      {
+        "type": "CERTIFICATE",
+        "value": [
+          "mlhbtrip_longfeng"
+        ]
       }
     ],
     "sortOrder": 3,
+    "hasLeaderboard": true,
     "isActive": true
   },
   {
@@ -74,9 +82,16 @@
       {
         "type": "COIN",
         "value": 1
+      },
+      {
+        "type": "CERTIFICATE",
+        "value": [
+          "mlhbtrip_waipu"
+        ]
       }
     ],
     "sortOrder": 4,
+    "hasLeaderboard": true,
     "isActive": true
   },
   {
@@ -94,9 +109,16 @@
       {
         "type": "COIN",
         "value": 1
+      },
+      {
+        "type": "CERTIFICATE",
+        "value": [
+          "mlhbtrip_yuangang"
+        ]
       }
     ],
     "sortOrder": 5,
+    "hasLeaderboard": true,
     "isActive": true
   }
 ]
