@@ -3,7 +3,7 @@
 // 對應「任務頁面通訊介面規格.md」
 // =====================================================
 import { deductTaskCost, claimTaskReward, awardBadge, awardCertificate } from './coins.js';
-import { submitLeaderboardScore } from './leaderboard.js';
+import { submitLeaderboardScore, fetchMyScore } from './leaderboard.js';
 
 const openTaskWindows = new Map(); // taskId -> { win, origin }
 
@@ -21,7 +21,12 @@ export async function openTask(task, currentUser, onCoinsChanged) {
         return { ok: false };
     }
 
-    const costResult = await deductTaskCost(currentUser.uid, task, currentUser.coins, currentUser.dailyGuard);
+    // 扣款的同時平行查詢玩家在這個任務的個人最佳成績（架構調整討論記錄第四輪、方案A）：
+    // 扣款本來就要 await，順便平行查成績幾乎不增加等待時間，查詢結果有 sessionStorage 快取。
+    const [costResult, myScore] = await Promise.all([
+        deductTaskCost(currentUser.uid, task, currentUser.coins, currentUser.dailyGuard),
+        fetchMyScore(task.id, currentUser.uid)
+    ]);
     if (!costResult.ok) {
         alert(costResult.reason);
         return { ok: false };
@@ -39,7 +44,7 @@ export async function openTask(task, currentUser, onCoinsChanged) {
     }
 
     const origin = new URL(task.link, location.href).origin;
-    openTaskWindows.set(task.id, { win, origin });
+    openTaskWindows.set(task.id, { win, origin, myScore });
     return { ok: true };
 }
 
@@ -59,6 +64,19 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
 
         switch (msg.type) {
             case 'ready':
+                // 回傳玩家資料給任務頁面：nickname/badges/certificates 平台記憶體裡已有，不用另外查；
+                // myScore 是 openTask() 扣款當下平行查好、存在 entry 裡的個人最佳成績（可能是 null，代表沒玩過）。
+                entry.win.postMessage({
+                    source: 'culture-platform',
+                    version: 1,
+                    type: 'player_info',
+                    payload: {
+                        nickname: currentUser.nickname,
+                        badges: currentUser.badges || [],
+                        certificates: currentUser.certificates || [],
+                        myScore: entry.myScore ?? null
+                    }
+                }, entry.origin);
                 break;
 
             case 'complete': {
