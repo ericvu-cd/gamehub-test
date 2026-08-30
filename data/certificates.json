@@ -1,8 +1,20 @@
 {
-  "c1": {
-    "name": "2026 老街導覽初階證明",
-    "description": "完成廟埕故事所授予",
-    "iconUrl": null,
-    "sourceTaskId": "g2"
+  "mlhbtrip_longfeng": {
+    "name": "竹南龍鳳漁港通行證",
+    "description": "",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/certificates/1788056631942_lfhb.jpg",
+    "sourceTaskId": "mlhbtrip"
+  },
+  "mlhbtrip_waipu": {
+    "name": "後龍外埔漁港通行證",
+    "description": "",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/certificates/1788056687888_wphb.jpg",
+    "sourceTaskId": "mlhbtrip"
+  },
+  "mlhbtrip_yuangang": {
+    "name": "苑港觀光漁港通行證",
+    "description": "",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/certificates/1788056756071_yghb.jpg",
+    "sourceTaskId": "mlhbtrip"
   }
 }
