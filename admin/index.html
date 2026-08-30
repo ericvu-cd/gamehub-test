@@ -40,6 +40,8 @@
     form.entity-form { display: flex; flex-direction: column; gap: 12px; }
     .field label { font-size: 11px; font-weight: 700; color: #6B6255; display: block; margin-bottom: 4px; }
     .field input, .field textarea, .field select { width: 100%; padding: 9px 10px; border: 1px solid #ccc; border-radius: 7px; font-size: 13px; font-family: inherit; }
+    .checkbox-field label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: #3A342B; margin-bottom: 0; }
+    .checkbox-field input[type="checkbox"] { width: auto; }
     .field textarea { resize: vertical; min-height: 50px; }
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
@@ -205,6 +207,9 @@
                         </div>
                         <div class="field"><label>任務網址（獨立HTML）</label><input id="tasks-link" required></div>
                         <div class="field"><label>進入扣款金額</label><input id="tasks-entryCost" type="number" value="0"></div>
+                        <div class="field checkbox-field">
+                            <label><input id="tasks-hasLeaderboard" type="checkbox" checked> 這個任務有排行榜</label>
+                        </div>
                         <p style="font-size:11px;color:#8B8577;margin:4px 0 0;">以下解鎖條件皆選填：</p>
                         <div class="two-col">
                             <div class="field"><label>需等級</label><input id="tasks-unlockLevel" type="number"></div>
