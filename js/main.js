@@ -338,9 +338,11 @@ function renderTasks() {
         const status = computeUnlockStatus(task, currentUser);
         const themeClass = `theme-${task.colorTheme || 'mint'}`;
         const lockedClass = status.canPlay ? '' : 'grad-locked';
+        const fallbackClass = `task-thumb-fallback ${status.canPlay ? themeClass : ''}`.trim();
         const thumbHtml = task.iconUrl
-            ? `<img src="${task.iconUrl}" alt="" class="task-thumb-img ${status.canPlay ? '' : 'grayscale'}">`
-            : `<div class="task-thumb-fallback ${status.canPlay ? themeClass : ''}">🎯</div>`;
+            ? `<img src="${task.iconUrl}" alt="" class="task-thumb-img ${status.canPlay ? '' : 'grayscale'}"
+                 onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'${fallbackClass}',textContent:'🎯'}))">`
+            : `<div class="${fallbackClass}">🎯</div>`;
         const statusHtml = status.canPlay ? '' : `<span class="task-status">${status.reason}</span>`;
         return `
             <div class="task-card ${lockedClass}">
