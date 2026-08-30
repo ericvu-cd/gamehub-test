@@ -1,1 +1,8 @@
-{}
+{
+  "mlhbtrip_longfeng": {
+    "name": "竹南龍鳳漁港通行證",
+    "description": "",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/certificates/1788056631942_lfhb.jpg",
+    "sourceTaskId": "mlhbtrip"
+  }
+}
