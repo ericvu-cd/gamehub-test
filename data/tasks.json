@@ -82,9 +82,16 @@
       {
         "type": "COIN",
         "value": 1
+      },
+      {
+        "type": "CERTIFICATE",
+        "value": [
+          "mlhbtrip_waipu"
+        ]
       }
     ],
     "sortOrder": 4,
+    "hasLeaderboard": true,
     "isActive": true
   },
   {
