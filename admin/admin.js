@@ -379,7 +379,7 @@ function renderTasksList() {
     wrap.innerHTML = items.map((t, i) => `<div class="item-row ${t.isActive === false ? 'inactive' : ''}">
         <div class="item-thumb" id="task-thumb-${i}"></div>
         <div class="item-info"><div class="item-title">${t.title} <span style="color:#999;font-weight:400;">(${t.id})</span></div>
-            <div class="item-meta">扣 ${t.entryCost || 0} 金幣 · ${t.isActive === false ? '已下架' : '上架中'}</div></div>
+            <div class="item-meta">扣 ${t.entryCost || 0} 金幣 · ${t.isActive === false ? '已下架' : '上架中'} · ${t.hasLeaderboard === false ? '無排行榜' : '有排行榜'}</div></div>
         <div class="item-actions">
             <button class="icon-btn edit" onclick="window.editTask(${i})">編輯</button>
             <button class="icon-btn toggle" onclick="window.toggleTaskActive(${i})">${t.isActive === false ? '上架' : '下架'}</button>
@@ -407,6 +407,7 @@ window.editTask = function (index) {
     document.getElementById('tasks-sortOrder').value = t.sortOrder || 0;
     document.getElementById('tasks-link').value = t.link || '';
     document.getElementById('tasks-entryCost').value = t.entryCost || 0;
+    document.getElementById('tasks-hasLeaderboard').checked = t.hasLeaderboard !== false;
 
     document.getElementById('tasks-unlockLevel').value = '';
     document.getElementById('tasks-unlockCoin').value = '';
@@ -486,6 +487,7 @@ window.submitTask = async function (e) {
             entryCost: Number(document.getElementById('tasks-entryCost').value) || 0,
             unlockConditions: conditions,
             sortOrder: Number(document.getElementById('tasks-sortOrder').value) || 0,
+            hasLeaderboard: document.getElementById('tasks-hasLeaderboard').checked,
             isActive: existing ? existing.isActive !== false : true
         };
 

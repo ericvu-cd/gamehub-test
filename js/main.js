@@ -340,7 +340,7 @@ function renderTasks() {
         const lockedClass = status.canPlay ? '' : 'grad-locked';
         const thumbHtml = task.iconUrl
             ? `<img src="${task.iconUrl}" alt="" class="task-thumb-img ${status.canPlay ? '' : 'grayscale'}">`
-            : `<div class="task-thumb-fallback ${status.canPlay ? themeClass : ''}"></div>`;
+            : `<div class="task-thumb-fallback ${status.canPlay ? themeClass : ''}">🎯</div>`;
         const statusHtml = status.canPlay ? '' : `<span class="task-status">${status.reason}</span>`;
         return `
             <div class="task-card ${lockedClass}">
@@ -378,18 +378,34 @@ function renderNewsBadgeDot() {
     document.getElementById('nav-news-dot').classList.toggle('hidden', !hasUnreadNews());
 }
 
+const NEWS_PREVIEW_LENGTH = 70; // 超過這個字數就截斷、改用「查看更多」開彈窗看全文
+
 function renderNews() {
     const container = document.getElementById('news-list');
-    container.innerHTML = siteData.news.map(n => `
+    container.innerHTML = siteData.news.map((n, i) => {
+        const content = n.content || '';
+        const isLong = content.length > NEWS_PREVIEW_LENGTH;
+        const preview = isLong ? content.slice(0, NEWS_PREVIEW_LENGTH) : content;
+        return `
         <div class="news-card">
             <div class="news-date">${new Date(n.publishedAt).toISOString().slice(5, 10).replace('-', '/')}</div>
             <div class="news-body">
                 <h3 class="news-title">${n.title}</h3>
-                <p class="news-content">${n.content || ''}</p>
+                <p class="news-content ${isLong ? 'truncated' : ''}" ${isLong ? `onclick="window.showNewsDetail(${i})"` : ''}>${preview}</p>
             </div>
         </div>
-    `).join('') || `<p class="empty-hint">目前尚無公告</p>`;
+    `;
+    }).join('') || `<p class="empty-hint">目前尚無公告</p>`;
 }
+
+// 公告內容太長時，點擊「查看更多」開跟徽章/證書一樣的 detail-modal 看全文（沿用同一套彈窗元件，介面風格一致）
+window.showNewsDetail = function (index) {
+    const n = siteData.news[index];
+    if (!n) return;
+    document.getElementById('detail-modal-title').innerText = n.title;
+    document.getElementById('detail-modal-body').innerHTML = `<p style="white-space:pre-wrap;">${n.content || ''}</p>`;
+    document.getElementById('detail-modal').classList.remove('hidden');
+};
 
 async function markNewsAsRead() {
     if (!currentUser) return;
@@ -429,8 +445,10 @@ window.showCollectibleDetail = function (kind, id) {
     const item = dict[id];
     const owned = kind === 'badge' ? currentUser.badges.includes(id) : currentUser.certificates.includes(id);
     const sourceTask = siteData.tasks.find(t => t.id === item.sourceTaskId);
+    const fallbackIcon = kind === 'badge' ? '🏅' : '📜';
     document.getElementById('detail-modal-title').innerText = item.name;
     document.getElementById('detail-modal-body').innerHTML = `
+        <div class="detail-modal-icon">${item.iconUrl ? `<img src="${item.iconUrl}" alt="${item.name}">` : fallbackIcon}</div>
         <p>${item.description || ''}</p>
         <p class="detail-meta">取得方式：完成任務「${sourceTask?.title || '未知任務'}」</p>
         <p class="detail-meta">${owned ? '✅ 已取得' : '尚未取得'}</p>
@@ -445,8 +463,15 @@ window.closeDetailModal = function () {
 /* ---------------- 排行榜 ---------------- */
 function renderLeaderboardOptions() {
     const select = document.getElementById('leaderboard-task-select');
-    select.innerHTML = siteData.tasks.map(t => `<option value="${t.id}">${t.title}</option>`).join('');
-    if (siteData.tasks.length) renderLeaderboard();
+    const lbTasks = siteData.tasks.filter(t => t.hasLeaderboard !== false);
+    select.innerHTML = lbTasks.length
+        ? lbTasks.map(t => `<option value="${t.id}">${t.title}</option>`).join('')
+        : '';
+    if (lbTasks.length) {
+        renderLeaderboard();
+    } else {
+        document.getElementById('leaderboard-list').innerHTML = `<p class="empty-hint">目前沒有任務開放排行榜</p>`;
+    }
 }
 
 window.renderLeaderboard = async function () {

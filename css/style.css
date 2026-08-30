@@ -131,7 +131,10 @@ body {
     z-index: 5;
 }
 .task-thumb-img { width: 100%; height: 100%; object-fit: cover; }
-.task-thumb-fallback { width: 100%; height: 100%; background: #E2F0D9; }
+.task-thumb-fallback {
+    width: 100%; height: 100%; background: #E2F0D9;
+    display: flex; align-items: center; justify-content: center; font-size: 28px;
+}
 .theme-mint  { background: #E2F0D9; }
 .theme-peach { background: #FFE0D0; }
 .theme-gold  { background: #FFE29A; }
@@ -249,6 +252,10 @@ body {
 .error-text { color: #C84B31; font-size: 12px; font-weight: 900; text-align: center; margin-bottom: 10px; }
 .link-text { text-align: center; font-size: 12px; font-weight: 700; color: #66554B; margin-top: 12px; cursor: pointer; }
 .detail-meta { font-size: 12px; font-weight: 700; color: #66554B; margin-top: 8px; }
+.detail-modal-icon { text-align: center; font-size: 48px; margin-bottom: 10px; }
+.detail-modal-icon img { width: 88px; height: 88px; object-fit: contain; }
+.news-content { cursor: pointer; }
+.news-content.truncated::after { content: '⋯查看更多'; display: block; color: #B35124; font-weight: 700; margin-top: 4px; font-size: 12px; }
 
 .btn-primary {
     width: 100%; padding: 13px; border-radius: 12px;
