@@ -55,9 +55,16 @@
       {
         "type": "COIN",
         "value": 1
+      },
+      {
+        "type": "CERTIFICATE",
+        "value": [
+          "mlhbtrip_longfeng"
+        ]
       }
     ],
     "sortOrder": 3,
+    "hasLeaderboard": true,
     "isActive": true
   },
   {
