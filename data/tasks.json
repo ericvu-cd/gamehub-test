@@ -100,7 +100,7 @@
     "description": "走讀苑港漁港",
     "colorTheme": "gold",
     "link": "https://ericvu-cd.github.io/lbsgame/fishball.html",
-    "entryCost": 0,
+    "entryCost": 1,
     "unlockConditions": [
       {
         "type": "LEVEL",
