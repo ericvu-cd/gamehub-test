@@ -4,5 +4,11 @@
     "description": "S級徽章",
     "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/1788153402212_fmbd1.jpg",
     "sourceTaskId": "fishmarket"
+  },
+  "fishmarket_sustainability": {
+    "name": "海洋保衛者",
+    "description": "",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/1788264226965_fmbd1.jpg",
+    "sourceTaskId": "fishmarket"
   }
 }
