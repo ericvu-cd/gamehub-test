@@ -9,7 +9,7 @@ import {
     GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-    doc, getDoc, updateDoc, collection, getDocs
+    doc, getDoc, updateDoc, deleteDoc, collection, getDocs, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { resolveTaskIcon } from '../js/content.js';
 
@@ -370,6 +370,19 @@ async function loadTasksList() {
     editState.tasks.items = data;
     editState.tasks.sha = sha;
     renderTasksList();
+    renderLeaderboardTaskOptions();
+}
+
+// 排行榜分頁的任務下拉選單，跟任務清單共用同一份資料，保持同步
+function renderLeaderboardTaskOptions() {
+    const select = document.getElementById('leaderboard-task-select');
+    if (!select) return;
+    const prevValue = select.value;
+    const items = editState.tasks.items;
+    select.innerHTML = items.length
+        ? `<option value="">請選擇任務</option>` + items.map(t => `<option value="${t.id}">${t.title}（${t.id}）</option>`).join('')
+        : `<option value="">尚無任務資料</option>`;
+    if (items.some(t => t.id === prevValue)) select.value = prevValue;
 }
 
 function renderTasksList() {
@@ -777,18 +790,132 @@ window.submitUserEdit = async function (e, uid) {
     return false;
 };
 
+/* =====================================================
+   排行榜管理（維持 Firebase Google 登入 + Firestore，跟使用者資料編修共用同一組登入狀態）
+   顯示前 20 名（跟前台排行榜卡片概念一致），「清空」則不受這個限制、抓全部筆數刪除。
+===================================================== */
+window.loadLeaderboardList = async function () {
+    const taskId = document.getElementById('leaderboard-task-select').value;
+    const listEl = document.getElementById('leaderboard-list');
+    const loadingEl = document.getElementById('leaderboard-list-loading');
+    document.getElementById('leaderboard-edit-area').innerHTML = '';
+    if (!taskId) { listEl.innerHTML = ''; return; }
+
+    loadingEl.classList.remove('hidden');
+    listEl.innerHTML = '';
+    try {
+        const snap = await getDocs(query(
+            collection(db, 'leaderboard', taskId, 'entries'),
+            orderBy('scoreValue', 'desc'),
+            limit(20)
+        ));
+        loadingEl.classList.add('hidden');
+        if (snap.empty) { listEl.innerHTML = `<p class="empty-note">這個任務目前沒有任何排行榜紀錄</p>`; return; }
+
+        const rows = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        listEl.innerHTML = rows.map((r, i) => `
+            <div class="item-row">
+                <div class="item-info">
+                    <div class="item-title">#${i + 1}　${r.playerName || '（未命名）'}</div>
+                    <div class="item-meta">${r.scoreLabel || ''}（${r.scoreValue} 分）${r.updatedAt ? ' · ' + new Date(r.updatedAt).toLocaleString() : ''}</div>
+                </div>
+                <div class="item-actions">
+                    <button class="icon-btn edit" onclick="window.editLeaderboardEntry('${taskId}','${r.uid}')">編輯</button>
+                    <button class="icon-btn danger" onclick="window.deleteLeaderboardEntry('${taskId}','${r.uid}','${(r.playerName || '未命名').replace(/'/g, "\\'")}')">刪除</button>
+                </div>
+            </div>
+        `).join('');
+
+        // 編輯用的原始資料另外存一份，避免把使用者名稱、分數字串塞進 onclick 屬性裡處理跳脫字元的麻煩
+        window.__lbRowsCache = rows;
+    } catch (err) {
+        loadingEl.classList.add('hidden');
+        listEl.innerHTML = `<p class="empty-note">載入失敗：${err.message}</p>`;
+    }
+};
+
+window.editLeaderboardEntry = function (taskId, uid) {
+    const row = (window.__lbRowsCache || []).find(r => r.uid === uid);
+    if (!row) return;
+    const area = document.getElementById('leaderboard-edit-area');
+    area.innerHTML = `
+        <form class="entity-form" onsubmit="return window.submitLeaderboardEdit(event, '${taskId}', '${uid}')">
+            <h3 style="margin:0 0 8px;font-size:14px;">編輯：${row.playerName || '（未命名）'}</h3>
+            <div class="field"><label>顯示用分數字串</label><input name="scoreLabel" value="${(row.scoreLabel || '').replace(/"/g, '&quot;')}"></div>
+            <div class="field"><label>排序用數字分數</label><input name="scoreValue" type="number" value="${row.scoreValue ?? 0}" required></div>
+            <div style="display:flex;gap:8px;">
+                <button class="btn-save" type="submit">儲存變更</button>
+                <button type="button" class="btn-cancel" onclick="document.getElementById('leaderboard-edit-area').innerHTML=''">取消</button>
+            </div>
+        </form>`;
+};
+
+window.submitLeaderboardEdit = async function (e, taskId, uid) {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    try {
+        await updateDoc(doc(db, 'leaderboard', taskId, 'entries', uid), {
+            scoreLabel: f.get('scoreLabel'),
+            scoreValue: Number(f.get('scoreValue')),
+            updatedAt: Date.now()
+        });
+        showMsg('leaderboard', '已儲存');
+        document.getElementById('leaderboard-edit-area').innerHTML = '';
+        window.loadLeaderboardList();
+    } catch (err) { showMsg('leaderboard', err.message, true); }
+    return false;
+};
+
+window.deleteLeaderboardEntry = async function (taskId, uid, playerName) {
+    if (!confirm(`確定要刪除「${playerName}」這筆排行榜紀錄嗎？`)) return;
+    try {
+        await deleteDoc(doc(db, 'leaderboard', taskId, 'entries', uid));
+        showMsg('leaderboard', '已刪除');
+        window.loadLeaderboardList();
+    } catch (err) { showMsg('leaderboard', err.message, true); }
+};
+
+// 清空不受「前20名」限制，抓這個任務底下全部的紀錄逐筆刪除，不留殘餘資料
+window.clearLeaderboard = async function () {
+    const select = document.getElementById('leaderboard-task-select');
+    const taskId = select.value;
+    if (!taskId) return;
+    const taskLabel = select.options[select.selectedIndex]?.text || taskId;
+    if (!confirm(`確定要清空「${taskLabel}」的整個排行榜嗎？此動作無法復原，會刪除全部紀錄（不只前20名）。`)) return;
+    try {
+        showMsg('leaderboard', '清空中…');
+        const snap = await getDocs(collection(db, 'leaderboard', taskId, 'entries'));
+        await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+        showMsg('leaderboard', `已清空，共刪除 ${snap.size} 筆`);
+        window.loadLeaderboardList();
+    } catch (err) { showMsg('leaderboard', err.message, true); }
+};
+
 onAuthStateChanged(auth, async (user) => {
     document.getElementById('users-login-screen').classList.add('hidden');
     document.getElementById('users-not-admin').classList.add('hidden');
     document.getElementById('users-panel-content').classList.add('hidden');
+    document.getElementById('leaderboard-login-screen').classList.add('hidden');
+    document.getElementById('leaderboard-not-admin').classList.add('hidden');
+    document.getElementById('leaderboard-panel-content').classList.add('hidden');
 
-    if (!user) { document.getElementById('users-login-screen').classList.remove('hidden'); return; }
+    if (!user) {
+        document.getElementById('users-login-screen').classList.remove('hidden');
+        document.getElementById('leaderboard-login-screen').classList.remove('hidden');
+        return;
+    }
 
     const adminSnap = await getDoc(doc(db, 'admins', user.uid));
-    if (!adminSnap.exists()) { document.getElementById('users-not-admin').classList.remove('hidden'); return; }
+    if (!adminSnap.exists()) {
+        document.getElementById('users-not-admin').classList.remove('hidden');
+        document.getElementById('leaderboard-not-admin').classList.remove('hidden');
+        return;
+    }
 
     document.getElementById('users-panel-content').classList.remove('hidden');
+    document.getElementById('leaderboard-panel-content').classList.remove('hidden');
     window.loadUsersList();
+    renderLeaderboardTaskOptions();
 });
 
 /* =====================================================

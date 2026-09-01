@@ -193,14 +193,16 @@ service cloud.firestore {
     match /leaderboard/{taskId}/entries/{entryUid} {
       allow read: if true;
 
-      allow create: if isOwner(entryUid)
-        && request.resource.data.scoreValue is number;
+      allow create: if (isOwner(entryUid) && request.resource.data.scoreValue is number)
+        || isAdmin();
 
-      allow update: if isOwner(entryUid)
-        && request.resource.data.scoreValue is number
-        && request.resource.data.scoreValue > resource.data.scoreValue;
+      // 玩家本人只能覆寫成「更高分」；admin 可以改成任意分數（人工修正錯誤/作弊用）
+      allow update: if (isOwner(entryUid)
+          && request.resource.data.scoreValue is number
+          && request.resource.data.scoreValue > resource.data.scoreValue)
+        || (isAdmin() && request.resource.data.scoreValue is number);
 
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
   }
 }

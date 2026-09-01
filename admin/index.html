@@ -129,6 +129,7 @@
             <button data-tab="badges" onclick="switchAdminTab('badges')">徽章</button>
             <button data-tab="certificates" onclick="switchAdminTab('certificates')">證書</button>
             <button data-tab="users" onclick="switchAdminTab('users')">使用者資料</button>
+            <button data-tab="leaderboard" onclick="switchAdminTab('leaderboard')">排行榜</button>
         </nav>
 
         <section id="panel-banners" class="panel active">
@@ -353,6 +354,38 @@
                         </form>
                         <div id="user-edit-area" style="margin-top:16px;"></div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="panel-leaderboard" class="panel">
+            <div id="leaderboard-login-screen" class="card" style="max-width:420px;text-align:center;">
+                <p style="font-size:13px;margin-bottom:14px;">編修排行榜需要另外用 Google 帳號登入驗證身分</p>
+                <button class="google-btn" onclick="handleGoogleLogin()">使用 Google 帳號登入</button>
+                <p id="leaderboard-login-error" style="color:#A63D40;font-size:12px;"></p>
+            </div>
+            <div id="leaderboard-not-admin" class="not-admin hidden">
+                <p>此 Google 帳號不在管理者名單內。</p>
+                <button class="google-btn" onclick="handleGoogleLogout()">登出</button>
+            </div>
+            <div id="leaderboard-panel-content" class="hidden">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                    <button class="icon-btn" onclick="handleGoogleLogout()">登出</button>
+                </div>
+                <div class="card">
+                    <h2>排行榜管理</h2>
+                    <p style="font-size:12px;color:#8B8577;margin-top:-6px;">選擇任務後顯示前 20 名，可修改分數、刪除單筆紀錄；「清空」不受前20名限制，會刪除該任務全部紀錄。</p>
+                    <div id="leaderboard-msg"></div>
+                    <div class="field"><label>選擇任務</label>
+                        <select id="leaderboard-task-select" onchange="window.loadLeaderboardList()"></select>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;">
+                        <button class="icon-btn" onclick="window.loadLeaderboardList()">重新整理</button>
+                        <button class="icon-btn danger" onclick="window.clearLeaderboard()">清空這個任務的排行榜</button>
+                    </div>
+                    <div id="leaderboard-list-loading" class="empty-note hidden">載入中...</div>
+                    <div id="leaderboard-list"></div>
+                    <div id="leaderboard-edit-area" style="margin-top:16px;"></div>
                 </div>
             </div>
         </section>
