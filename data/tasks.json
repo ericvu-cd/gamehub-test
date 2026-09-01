@@ -73,7 +73,7 @@
     "description": "走讀外埔漁港",
     "colorTheme": "peach",
     "link": "https://ericvu-cd.github.io/lbsgame/stoneweir.html",
-    "entryCost": 0,
+    "entryCost": 1,
     "unlockConditions": [
       {
         "type": "LEVEL",
