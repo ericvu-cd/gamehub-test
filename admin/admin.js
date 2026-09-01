@@ -736,8 +736,91 @@ function renderUserEditForm(uid, u) {
             <div class="field"><label>徽章（逗號分隔ID）</label><input name="badges" value="${(u.badges || []).join(',')}"></div>
             <div class="field"><label>證書（逗號分隔ID）</label><input name="certificates" value="${(u.certificates || []).join(',')}"></div>
             <button class="btn-save" type="submit">儲存變更</button>
-        </form>`;
+        </form>
+        <div style="margin-top:20px;border-top:1px solid #E5DFD3;padding-top:14px;">
+            <h3 style="font-size:14px;margin:0 0 8px;">此玩家的排行榜成績</h3>
+            <p style="font-size:11px;color:#8B8577;margin:-4px 0 8px;">直接用 uid 查每個任務有沒有這個玩家的紀錄，不需要搜尋、也不受改暱稱影響。</p>
+            <div id="user-leaderboard-list" class="empty-note">載入中...</div>
+            <div id="user-leaderboard-edit-area" style="margin-top:12px;"></div>
+        </div>`;
+    loadUserLeaderboardEntries(uid);
 }
+
+// 用這個玩家的 uid，逐一比對每個任務底下有沒有他的排行榜紀錄（直接 getDoc 點查，不是搜尋，不怕改名字或打錯字）
+async function loadUserLeaderboardEntries(uid) {
+    const listEl = document.getElementById('user-leaderboard-list');
+    if (!listEl) return;
+    const tasks = editState.tasks.items;
+    if (!tasks.length) {
+        listEl.innerHTML = `<p class="empty-note">尚無任務資料（請確認 GitHub 連線已設定並已載入任務清單）</p>`;
+        return;
+    }
+    listEl.innerHTML = '載入中...';
+    try {
+        const results = await Promise.all(tasks.map(async (t) => {
+            const snap = await getDoc(doc(db, 'leaderboard', t.id, 'entries', uid));
+            return snap.exists() ? { taskId: t.id, taskTitle: t.title, ...snap.data() } : null;
+        }));
+        const rows = results.filter(Boolean);
+        window.__userLbRowsCache = rows;
+        if (!rows.length) { listEl.innerHTML = `<p class="empty-note">這位玩家目前沒有任何排行榜紀錄</p>`; return; }
+        listEl.innerHTML = rows.map(r => `
+            <div class="item-row">
+                <div class="item-info">
+                    <div class="item-title">${r.taskTitle}</div>
+                    <div class="item-meta">${r.scoreLabel || ''}（${r.scoreValue} 分）${r.updatedAt ? ' · ' + new Date(r.updatedAt).toLocaleString() : ''}</div>
+                </div>
+                <div class="item-actions">
+                    <button class="icon-btn edit" onclick="window.editUserLeaderboardEntry('${r.taskId}','${uid}')">編輯</button>
+                    <button class="icon-btn danger" onclick="window.deleteUserLeaderboardEntry('${r.taskId}','${uid}','${r.taskTitle.replace(/'/g, "\\'")}')">刪除</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (err) {
+        listEl.innerHTML = `<p class="empty-note">載入失敗：${err.message}</p>`;
+    }
+}
+
+window.editUserLeaderboardEntry = function (taskId, uid) {
+    const row = (window.__userLbRowsCache || []).find(r => r.taskId === taskId);
+    if (!row) return;
+    const area = document.getElementById('user-leaderboard-edit-area');
+    area.innerHTML = `
+        <form class="entity-form" onsubmit="return window.submitUserLeaderboardEdit(event, '${taskId}', '${uid}')">
+            <h3 style="margin:0 0 8px;font-size:14px;">編輯：${row.taskTitle}</h3>
+            <div class="field"><label>顯示用分數字串</label><input name="scoreLabel" value="${(row.scoreLabel || '').replace(/"/g, '&quot;')}"></div>
+            <div class="field"><label>排序用數字分數</label><input name="scoreValue" type="number" value="${row.scoreValue ?? 0}" required></div>
+            <div style="display:flex;gap:8px;">
+                <button class="btn-save" type="submit">儲存變更</button>
+                <button type="button" class="btn-cancel" onclick="document.getElementById('user-leaderboard-edit-area').innerHTML=''">取消</button>
+            </div>
+        </form>`;
+};
+
+window.submitUserLeaderboardEdit = async function (e, taskId, uid) {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    try {
+        await updateDoc(doc(db, 'leaderboard', taskId, 'entries', uid), {
+            scoreLabel: f.get('scoreLabel'),
+            scoreValue: Number(f.get('scoreValue')),
+            updatedAt: Date.now()
+        });
+        showMsg('users', '已儲存');
+        document.getElementById('user-leaderboard-edit-area').innerHTML = '';
+        loadUserLeaderboardEntries(uid);
+    } catch (err) { showMsg('users', err.message, true); }
+    return false;
+};
+
+window.deleteUserLeaderboardEntry = async function (taskId, uid, taskTitle) {
+    if (!confirm(`確定要刪除「${taskTitle}」這筆排行榜紀錄嗎？`)) return;
+    try {
+        await deleteDoc(doc(db, 'leaderboard', taskId, 'entries', uid));
+        showMsg('users', '已刪除');
+        loadUserLeaderboardEntries(uid);
+    } catch (err) { showMsg('users', err.message, true); }
+};
 
 // 瀏覽全部使用者（Firestore users collection 目前設定任何人可讀，
 // 這裡仍限定要先通過管理者 Google 登入才看得到這個畫面）
