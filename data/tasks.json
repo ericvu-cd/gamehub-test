@@ -46,7 +46,7 @@
     "description": "走讀龍鳳漁港",
     "colorTheme": "sky",
     "link": "https://ericvu-cd.github.io/lbsgame/fishmarket.html",
-    "entryCost": 0,
+    "entryCost": 1,
     "unlockConditions": [
       {
         "type": "LEVEL",
