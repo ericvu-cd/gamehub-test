@@ -4,5 +4,11 @@
     "description": "S級徽章",
     "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/1788264226965_fmbd1.jpg",
     "sourceTaskId": "fishmarket"
+  },
+  "stoneweir_master": {
+    "name": "石滬達人",
+    "description": "800分以上",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/1788317156445_swbd1.jpg",
+    "sourceTaskId": "stoneweir"
   }
 }
