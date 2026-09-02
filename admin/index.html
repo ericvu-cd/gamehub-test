@@ -130,6 +130,7 @@
             <button data-tab="certificates" onclick="switchAdminTab('certificates')">證書</button>
             <button data-tab="users" onclick="switchAdminTab('users')">使用者資料</button>
             <button data-tab="leaderboard" onclick="switchAdminTab('leaderboard')">排行榜</button>
+            <button data-tab="logs" onclick="switchAdminTab('logs')">系統記錄</button>
         </nav>
 
         <section id="panel-banners" class="panel active">
@@ -386,6 +387,33 @@
                     <div id="leaderboard-list-loading" class="empty-note hidden">載入中...</div>
                     <div id="leaderboard-list"></div>
                     <div id="leaderboard-edit-area" style="margin-top:16px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="panel-logs" class="panel">
+            <div id="logs-login-screen" class="card" style="max-width:420px;text-align:center;">
+                <p style="font-size:13px;margin-bottom:14px;">查看系統記錄需要另外用 Google 帳號登入驗證身分</p>
+                <button class="google-btn" onclick="handleGoogleLogin()">使用 Google 帳號登入</button>
+            </div>
+            <div id="logs-not-admin" class="not-admin hidden">
+                <p>此 Google 帳號不在管理者名單內。</p>
+                <button class="google-btn" onclick="handleGoogleLogout()">登出</button>
+            </div>
+            <div id="logs-panel-content" class="hidden">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                    <button class="icon-btn" onclick="handleGoogleLogout()">登出</button>
+                </div>
+                <div class="card">
+                    <h2>系統記錄</h2>
+                    <p style="font-size:12px;color:#8B8577;margin-top:-6px;">任務頁面 complete／score 訊息處理過程的記錄，最新 50 筆。預設只顯示警告／錯誤，勾選下面可以看全部（含正常成功的記錄）。</p>
+                    <div id="logs-msg"></div>
+                    <div class="field checkbox-field">
+                        <label><input type="checkbox" id="logs-show-info" onchange="window.loadTaskLogs()"> 顯示一般記錄（info）</label>
+                    </div>
+                    <button class="icon-btn" onclick="window.loadTaskLogs()">重新整理</button>
+                    <div id="logs-list-loading" class="empty-note hidden">載入中...</div>
+                    <div id="logs-list" style="margin-top:10px;"></div>
                 </div>
             </div>
         </section>

@@ -974,6 +974,44 @@ window.clearLeaderboard = async function () {
     } catch (err) { showMsg('leaderboard', err.message, true); }
 };
 
+/* =====================================================
+   系統記錄（taskEventLogs）：任務頁面 complete/score 訊息處理過程的記錄，
+   取代「要即時盯著 console 看」的做法，事後隨時可以回來查。
+===================================================== */
+window.loadTaskLogs = async function () {
+    const listEl = document.getElementById('logs-list');
+    const loadingEl = document.getElementById('logs-list-loading');
+    const showInfo = document.getElementById('logs-show-info').checked;
+    loadingEl.classList.remove('hidden');
+    listEl.innerHTML = '';
+    try {
+        const snap = await getDocs(query(
+            collection(db, 'taskEventLogs'),
+            orderBy('at', 'desc'),
+            limit(50)
+        ));
+        loadingEl.classList.add('hidden');
+        let rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (!showInfo) rows = rows.filter(r => r.level !== 'info');
+        if (!rows.length) { listEl.innerHTML = `<p class="empty-note">沒有符合條件的記錄</p>`; return; }
+
+        listEl.innerHTML = rows.map(r => {
+            const levelColor = r.level === 'error' ? '#A63D40' : (r.level === 'warn' ? '#B8860B' : '#6B6255');
+            return `
+            <div class="item-row" style="align-items:flex-start;">
+                <div class="item-info">
+                    <div class="item-title" style="color:${levelColor};">[${r.level}] ${r.message}</div>
+                    <div class="item-meta">${new Date(r.at).toLocaleString()} · taskId: ${r.taskId || '-'} · uid: ${r.uid || '-'}</div>
+                    ${r.extra ? `<div class="item-meta" style="word-break:break-all;">${r.extra}</div>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    } catch (err) {
+        loadingEl.classList.add('hidden');
+        listEl.innerHTML = `<p class="empty-note">載入失敗：${err.message}</p>`;
+    }
+};
+
 onAuthStateChanged(auth, async (user) => {
     document.getElementById('users-login-screen').classList.add('hidden');
     document.getElementById('users-not-admin').classList.add('hidden');
@@ -981,10 +1019,14 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('leaderboard-login-screen').classList.add('hidden');
     document.getElementById('leaderboard-not-admin').classList.add('hidden');
     document.getElementById('leaderboard-panel-content').classList.add('hidden');
+    document.getElementById('logs-login-screen').classList.add('hidden');
+    document.getElementById('logs-not-admin').classList.add('hidden');
+    document.getElementById('logs-panel-content').classList.add('hidden');
 
     if (!user) {
         document.getElementById('users-login-screen').classList.remove('hidden');
         document.getElementById('leaderboard-login-screen').classList.remove('hidden');
+        document.getElementById('logs-login-screen').classList.remove('hidden');
         return;
     }
 
@@ -992,13 +1034,16 @@ onAuthStateChanged(auth, async (user) => {
     if (!adminSnap.exists()) {
         document.getElementById('users-not-admin').classList.remove('hidden');
         document.getElementById('leaderboard-not-admin').classList.remove('hidden');
+        document.getElementById('logs-not-admin').classList.remove('hidden');
         return;
     }
 
     document.getElementById('users-panel-content').classList.remove('hidden');
     document.getElementById('leaderboard-panel-content').classList.remove('hidden');
+    document.getElementById('logs-panel-content').classList.remove('hidden');
     window.loadUsersList();
     renderLeaderboardTaskOptions();
+    window.loadTaskLogs();
 });
 
 /* =====================================================

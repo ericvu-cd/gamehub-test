@@ -204,5 +204,23 @@ service cloud.firestore {
 
       allow delete: if isAdmin();
     }
+
+    // ===================================================================
+    // 任務事件記錄：taskEventLogs/{logId}
+    // 平台處理任務頁面送來的 complete/score 等訊息時，把關鍵結果（成功/被拒絕/
+    // 例外/訊息被忽略）寫下來，方便事後在後台查，不用即時盯著 console 看。
+    // 只能新增、不能改或刪，是唯讀事後稽核用的記錄，不是給玩家自己查看的資料。
+    // ===================================================================
+
+    match /taskEventLogs/{logId} {
+      allow read: if isAdmin();
+
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.level in ['info', 'warn', 'error']
+        && request.resource.data.at is number;
+
+      allow update, delete: if false;
+    }
   }
 }
