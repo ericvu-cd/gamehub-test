@@ -41,11 +41,17 @@ body {
     background: var(--paper-bg);
 }
 
-/* 頂端一圈藍紫光暈，呼應深海夜遊的整體基調，只在最上層淡淡出現，不搶內容 */
+/* 頂端一圈藍紫光暈 + 左側漂浮光斑，營造夜遊探險的氛圍感，讓畫面更有層次不死板 */
 body::before {
     content: "";
     position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background: radial-gradient(130% 45% at 50% -8%, #4a6ee0 0%, #2a3a9c 42%, transparent 75%);
+    background: radial-gradient(130% 50% at 50% -8%, #5b7dff 0%, #2a3a9c 45%, transparent 78%);
+}
+body::after {
+    content: "";
+    position: fixed; left: -70px; top: 220px; z-index: 0; pointer-events: none;
+    width: 240px; height: 240px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(126,168,255,0.28), transparent 70%);
 }
 
 .hidden { display: none !important; }
@@ -56,7 +62,7 @@ body::before {
     flex-shrink: 0; text-align: center; padding: 10px 16px 2px;
     color: var(--text-dim); position: relative; z-index: 1;
 }
-.brand-bar h1 { font-size: 13px; font-weight: 700; letter-spacing: 2px; opacity: 0.7; }
+.brand-bar h1 { font-size: 13px; font-weight: 800; letter-spacing: 2px; color: #cfe0ff; }
 
 .topbar {
     flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -72,7 +78,7 @@ body::before {
     display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800;
     background: linear-gradient(160deg, var(--gold-avatar-a), var(--gold-avatar-b));
     border: 3px solid #fff6d8; color: #7a3c00;
-    box-shadow: inset 0 -4px 8px rgba(0,0,0,0.16);
+    box-shadow: inset 0 -4px 8px rgba(0,0,0,0.16), 0 0 14px rgba(255,180,60,0.5);
 }
 .user-text { flex: 1; min-width: 0; }
 .user-text h1 {
@@ -87,6 +93,8 @@ body::before {
 .coin-pill {
     flex-shrink: 0; display: flex; align-items: center; gap: 5px;
     background: rgba(0,0,0,0.28); border-radius: 22px;
+    border: 1.5px solid rgba(255,227,122,0.4);
+    box-shadow: 0 0 12px rgba(255,200,80,0.3);
     padding: 6px 13px 6px 6px;
     font-weight: 800; font-size: 14px; color: #ffe9a8;
 }
@@ -102,8 +110,13 @@ body::before {
 .banner-carousel {
     position: relative; border-radius: var(--radius-lg);
     background: var(--hero-gradient);
-    box-shadow: var(--hard-shadow);
+    box-shadow: var(--hard-shadow), 0 0 26px rgba(255,90,150,0.35);
     overflow: hidden;
+}
+.banner-carousel::before {
+    content: "";
+    position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(120deg, rgba(255,255,255,0.22) 0%, transparent 30%);
 }
 .banner-track { display: flex; transition: transform 0.3s ease; }
 .banner-slide {
@@ -141,7 +154,7 @@ body::before {
 .task-thumb {
     width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
     border: 3px solid rgba(255,255,255,0.55); background: var(--gold-b);
-    box-shadow: inset 0 -4px 0 rgba(0,0,0,0.18);
+    box-shadow: inset 0 -4px 0 rgba(0,0,0,0.18), 0 0 14px rgba(120,150,255,0.35);
     margin-left: 0;
     z-index: 5;
 }
@@ -199,6 +212,7 @@ body::before {
 .nav-item.tab-active {
     color: #151d52;
     background: linear-gradient(180deg, var(--gold-a), var(--gold-b));
+    box-shadow: 0 0 14px rgba(255,200,80,0.55);
 }
 .nav-item.tab-active svg { stroke: #151d52; }
 
@@ -243,8 +257,8 @@ body::before {
     width: 100%; max-width: 380px;
     background: linear-gradient(180deg, #3a52c0, #22307e);
     border-radius: var(--radius-lg);
-    border: 3px solid rgba(255,255,255,0.28);
-    box-shadow: 0 10px 0 rgba(0,0,0,0.35);
+    border: 3px solid rgba(255,255,255,0.32);
+    box-shadow: 0 10px 0 rgba(0,0,0,0.35), 0 0 30px rgba(80,110,255,0.4);
     padding: 24px 22px;
 }
 .modal-header { text-align: center; margin-bottom: 16px; }
@@ -255,12 +269,13 @@ body::before {
 .field-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
 .text-input, .select-input {
     width: 100%; padding: 13px 18px; border-radius: 24px;
-    border: 2px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.28);
-    font-size: 13.5px; font-weight: 600;
+    border: 2px solid rgba(255,255,255,0.32); background: rgba(0,0,0,0.35);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    font-size: 14px; font-weight: 700;
     font-family: inherit; color: #fff;
 }
-.text-input::placeholder { color: rgba(255,255,255,0.45); }
-.text-input:focus, .select-input:focus { outline: none; border-color: rgba(255,255,255,0.5); }
+.text-input::placeholder { color: rgba(255,255,255,0.55); }
+.text-input:focus, .select-input:focus { outline: none; border-color: #ffe37a; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 0 0 3px rgba(255,227,122,0.25); }
 .select-input { color: #fff; }
 .select-input option { color: #151d52; }
 
@@ -271,8 +286,8 @@ body::before {
 .error-text { color: #ff8a8a; font-size: 12px; font-weight: 800; text-align: center; margin-bottom: 10px; }
 .link-text { text-align: center; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.6); margin-top: 14px; cursor: pointer; }
 .detail-meta { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.65); margin-top: 8px; }
-.detail-modal-icon { text-align: center; font-size: 48px; margin-bottom: 10px; }
-.detail-modal-icon img { width: 88px; height: 88px; object-fit: contain; border-radius: 16px; }
+.detail-modal-icon { text-align: center; font-size: 56px; margin-bottom: 10px; }
+.detail-modal-icon img { width: 108px; height: 108px; object-fit: contain; border-radius: 16px; box-shadow: 0 0 20px rgba(255,200,80,0.3); }
 .news-content { cursor: pointer; }
 .news-content.truncated::after { content: '⋯查看更多'; display: block; color: var(--gold-a); font-weight: 800; margin-top: 4px; font-size: 12px; }
 
@@ -373,18 +388,18 @@ body::before {
 .collectible-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; }
 .collectible {
     background: var(--surface); border: 2px solid var(--surface-border); border-radius: var(--radius-md);
-    padding: 13px 6px 12px; text-align: center; box-shadow: var(--hard-shadow); cursor: pointer;
+    padding: 15px 6px 13px; text-align: center; box-shadow: var(--hard-shadow); cursor: pointer;
 }
 .collectible.locked { opacity: 0.3; filter: grayscale(0.6); box-shadow: none; }
 .collectible-icon {
-    width: 48px; height: 48px; margin: 0 auto; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    width: 68px; height: 68px; margin: 0 auto; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 30px;
     background: linear-gradient(160deg, #ffcf5c, #f08a1c);
     border: 3px solid rgba(255,255,255,0.5);
-    box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2);
+    box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), 0 0 16px rgba(255,207,92,0.35);
 }
-.collectible-icon img { width: 32px; height: 32px; object-fit: contain; border-radius: 50%; }
-.collectible-name { font-size: 10.5px; font-weight: 700; display: block; margin-top: 8px; color: rgba(255,255,255,0.85); }
+.collectible-icon img { width: 50px; height: 50px; object-fit: contain; border-radius: 50%; }
+.collectible-name { font-size: 11px; font-weight: 700; display: block; margin-top: 9px; color: rgba(255,255,255,0.9); }
 
 /* ---------------- 排行榜 ---------------- */
 .leaderboard-list {
