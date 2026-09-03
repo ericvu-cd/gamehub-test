@@ -66,7 +66,7 @@ body::after {
 
 .topbar {
     flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 10px 14px 12px; position: relative; z-index: 1;
+    padding: 10px 14px 12px; position: relative;
 }
 .user-brief {
     flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; cursor: pointer;
@@ -295,7 +295,7 @@ body::after {
 .link-text { text-align: center; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.6); margin-top: 14px; cursor: pointer; }
 .detail-meta { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.65); margin-top: 8px; }
 .detail-modal-icon { text-align: center; font-size: 56px; margin-bottom: 10px; }
-.detail-modal-icon img { width: 108px; height: 108px; object-fit: cover; border-radius: 50%; box-shadow: 0 0 20px rgba(255,200,80,0.3); }
+.detail-modal-icon img { max-width: 100%; max-height: 220px; width: auto; height: auto; object-fit: contain; border-radius: 16px; box-shadow: 0 0 20px rgba(255,200,80,0.3); }
 .news-content { cursor: pointer; }
 .news-content.truncated::after { content: '⋯查看更多'; display: block; color: var(--gold-a); font-weight: 800; margin-top: 4px; font-size: 12px; }
 
