@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>在地文化知識型互動平台</title>
+<script>
+// 偵測 LINE 內建瀏覽器，用 LINE 官方認得的 openExternalBrowser=1 參數自動跳轉到系統瀏覽器開啟。
+// 一定要放在所有其他資源（字型、CSS、Firebase）載入之前，越早跳轉越好，避免使用者在 LINE 內建
+// 瀏覽器裡先看到畫面一閃、又跳走的閃爍感，也避免 Firebase 登入彈窗、window.open 任務在裡面先失敗一次。
+(function () {
+    var ua = navigator.userAgent;
+    if (ua.indexOf('Line') > -1) {
+        var url = window.location.href;
+        if (url.indexOf('openExternalBrowser=1') === -1) {
+            var separator = url.indexOf('?') === -1 ? '?' : '&';
+            window.location.replace(url + separator + 'openExternalBrowser=1');
+        }
+    }
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
