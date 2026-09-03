@@ -267,7 +267,7 @@ body::after {
 
 .field-label { font-size: 12px; font-weight: 800; color: #fff; margin-bottom: 8px; }
 .field-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
-.text-input, .select-input {
+.text-input {
     width: 100%; padding: 13px 18px; border-radius: 24px;
     border: 2px solid rgba(255,255,255,0.32); background: rgba(0,0,0,0.35);
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
@@ -275,8 +275,16 @@ body::after {
     font-family: inherit; color: #fff;
 }
 .text-input::placeholder { color: rgba(255,255,255,0.55); }
-.text-input:focus, .select-input:focus { outline: none; border-color: #ffe37a; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 0 0 3px rgba(255,227,122,0.25); }
-.select-input { color: #fff; }
+.text-input:focus { outline: none; border-color: #ffe37a; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 0 0 3px rgba(255,227,122,0.25); }
+.select-input {
+    width: 100%; padding: 13px 40px 13px 18px; border-radius: 24px;
+    border: 2px solid var(--surface-border); background: var(--surface-strong);
+    font-size: 14px; font-weight: 700; font-family: inherit; color: #fff;
+    -webkit-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center; background-size: 16px;
+}
+.select-input:focus { outline: none; border-color: #ffe37a; box-shadow: 0 0 0 3px rgba(255,227,122,0.25); }
 .select-input option { color: #151d52; }
 
 .notice-box { background: rgba(255,226,154,0.16); border: 2px solid var(--gold-b); border-radius: 16px; padding: 12px; margin-bottom: 14px; }
@@ -287,7 +295,7 @@ body::after {
 .link-text { text-align: center; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.6); margin-top: 14px; cursor: pointer; }
 .detail-meta { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.65); margin-top: 8px; }
 .detail-modal-icon { text-align: center; font-size: 56px; margin-bottom: 10px; }
-.detail-modal-icon img { width: 108px; height: 108px; object-fit: contain; border-radius: 16px; box-shadow: 0 0 20px rgba(255,200,80,0.3); }
+.detail-modal-icon img { width: 108px; height: 108px; object-fit: cover; border-radius: 50%; box-shadow: 0 0 20px rgba(255,200,80,0.3); }
 .news-content { cursor: pointer; }
 .news-content.truncated::after { content: '⋯查看更多'; display: block; color: var(--gold-a); font-weight: 800; margin-top: 4px; font-size: 12px; }
 
@@ -329,7 +337,7 @@ body::after {
 
 /* ---------------- 使用者選單（頭像點擊） ---------------- */
 .user-menu {
-    position: absolute; top: 68px; left: 18px; z-index: 20;
+    position: absolute; top: 100%; margin-top: 6px; left: 14px; z-index: 20;
     background: #1c2660; border: 2px solid var(--surface-border); border-radius: 18px;
     box-shadow: 0 8px 0 rgba(0,0,0,0.3); overflow: hidden; min-width: 140px;
 }
@@ -390,7 +398,7 @@ body::after {
     background: var(--surface); border: 2px solid var(--surface-border); border-radius: var(--radius-md);
     padding: 15px 6px 13px; text-align: center; box-shadow: var(--hard-shadow); cursor: pointer;
 }
-.collectible.locked { opacity: 0.3; filter: grayscale(0.6); box-shadow: none; }
+.collectible.locked { opacity: 0.45; filter: grayscale(0.7); box-shadow: none; }
 .collectible-icon {
     width: 68px; height: 68px; margin: 0 auto; border-radius: 50%;
     display: flex; align-items: center; justify-content: center; font-size: 30px;
@@ -398,7 +406,7 @@ body::after {
     border: 3px solid rgba(255,255,255,0.5);
     box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), 0 0 16px rgba(255,207,92,0.35);
 }
-.collectible-icon img { width: 50px; height: 50px; object-fit: contain; border-radius: 50%; }
+.collectible-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .collectible-name { font-size: 11px; font-weight: 700; display: block; margin-top: 9px; color: rgba(255,255,255,0.9); }
 
 /* ---------------- 排行榜 ---------------- */
