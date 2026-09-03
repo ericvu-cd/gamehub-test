@@ -349,13 +349,15 @@ function renderTasks() {
                  onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'${fallbackClass}',textContent:'🎯'}))">`
             : `<div class="${fallbackClass}">🎯</div>`;
         const statusHtml = status.canPlay ? '' : `<span class="task-status">${status.reason}</span>`;
+        const coinIconSvg = `<svg class="coin-icon" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#E8B84B" stroke="#B8863B" stroke-width="1.5"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="#B8863B" stroke-width="1.2" opacity="0.6"/><text x="12" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#8A5A16">$</text></svg>`;
+        const costHtml = `<span class="task-cost">${coinIconSvg}${task.entryCost || 0}</span>`;
         return `
             <div class="task-card ${lockedClass}">
                 <div class="task-thumb">${thumbHtml}</div>
                 <div class="task-info">
                     <h4 class="task-title">${task.title}</h4>
                     <p class="task-desc">${task.description || ''}</p>
-                    ${statusHtml}
+                    <div class="task-tags">${costHtml}${statusHtml}</div>
                 </div>
                 <button class="task-btn" ${status.canPlay ? '' : 'disabled'}
                     onclick="window.handleTaskClick('${task.id}')">${status.canPlay ? '出發' : '未解鎖'}</button>
