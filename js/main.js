@@ -3,7 +3,7 @@
 // =====================================================================
 import { auth } from './firebase-config.js';
 import {
-    registerUser, loginUser, logoutUser, changePassword, watchAuthState, validateUsername
+    registerUser, loginUser, logoutUser, changePassword, watchAuthState, validateUsername, validatePassword
 } from './auth.js';
 import {
     loadActiveBanners, loadTasks, loadNews, loadBadges, loadCertificates, loadAvatarPresets
@@ -165,7 +165,12 @@ window.handleAuthSubmit = async function () {
 
     const usernameErr = validateUsername(username);
     if (usernameErr) { showAuthError(usernameErr); return; }
-    if (!password) { showAuthError('請輸入密碼'); return; }
+    if (isRegisterMode) {
+        const passwordErr = validatePassword(password);
+        if (passwordErr) { showAuthError(passwordErr); return; }
+    } else if (!password) {
+        showAuthError('請輸入密碼'); return;
+    }
 
     const submitBtn = document.getElementById('auth-submit-btn');
     const submitText = document.getElementById('auth-submit-text');
@@ -476,6 +481,14 @@ function renderLeaderboardOptions() {
     }
 }
 
+// 把使用者可控的字串（暱稱、排行榜玩家名/分數字串）安全地插入 HTML，
+// 避免有人繞過網頁介面直接寫入含 HTML/script 的內容時被當成程式碼執行（儲存型 XSS 防護）。
+function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
+
 window.renderLeaderboard = async function () {
     const taskId = document.getElementById('leaderboard-task-select').value;
     const container = document.getElementById('leaderboard-list');
@@ -489,8 +502,8 @@ window.renderLeaderboard = async function () {
     container.innerHTML = rows.map((row, i) => `
         <div class="lb-row ${i < 3 ? `lb-top${i + 1}` : ''}">
             <span class="lb-rank">No.${i + 1}</span>
-            <span class="lb-name">${row.playerName}</span>
-            <span class="lb-score">${row.scoreLabel}</span>
+            <span class="lb-name">${escapeHtml(row.playerName)}</span>
+            <span class="lb-score">${escapeHtml(row.scoreLabel)}</span>
         </div>
     `).join('');
 };

@@ -79,7 +79,9 @@ service cloud.firestore {
         && request.resource.data.badges == []
         && request.resource.data.certificates == []
         && request.resource.data.nickname is string
-        && request.resource.data.nickname.size() <= 20;
+        && request.resource.data.nickname.size() >= 1
+        && request.resource.data.nickname.size() <= 20
+        && request.resource.data.nickname.matches('^[A-Za-z0-9\u4e00-\u9fa5]+$');
 
       // 管理者：可自由編修任何使用者資料（金幣調整等人工修正用途）
       allow update: if isAdmin();
@@ -96,7 +98,12 @@ service cloud.firestore {
       // --- 樣式 1：只改暱稱／頭像／公告已讀時間，不動金幣與 dailyGuard ---
       function isProfileOnlyEdit(before, after) {
         return changedKeys(before, after).hasOnly(['nickname', 'avatarId', 'lastNewsViewedAt'])
-          && (!('nickname' in after) || (after.nickname is string && after.nickname.size() <= 20));
+          && (!('nickname' in after) || (
+            after.nickname is string
+            && after.nickname.size() >= 1
+            && after.nickname.size() <= 20
+            && after.nickname.matches('^[A-Za-z0-9\u4e00-\u9fa5]+$')
+          ));
       }
 
       // --- 每日總量防護核心邏輯：驗證 dailyGuard 是否正確地反映了這次異動 ---
@@ -193,13 +200,29 @@ service cloud.firestore {
     match /leaderboard/{taskId}/entries/{entryUid} {
       allow read: if true;
 
-      allow create: if (isOwner(entryUid) && request.resource.data.scoreValue is number)
+      // 玩家本人寫入時，playerName 要符合跟暱稱一致的格式驗證，避免有人繞過網頁介面
+      // 直接呼叫 API 塞入任意內容（例如惡意 HTML），這個排行榜是公開可讀的頁面。
+      function isValidPlayerName(name) {
+        return name is string
+          && name.size() >= 1
+          && name.size() <= 20
+          && name.matches('^[A-Za-z0-9\u4e00-\u9fa5]+$');
+      }
+
+      allow create: if (isOwner(entryUid)
+          && request.resource.data.scoreValue is number
+          && isValidPlayerName(request.resource.data.playerName)
+          && request.resource.data.scoreLabel is string
+          && request.resource.data.scoreLabel.size() <= 40)
         || isAdmin();
 
       // 玩家本人只能覆寫成「更高分」；admin 可以改成任意分數（人工修正錯誤/作弊用）
       allow update: if (isOwner(entryUid)
           && request.resource.data.scoreValue is number
-          && request.resource.data.scoreValue > resource.data.scoreValue)
+          && request.resource.data.scoreValue > resource.data.scoreValue
+          && isValidPlayerName(request.resource.data.playerName)
+          && request.resource.data.scoreLabel is string
+          && request.resource.data.scoreLabel.size() <= 40)
         || (isAdmin() && request.resource.data.scoreValue is number);
 
       allow delete: if isAdmin();

@@ -30,6 +30,13 @@ export function validateUsername(username) {
     return null;
 }
 
+export function validatePassword(password) {
+    if (!password) return '請輸入密碼';
+    if (password.length < 6) return '密碼至少需要 6 個字元';
+    if (password.length > 64) return '密碼最長 64 個字元';
+    return null;
+}
+
 // 檢查名稱是否已被使用（即時檢查用，最終仍以註冊時的 Firestore 規則為準）
 export async function isUsernameTaken(username) {
     const snap = await getDoc(doc(db, 'usernames', username.toLowerCase()));
@@ -99,9 +106,8 @@ export async function changePassword(username, currentPassword, newPassword) {
     } catch (err) {
         throw new Error('原密碼不正確');
     }
-    if (!newPassword || newPassword.length < 6) {
-        throw new Error('新密碼至少需要 6 個字元');
-    }
+    const passwordErr = validatePassword(newPassword);
+    if (passwordErr) throw new Error(passwordErr);
     await updatePassword(user, newPassword);
 }
 

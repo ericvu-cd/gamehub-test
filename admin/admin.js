@@ -13,6 +13,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { resolveTaskIcon } from '../js/content.js';
 
+// 把使用者可控的字串（暱稱、排行榜玩家名）安全地插入 HTML，避免有人繞過網頁介面
+// 直接寫入含 HTML/script 的內容時，在後台畫面被當成程式碼執行（儲存型 XSS 防護）。
+function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
+
 /* =====================================================
    GitHub Contents API 連線層
 ===================================================== */
@@ -728,7 +736,7 @@ function renderUserEditForm(uid, u) {
     const area = document.getElementById('user-edit-area');
     area.innerHTML = `
         <form class="entity-form" onsubmit="return window.submitUserEdit(event, '${uid}')">
-            <div class="field"><label>暱稱</label><input name="nickname" value="${u.nickname || ''}"></div>
+            <div class="field"><label>暱稱</label><input name="nickname" value="${escapeHtml(u.nickname || '')}"></div>
             <div class="two-col">
                 <div class="field"><label>等級</label><input name="level" type="number" value="${u.level ?? 1}"></div>
                 <div class="field"><label>通行金幣</label><input name="coins" type="number" value="${u.coins ?? 0}"></div>
@@ -767,12 +775,12 @@ async function loadUserLeaderboardEntries(uid) {
         listEl.innerHTML = rows.map(r => `
             <div class="item-row">
                 <div class="item-info">
-                    <div class="item-title">${r.taskTitle}</div>
-                    <div class="item-meta">${r.scoreLabel || ''}（${r.scoreValue} 分）${r.updatedAt ? ' · ' + new Date(r.updatedAt).toLocaleString() : ''}</div>
+                    <div class="item-title">${escapeHtml(r.taskTitle)}</div>
+                    <div class="item-meta">${escapeHtml(r.scoreLabel || '')}（${r.scoreValue} 分）${r.updatedAt ? ' · ' + new Date(r.updatedAt).toLocaleString() : ''}</div>
                 </div>
                 <div class="item-actions">
                     <button class="icon-btn edit" onclick="window.editUserLeaderboardEntry('${r.taskId}','${uid}')">編輯</button>
-                    <button class="icon-btn danger" onclick="window.deleteUserLeaderboardEntry('${r.taskId}','${uid}','${r.taskTitle.replace(/'/g, "\\'")}')">刪除</button>
+                    <button class="icon-btn danger" onclick="window.deleteUserLeaderboardEntry('${r.taskId}','${uid}')">刪除</button>
                 </div>
             </div>
         `).join('');
@@ -787,8 +795,8 @@ window.editUserLeaderboardEntry = function (taskId, uid) {
     const area = document.getElementById('user-leaderboard-edit-area');
     area.innerHTML = `
         <form class="entity-form" onsubmit="return window.submitUserLeaderboardEdit(event, '${taskId}', '${uid}')">
-            <h3 style="margin:0 0 8px;font-size:14px;">編輯：${row.taskTitle}</h3>
-            <div class="field"><label>顯示用分數字串</label><input name="scoreLabel" value="${(row.scoreLabel || '').replace(/"/g, '&quot;')}"></div>
+            <h3 style="margin:0 0 8px;font-size:14px;">編輯：${escapeHtml(row.taskTitle)}</h3>
+            <div class="field"><label>顯示用分數字串</label><input name="scoreLabel" value="${escapeHtml(row.scoreLabel || '')}"></div>
             <div class="field"><label>排序用數字分數</label><input name="scoreValue" type="number" value="${row.scoreValue ?? 0}" required></div>
             <div style="display:flex;gap:8px;">
                 <button class="btn-save" type="submit">儲存變更</button>
@@ -813,7 +821,9 @@ window.submitUserLeaderboardEdit = async function (e, taskId, uid) {
     return false;
 };
 
-window.deleteUserLeaderboardEntry = async function (taskId, uid, taskTitle) {
+window.deleteUserLeaderboardEntry = async function (taskId, uid) {
+    const row = (window.__userLbRowsCache || []).find(r => r.taskId === taskId);
+    const taskTitle = row?.taskTitle || taskId;
     if (!confirm(`確定要刪除「${taskTitle}」這筆排行榜紀錄嗎？`)) return;
     try {
         await deleteDoc(doc(db, 'leaderboard', taskId, 'entries', uid));
@@ -840,7 +850,7 @@ window.loadUsersList = async function () {
             <div class="item-row">
                 <div class="item-thumb"></div>
                 <div class="item-info">
-                    <div class="item-title">${u.nickname || '（未命名）'}</div>
+                    <div class="item-title">${escapeHtml(u.nickname || '（未命名）')}</div>
                     <div class="item-meta">Lv.${u.level ?? 1} · ${u.coins ?? 0} 金幣</div>
                 </div>
                 <div class="item-actions">
@@ -899,12 +909,12 @@ window.loadLeaderboardList = async function () {
         listEl.innerHTML = rows.map((r, i) => `
             <div class="item-row">
                 <div class="item-info">
-                    <div class="item-title">#${i + 1}　${r.playerName || '（未命名）'}</div>
-                    <div class="item-meta">${r.scoreLabel || ''}（${r.scoreValue} 分）${r.updatedAt ? ' · ' + new Date(r.updatedAt).toLocaleString() : ''}</div>
+                    <div class="item-title">#${i + 1}　${escapeHtml(r.playerName || '（未命名）')}</div>
+                    <div class="item-meta">${escapeHtml(r.scoreLabel || '')}（${r.scoreValue} 分）${r.updatedAt ? ' · ' + new Date(r.updatedAt).toLocaleString() : ''}</div>
                 </div>
                 <div class="item-actions">
                     <button class="icon-btn edit" onclick="window.editLeaderboardEntry('${taskId}','${r.uid}')">編輯</button>
-                    <button class="icon-btn danger" onclick="window.deleteLeaderboardEntry('${taskId}','${r.uid}','${(r.playerName || '未命名').replace(/'/g, "\\'")}')">刪除</button>
+                    <button class="icon-btn danger" onclick="window.deleteLeaderboardEntry('${taskId}','${r.uid}')">刪除</button>
                 </div>
             </div>
         `).join('');
@@ -923,8 +933,8 @@ window.editLeaderboardEntry = function (taskId, uid) {
     const area = document.getElementById('leaderboard-edit-area');
     area.innerHTML = `
         <form class="entity-form" onsubmit="return window.submitLeaderboardEdit(event, '${taskId}', '${uid}')">
-            <h3 style="margin:0 0 8px;font-size:14px;">編輯：${row.playerName || '（未命名）'}</h3>
-            <div class="field"><label>顯示用分數字串</label><input name="scoreLabel" value="${(row.scoreLabel || '').replace(/"/g, '&quot;')}"></div>
+            <h3 style="margin:0 0 8px;font-size:14px;">編輯：${escapeHtml(row.playerName || '（未命名）')}</h3>
+            <div class="field"><label>顯示用分數字串</label><input name="scoreLabel" value="${escapeHtml(row.scoreLabel || '')}"></div>
             <div class="field"><label>排序用數字分數</label><input name="scoreValue" type="number" value="${row.scoreValue ?? 0}" required></div>
             <div style="display:flex;gap:8px;">
                 <button class="btn-save" type="submit">儲存變更</button>
@@ -949,7 +959,11 @@ window.submitLeaderboardEdit = async function (e, taskId, uid) {
     return false;
 };
 
-window.deleteLeaderboardEntry = async function (taskId, uid, playerName) {
+// 不把玩家名稱直接塞進 onclick 屬性字串（那樣做，名稱裡如果有引號會被拿來跳脫、注入額外的 JS），
+// 改成只傳 taskId/uid 這種安全的固定格式字串，實際顯示用的名稱從 __lbRowsCache 這份記憶體資料查。
+window.deleteLeaderboardEntry = async function (taskId, uid) {
+    const row = (window.__lbRowsCache || []).find(r => r.uid === uid);
+    const playerName = row?.playerName || '未命名';
     if (!confirm(`確定要刪除「${playerName}」這筆排行榜紀錄嗎？`)) return;
     try {
         await deleteDoc(doc(db, 'leaderboard', taskId, 'entries', uid));
