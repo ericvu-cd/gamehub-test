@@ -10,5 +10,11 @@
     "description": "800分以上",
     "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/1788317156445_swbd1.jpg",
     "sourceTaskId": "stoneweir"
+  },
+  "fishball_guardian": {
+    "name": "魚丸守護神",
+    "description": "通過10關且1000分以上",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/1788417730858_fbbd1.png",
+    "sourceTaskId": "fishball"
   }
 }
