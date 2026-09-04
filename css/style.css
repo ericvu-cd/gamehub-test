@@ -85,10 +85,23 @@ body::after {
     font-size: 15.5px; font-weight: 800; color: #fff;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.level-pill {
-    font-size: 9.5px; font-weight: 800; color: #151d52;
+.level-progress-wrap {
+    display: flex; align-items: center; gap: 6px; margin-top: 4px; max-width: 160px;
+}
+.level-badge {
+    flex-shrink: 0; font-size: 9.5px; font-weight: 800; color: #151d52;
     background: linear-gradient(180deg, var(--gold-a), var(--gold-b));
-    padding: 2px 9px; border-radius: 20px; display: inline-block; margin-top: 3px;
+    padding: 2px 8px; border-radius: 20px;
+}
+.level-progress-track {
+    flex: 1; height: 6px; min-width: 40px;
+    background: rgba(0,0,0,0.3); border-radius: 6px; overflow: hidden;
+}
+.level-progress-bar {
+    height: 100%; width: 0%; border-radius: 6px;
+    background: linear-gradient(90deg, var(--green-a), var(--green-b));
+    box-shadow: 0 0 6px rgba(150,240,120,0.5);
+    transition: width 0.4s ease;
 }
 .coin-pill {
     flex-shrink: 0; display: flex; align-items: center; gap: 5px;

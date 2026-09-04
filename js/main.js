@@ -35,11 +35,24 @@ let selectedAvatarId = null;
 /* ---------------- 解鎖條件判定（多條件 AND） ---------------- */
 // 等級純計算，不存進 Firestore：背包裡每 25 個已得物件（徽章+證書加權合計）升一級。
 // 權重讀 data/badges.json／certificates.json 的 weight 欄位，沒設定就當作 1（等同「每個算1個」）。
-function computeLevel(user) {
-    if (!user) return 1;
+const LEVEL_STEP = 25; // 每 25 個加權物件升一級，跟後台的權重欄位是同一套邏輯
+
+// 等級純計算，不存進 Firestore：背包裡每 25 個已得物件（徽章+證書加權合計）升一級。
+// 權重讀 data/badges.json／certificates.json 的 weight 欄位，沒設定就當作 1（等同「每個算1個」）。
+function computeLevelInfo(user) {
+    if (!user) return { level: 1, current: 0, target: LEVEL_STEP };
     const badgeWeight = (user.badges || []).reduce((sum, id) => sum + (siteData.badges[id]?.weight ?? 1), 0);
     const certWeight = (user.certificates || []).reduce((sum, id) => sum + (siteData.certificates[id]?.weight ?? 1), 0);
-    return Math.floor((badgeWeight + certWeight) / 25) + 1;
+    const totalWeight = badgeWeight + certWeight;
+    return {
+        level: Math.floor(totalWeight / LEVEL_STEP) + 1,
+        current: totalWeight % LEVEL_STEP,
+        target: LEVEL_STEP
+    };
+}
+
+function computeLevel(user) {
+    return computeLevelInfo(user).level;
 }
 
 function computeUnlockStatus(task, user) {
@@ -254,20 +267,27 @@ window.handleChangePassword = async function () {
 /* ---------------- 使用者狀態列 ---------------- */
 function renderUserBar() {
     const avatarEl = document.getElementById('user-avatar');
+    const progressWrap = document.getElementById('level-progress-wrap');
     if (!currentUser) {
         document.getElementById('user-name').innerText = '未登記隊員';
-        document.getElementById('user-level').innerText = '等級 Lv.0';
+        document.getElementById('user-level').innerText = 'Lv.0';
         document.getElementById('user-coins').innerText = '0';
         avatarEl.innerText = '🧭';
         avatarEl.style.setProperty('--glow', '#B8863B');
+        progressWrap.classList.add('hidden');
         return;
     }
     const avatar = siteData.avatarPresets.find(a => a.id === currentUser.avatarId);
+    const levelInfo = computeLevelInfo(currentUser);
     document.getElementById('user-name').innerText = currentUser.nickname;
-    document.getElementById('user-level').innerText = `等級 Lv.${computeLevel(currentUser)}`;
+    document.getElementById('user-level').innerText = `Lv.${levelInfo.level}`;
     document.getElementById('user-coins').innerText = currentUser.coins;
     avatarEl.innerText = avatar?.emoji || '🙂';
     avatarEl.style.setProperty('--glow', avatar?.glowColor || '#B8863B');
+
+    progressWrap.classList.remove('hidden');
+    progressWrap.title = `${levelInfo.current} / ${levelInfo.target}，還差 ${levelInfo.target - levelInfo.current} 個升下一級`;
+    document.getElementById('level-progress-bar').style.width = `${(levelInfo.current / levelInfo.target) * 100}%`;
 }
 
 /* ---------------- Banner 輪播 ---------------- */
