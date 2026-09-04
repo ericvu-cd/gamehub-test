@@ -111,10 +111,19 @@ export async function changePassword(username, currentPassword, newPassword) {
     await updatePassword(user, newPassword);
 }
 
-async function ensureUserProfile(fbUser) {
+// 查無個人資料時，不要直接判定成「沒登入」——註冊流程裡 createUserWithEmailAndPassword
+// 一成功就會觸發這裡，但當下 registerUser() 自己可能還沒寫完 users/{uid} 這份文件（race
+// condition），先重試幾次、留一點緩衝時間，避免誤判成未登入（新註冊的玩家看到自己變成
+// 「未登記隊員」）。
+async function ensureUserProfile(fbUser, retriesLeft = 4) {
     const ref = doc(db, 'users', fbUser.uid);
     const snap = await getDoc(ref);
-    return snap.exists() ? snap.data() : null;
+    if (snap.exists()) return snap.data();
+    if (retriesLeft > 0) {
+        await new Promise(resolve => setTimeout(resolve, 350));
+        return ensureUserProfile(fbUser, retriesLeft - 1);
+    }
+    return null;
 }
 
 export function watchAuthState(callback) {
