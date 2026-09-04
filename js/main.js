@@ -110,6 +110,7 @@ async function maybeClaimDailyLogin() {
     if (result.ok) {
         currentUser = { ...currentUser, coins: result.newCoins, lastDailyLoginDay: today, dailyGuard: result.guard };
         renderUserBar();
+        renderTasks(); // 金幣餘額變了，任務卡片的「金幣夠不夠」判斷要跟著重新算，不然會用領獎勵前的舊餘額判斷
         showToast('每日登入獎勵 +10 通行金幣！');
     } else {
         console.warn('每日登入獎勵領取失敗：', result.reason);
@@ -136,6 +137,11 @@ window.toggleAuthMode = function () {
     document.getElementById('auth-toggle-link').innerText = isRegisterMode
         ? '已經有通行證了？點此登入'
         : '還沒有通行證？點此申請加入';
+
+    // 模式標籤+卡片強調色一起換，兩個畫面外觀不能靠仔細看文字才分得出來
+    document.getElementById('auth-mode-badge').innerText = isRegisterMode ? '📝 註冊模式' : '🔑 登入模式';
+    document.getElementById('auth-modal-card').classList.toggle('auth-mode-register', isRegisterMode);
+    document.getElementById('auth-modal-card').classList.toggle('auth-mode-login', !isRegisterMode);
 
     document.getElementById('auth-avatar-wrap').classList.toggle('hidden', !isRegisterMode);
     document.getElementById('auth-notice-wrap').classList.toggle('hidden', !isRegisterMode);

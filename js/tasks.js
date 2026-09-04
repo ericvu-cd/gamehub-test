@@ -41,6 +41,16 @@ export async function openTask(task, currentUser, onCoinsChanged) {
         return { ok: false };
     }
 
+    // 先在使用者點擊的同一個呼叫堆疊裡開一個空白分頁，保住瀏覽器判斷「這是使用者主動觸發」的
+    // 資格——iOS Safari 對這件事特別嚴格，只要中間隔了一個 await 才呼叫 window.open，幾乎必定
+    // 被彈出視窗攔截器擋下（先前的版本就是這樣寫壞的，註解寫著要小心但實作沒照做）。
+    // 確認扣款/查成績都沒問題後，再把這個已經開好的分頁導向到真正的任務網址。
+    const win = window.open('', '_blank');
+    if (!win) {
+        alert('視窗被瀏覽器擋下了，請允許本網站開啟新分頁');
+        return { ok: false };
+    }
+
     // 扣款的同時平行查詢玩家在這個任務的個人最佳成績（架構調整討論記錄第四輪、方案A）：
     // 扣款本來就要 await，順便平行查成績幾乎不增加等待時間，查詢結果有 sessionStorage 快取。
     const [costResult, myScore] = await Promise.all([
@@ -48,20 +58,13 @@ export async function openTask(task, currentUser, onCoinsChanged) {
         fetchMyScore(task.id, currentUser.uid)
     ]);
     if (!costResult.ok) {
+        win.close(); // 扣款失敗，把剛剛開好但還沒用到的空白分頁關掉，不留著一片空白的分頁
         alert(costResult.reason);
         return { ok: false };
     }
     if (costResult.newCoins !== undefined) onCoinsChanged(costResult.newCoins, costResult.guard);
 
-    // 務必在使用者點擊事件的同一個呼叫堆疊中直接呼叫 window.open，
-    // 不要包在 await 之後，否則容易被手機瀏覽器的彈出視窗攔截器擋下。
-    // （這裡扣款用 await，是刻意先確保扣款成功才開視窗；若擔心攔截問題，
-    //  可改成「先開一個空白視窗、扣款成功後才設定 win.location」的寫法）
-    const win = window.open(task.link, '_blank');
-    if (!win) {
-        alert('視窗被瀏覽器擋下了，請允許本網站開啟新分頁');
-        return { ok: false };
-    }
+    win.location = task.link;
 
     const origin = new URL(task.link, location.href).origin;
     openTaskWindows.set(task.id, { win, origin, myScore });

@@ -309,7 +309,16 @@ body::after {
     border: 3px solid rgba(255,255,255,0.32);
     box-shadow: 0 10px 0 rgba(0,0,0,0.35), 0 0 30px rgba(80,110,255,0.4);
     padding: 24px 22px;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
+.modal-card.auth-mode-login { border-color: #7ab8ff; box-shadow: 0 10px 0 rgba(0,0,0,0.35), 0 0 30px rgba(80,150,255,0.45); }
+.modal-card.auth-mode-register { border-color: var(--gold-b); box-shadow: 0 10px 0 rgba(0,0,0,0.35), 0 0 30px rgba(255,200,80,0.45); }
+.auth-mode-badge {
+    display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 1px;
+    padding: 4px 14px; border-radius: 20px; margin-bottom: 10px;
+}
+.auth-mode-login .auth-mode-badge { background: linear-gradient(180deg, #9cc6ff, #4f8ef0); color: #0c2a5e; }
+.auth-mode-register .auth-mode-badge { background: linear-gradient(180deg, var(--gold-a), var(--gold-b)); color: #5a3d00; }
 .modal-header { text-align: center; margin-bottom: 16px; }
 .modal-header h2 { font-size: 21px; font-weight: 800; color: #fff; }
 .modal-sub { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.68); margin-top: 4px; }
