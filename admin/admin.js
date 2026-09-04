@@ -861,6 +861,16 @@ function renderUserEditForm(uid, u) {
             <p style="font-size:11px;color:#8B8577;margin:-4px 0 8px;">直接用 uid 查每個任務有沒有這個玩家的紀錄，不需要搜尋、也不受改暱稱影響。</p>
             <div id="user-leaderboard-list" class="empty-note">載入中...</div>
             <div id="user-leaderboard-edit-area" style="margin-top:12px;"></div>
+        </div>
+        <div style="margin-top:20px;border-top:2px solid #A63D40;padding-top:14px;">
+            <h3 style="font-size:14px;margin:0 0 6px;color:#A63D40;">⚠️ 危險區域</h3>
+            <p style="font-size:11px;color:#8B8577;margin:0 0 10px;line-height:1.6;">
+                只會刪除 Firestore 裡的資料（個人資料、金幣明細、商店兌換紀錄、各任務排行榜成績、使用者名稱保留紀錄）。
+                <strong>不會刪除 Firebase Auth 的登入帳號</strong>——那組帳號密碼理論上還能登入，只是登入後資料全空。
+                真的要讓這個帳號徹底消失、名稱可以被重新註冊，還要自己另外去 Firebase 主控台的 Authentication
+                頁面手動刪除這個使用者的 Auth 帳號。此動作無法復原。
+            </p>
+            <button class="icon-btn danger" onclick="window.deleteUserAccount('${uid}', '${escapeHtml(u.nickname || '').replace(/'/g, "\\'")}')">刪除此玩家的 Firestore 資料</button>
         </div>`;
     loadUserLeaderboardEntries(uid);
 }
@@ -991,6 +1001,51 @@ window.submitUserEdit = async function (e, uid) {
         window.loadUsersList(); // 存檔後刷新左側清單，讓等級/金幣顯示同步最新
     } catch (err) { showMsg('users', err.message, true); }
     return false;
+};
+
+// 刪除玩家：只清 Firestore 資料（個人資料、金幣明細、商店兌換紀錄、各任務排行榜成績、
+// 使用者名稱保留紀錄），不會、也沒辦法刪除 Firebase Auth 帳號本身（client SDK 沒有這個
+// 權限，只能刪除「目前登入中的自己」），要徹底刪帳號、讓名稱能被重新註冊，需要另外去
+// Firebase 主控台的 Authentication 頁面手動刪除。此動作無法復原，所以要求輸入暱稱二次確認。
+window.deleteUserAccount = async function (uid, nickname) {
+    if (!confirm(`確定要刪除「${nickname}」這個玩家嗎？\n\n此動作只會清空 Firestore 資料，無法復原。`)) return;
+    const typed = prompt(`請輸入這個玩家的暱稱「${nickname}」以確認刪除：`);
+    if (typed !== nickname) {
+        if (typed !== null) alert('輸入的暱稱不符，已取消刪除');
+        return;
+    }
+
+    try {
+        showMsg('users', '刪除中…');
+
+        // 逐一檢查每個任務底下有沒有這個玩家的排行榜紀錄，有就刪（沒有的話 deleteDoc 對不存在
+        // 的文件也是安全的無動作，不會報錯）
+        const tasks = editState.tasks.items || [];
+        await Promise.all(tasks.map(t => deleteDoc(doc(db, 'leaderboard', t.id, 'entries', uid)).catch(() => {})));
+
+        // 清空金幣明細、商店兌換紀錄這兩個子集合
+        const [ledgerSnap, redemptionsSnap] = await Promise.all([
+            getDocs(collection(db, 'coinLedger', uid, 'entries')),
+            getDocs(collection(db, 'shopRedemptions', uid, 'entries'))
+        ]);
+        await Promise.all([
+            ...ledgerSnap.docs.map(d => deleteDoc(d.ref)),
+            ...redemptionsSnap.docs.map(d => deleteDoc(d.ref))
+        ]);
+
+        // 釋出使用者名稱保留紀錄（注意：Auth 帳號本身還在，這個名稱換算出來的內部信箱
+        // 依然被那組舊帳號佔用，實際上還是沒辦法被別人重新註冊，除非連 Auth 帳號都手動刪了）
+        await deleteDoc(doc(db, 'usernames', nickname.toLowerCase())).catch(() => {});
+
+        // 最後才刪個人資料本體
+        await deleteDoc(doc(db, 'users', uid));
+
+        showMsg('users', '已刪除此玩家的 Firestore 資料');
+        document.getElementById('user-edit-area').innerHTML = '';
+        window.loadUsersList();
+    } catch (err) {
+        showMsg('users', '刪除失敗：' + err.message, true);
+    }
 };
 
 /* =====================================================

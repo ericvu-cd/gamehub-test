@@ -62,7 +62,8 @@ service cloud.firestore {
     match /usernames/{username} {
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isAdmin(); // 供後台「刪除玩家」功能釋出使用者名稱用
     }
 
     // ===================================================================
@@ -95,6 +96,8 @@ service cloud.firestore {
 
       // 管理者：可自由編修任何使用者資料（金幣調整等人工修正用途）
       allow update: if isAdmin();
+
+      allow delete: if isAdmin(); // 供後台「刪除玩家」功能使用
 
       // 一般使用者：僅限本人，且只能是下列其中一種「合法異動樣式」
       allow update: if isOwner(uid) && (
@@ -218,7 +221,8 @@ service cloud.firestore {
         && request.resource.data.balanceAfter ==
              getAfter(/databases/$(database)/documents/users/$(uid)).data.coins;
 
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isAdmin(); // 供後台「刪除玩家」功能清空明細用
     }
 
     // ===================================================================
@@ -275,7 +279,8 @@ service cloud.firestore {
         && request.resource.data.cost <= MAX_SHOP_ITEM_COST()
         && request.resource.data.redeemedAt is number;
 
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isAdmin(); // 供後台「刪除玩家」功能清空兌換紀錄用
     }
 
     // ===================================================================
