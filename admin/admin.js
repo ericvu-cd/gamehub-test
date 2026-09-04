@@ -175,7 +175,8 @@ const editState = {
     tasks: { editingId: null, pendingFile: null, sha: null, items: [] },
     news: { editingId: null, pendingFile: null, sha: null, items: [] },
     badges: { editingId: null, pendingFile: null, sha: null, items: {} },
-    certificates: { editingId: null, pendingFile: null, sha: null, items: {} }
+    certificates: { editingId: null, pendingFile: null, sha: null, items: {} },
+    shopItems: { editingId: null, pendingFile: null, sha: null, items: [] }
 };
 
 function showMsg(panelKey, text, isError = false) {
@@ -525,6 +526,104 @@ window.submitTask = async function (e) {
 };
 
 /* =====================================================
+   商店品項（data/shopItems.json，陣列）
+   做法比照任務清單（isActive/sortOrder），圖片上傳比照徽章/證書字典。
+===================================================== */
+async function loadShopItemsList() {
+    const { data, sha } = await readJsonFile('data/shopItems.json', []);
+    editState.shopItems.items = data;
+    editState.shopItems.sha = sha;
+    renderShopItemsList();
+}
+
+function renderShopItemsList() {
+    const wrap = document.getElementById('shopItems-list');
+    const items = editState.shopItems.items;
+    if (items.length === 0) { wrap.innerHTML = `<p class="empty-note">尚無資料</p>`; return; }
+    wrap.innerHTML = items.map((it, i) => `<div class="item-row ${it.isActive === false ? 'inactive' : ''}">
+        ${it.iconUrl ? `<img class="item-thumb" src="${it.iconUrl}">` : `<div class="item-thumb"></div>`}
+        <div class="item-info"><div class="item-title">${escapeHtml(it.name)} <span style="color:#999;font-weight:400;">(${it.id})</span></div>
+            <div class="item-meta">${it.cost || 0} 金幣 · ${it.isActive === false ? '已下架' : '上架中'}</div></div>
+        <div class="item-actions">
+            <button class="icon-btn edit" onclick="window.editShopItem(${i})">編輯</button>
+            <button class="icon-btn toggle" onclick="window.toggleShopItemActive(${i})">${it.isActive === false ? '上架' : '下架'}</button>
+            <button class="icon-btn danger" onclick="window.deleteShopItem(${i})">刪除</button>
+        </div>
+    </div>`).join('');
+}
+
+window.editShopItem = function (index) {
+    const it = editState.shopItems.items[index];
+    document.getElementById('shopItems-id').value = it.id;
+    document.getElementById('shopItems-name').value = it.name || '';
+    document.getElementById('shopItems-description').value = it.description || '';
+    document.getElementById('shopItems-cost').value = it.cost || 0;
+    document.getElementById('shopItems-sortOrder').value = it.sortOrder || 0;
+    showExistingImage('shopItems', it.iconUrl);
+    enterEditMode('shopItems', false);
+    editState.shopItems.editingId = index;
+    document.getElementById('panel-shopItems').scrollIntoView({ behavior: 'smooth' });
+};
+
+window.toggleShopItemActive = async function (index) {
+    editState.shopItems.items[index].isActive = editState.shopItems.items[index].isActive === false;
+    await saveShopItemsFile('切換商店品項上下架狀態');
+};
+
+window.deleteShopItem = async function (index) {
+    if (!confirm('確定要刪除嗎？此動作無法復原。')) return;
+    editState.shopItems.items.splice(index, 1);
+    await saveShopItemsFile('刪除商店品項');
+};
+
+async function saveShopItemsFile(message) {
+    try {
+        const result = await writeJsonFile('data/shopItems.json', editState.shopItems.items, editState.shopItems.sha, message);
+        editState.shopItems.sha = result.content.sha;
+        renderShopItemsList();
+        showMsg('shopItems', '已儲存');
+    } catch (err) {
+        showMsg('shopItems', err.message, true);
+        await loadShopItemsList();
+    }
+};
+
+window.submitShopItem = async function (e) {
+    e.preventDefault();
+    const id = document.getElementById('shopItems-id').value.trim();
+    try {
+        const editingIndex = editState.shopItems.editingId;
+        const existing = editingIndex !== null ? editState.shopItems.items[editingIndex] : null;
+
+        if (editingIndex === null && editState.shopItems.items.some(it => it.id === id)) {
+            showMsg('shopItems', '此品項 ID 已存在，請換一個', true);
+            return false;
+        }
+
+        const iconUrl = await uploadPendingImage('shopItems', existing?.iconUrl);
+        const data = {
+            id,
+            name: document.getElementById('shopItems-name').value,
+            description: document.getElementById('shopItems-description').value || '',
+            iconUrl,
+            cost: Number(document.getElementById('shopItems-cost').value) || 0,
+            sortOrder: Number(document.getElementById('shopItems-sortOrder').value) || 0,
+            isActive: existing ? existing.isActive !== false : true
+        };
+
+        if (editingIndex !== null) {
+            editState.shopItems.items[editingIndex] = data;
+        } else {
+            editState.shopItems.items.push(data);
+        }
+
+        await saveShopItemsFile(editingIndex !== null ? '更新商店品項' : '新增商店品項');
+        window.cancelEdit('shopItems');
+    } catch (err) { showMsg('shopItems', err.message, true); }
+    return false;
+};
+
+/* =====================================================
    公告（data/news.json，陣列）
 ===================================================== */
 async function loadNewsList() {
@@ -637,6 +736,7 @@ window.editDict = function (coll, id) {
     document.getElementById(`${coll}-name`).value = b.name || '';
     document.getElementById(`${coll}-description`).value = b.description || '';
     document.getElementById(`${coll}-sourceTaskId`).value = b.sourceTaskId || '';
+    document.getElementById(`${coll}-weight`).value = b.weight ?? 1;
     showExistingImage(coll, b.iconUrl);
     enterEditMode(coll, false);
     editState[coll].editingId = id;
@@ -678,7 +778,8 @@ async function submitDict(coll, e) {
             name: document.getElementById(`${coll}-name`).value,
             description: document.getElementById(`${coll}-description`).value || '',
             iconUrl,
-            sourceTaskId: document.getElementById(`${coll}-sourceTaskId`).value || ''
+            sourceTaskId: document.getElementById(`${coll}-sourceTaskId`).value || '',
+            weight: Number(document.getElementById(`${coll}-weight`).value) || 1
         };
 
         await saveDictFile(coll, editingId ? `更新 ${coll} ${id}` : `新增 ${coll} ${id}`);
@@ -695,7 +796,7 @@ window.submitCertificate = (e) => submitDict('certificates', e);
 async function loadAllContentLists() {
     await Promise.all([
         loadBannersList(), loadTasksList(), loadNewsList(),
-        loadDictList('badges'), loadDictList('certificates')
+        loadDictList('badges'), loadDictList('certificates'), loadShopItemsList()
     ]);
 }
 
@@ -732,13 +833,23 @@ async function loadUserIntoForm(username) {
     await loadUserByUid(unameSnap.data().uid);
 }
 
+// 等級純計算，做法跟 js/main.js 的 computeLevel 一致：背包物件（徽章+證書）加權合計，每 25 個升一級。
+// 後台不再提供手動改等級的欄位（改了也會被這個算出來的值蓋掉，保留只會誤導管理者）。
+function computeLevelAdmin(u) {
+    const badges = editState.badges.items || {};
+    const certificates = editState.certificates.items || {};
+    const badgeWeight = (u.badges || []).reduce((sum, id) => sum + (badges[id]?.weight ?? 1), 0);
+    const certWeight = (u.certificates || []).reduce((sum, id) => sum + (certificates[id]?.weight ?? 1), 0);
+    return Math.floor((badgeWeight + certWeight) / 25) + 1;
+}
+
 function renderUserEditForm(uid, u) {
     const area = document.getElementById('user-edit-area');
     area.innerHTML = `
         <form class="entity-form" onsubmit="return window.submitUserEdit(event, '${uid}')">
             <div class="field"><label>暱稱</label><input name="nickname" value="${escapeHtml(u.nickname || '')}"></div>
             <div class="two-col">
-                <div class="field"><label>等級</label><input name="level" type="number" value="${u.level ?? 1}"></div>
+                <div class="field"><label>等級（自動計算，不可手動改）</label><input value="Lv.${computeLevelAdmin(u)}" disabled style="opacity:0.7;"></div>
                 <div class="field"><label>通行金幣</label><input name="coins" type="number" value="${u.coins ?? 0}"></div>
             </div>
             <div class="field"><label>徽章（逗號分隔ID）</label><input name="badges" value="${(u.badges || []).join(',')}"></div>
@@ -851,7 +962,7 @@ window.loadUsersList = async function () {
                 <div class="item-thumb"></div>
                 <div class="item-info">
                     <div class="item-title">${escapeHtml(u.nickname || '（未命名）')}</div>
-                    <div class="item-meta">Lv.${u.level ?? 1} · ${u.coins ?? 0} 金幣</div>
+                    <div class="item-meta">Lv.${computeLevelAdmin(u)} · ${u.coins ?? 0} 金幣</div>
                 </div>
                 <div class="item-actions">
                     <button class="icon-btn edit" onclick="window.loadUserByUidFromList('${u.uid}')">編輯</button>
@@ -872,7 +983,6 @@ window.submitUserEdit = async function (e, uid) {
     try {
         await updateDoc(doc(db, 'users', uid), {
             nickname: f.get('nickname'),
-            level: Number(f.get('level')),
             coins: Number(f.get('coins')),
             badges: f.get('badges').split(',').map(s => s.trim()).filter(Boolean),
             certificates: f.get('certificates').split(',').map(s => s.trim()).filter(Boolean)

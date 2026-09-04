@@ -6,9 +6,9 @@ import {
     registerUser, loginUser, logoutUser, changePassword, watchAuthState, validateUsername, validatePassword
 } from './auth.js';
 import {
-    loadActiveBanners, loadTasks, loadNews, loadBadges, loadCertificates, loadAvatarPresets
+    loadActiveBanners, loadTasks, loadNews, loadBadges, loadCertificates, loadAvatarPresets, loadShopItems
 } from './content.js';
-import { claimDailyLogin } from './coins.js';
+import { claimDailyLogin, redeemShopItem } from './coins.js';
 import { openTask, initTaskMessageListener } from './tasks.js';
 import { fetchLeaderboard } from './leaderboard.js';
 
@@ -33,6 +33,15 @@ let selectedAvatarId = null;
 })();
 
 /* ---------------- 解鎖條件判定（多條件 AND） ---------------- */
+// 等級純計算，不存進 Firestore：背包裡每 25 個已得物件（徽章+證書加權合計）升一級。
+// 權重讀 data/badges.json／certificates.json 的 weight 欄位，沒設定就當作 1（等同「每個算1個」）。
+function computeLevel(user) {
+    if (!user) return 1;
+    const badgeWeight = (user.badges || []).reduce((sum, id) => sum + (siteData.badges[id]?.weight ?? 1), 0);
+    const certWeight = (user.certificates || []).reduce((sum, id) => sum + (siteData.certificates[id]?.weight ?? 1), 0);
+    return Math.floor((badgeWeight + certWeight) / 25) + 1;
+}
+
 function computeUnlockStatus(task, user) {
     const conditions = task.unlockConditions || [];
     if (conditions.length === 0) return { canPlay: true, reason: '自由參加' };
@@ -44,7 +53,7 @@ function computeUnlockStatus(task, user) {
     for (const cond of conditions) {
         switch (cond.type) {
             case 'LEVEL':
-                if (user.level < cond.value) reasons.push(`需達 Lv.${cond.value}`);
+                if (computeLevel(user) < cond.value) reasons.push(`需達 Lv.${cond.value}`);
                 break;
             case 'COIN':
                 if (user.coins < cond.value) reasons.push(`需 ${cond.value} 通行金幣`);
@@ -255,7 +264,7 @@ function renderUserBar() {
     }
     const avatar = siteData.avatarPresets.find(a => a.id === currentUser.avatarId);
     document.getElementById('user-name').innerText = currentUser.nickname;
-    document.getElementById('user-level').innerText = `等級 Lv.${currentUser.level}`;
+    document.getElementById('user-level').innerText = `等級 Lv.${computeLevel(currentUser)}`;
     document.getElementById('user-coins').innerText = currentUser.coins;
     avatarEl.innerText = avatar?.emoji || '🙂';
     avatarEl.style.setProperty('--glow', avatar?.glowColor || '#B8863B');
@@ -469,6 +478,52 @@ window.closeDetailModal = function () {
     document.getElementById('detail-modal').classList.add('hidden');
 };
 
+/* ---------------- 商店 ---------------- */
+function renderShop() {
+    const listEl = document.getElementById('shop-list');
+    const items = siteData.shopItems || [];
+    if (!items.length) { listEl.innerHTML = `<p class="empty-hint">目前沒有可兌換的品項</p>`; return; }
+
+    listEl.innerHTML = items.map(it => {
+        const canAfford = currentUser.coins >= (it.cost || 0);
+        return `
+        <div class="shop-card">
+            <div class="shop-thumb">${it.iconUrl ? `<img src="${it.iconUrl}" alt="">` : '🎁'}</div>
+            <div class="shop-info">
+                <h4 class="shop-title">${it.name}</h4>
+                <p class="shop-desc">${it.description || ''}</p>
+            </div>
+            <button class="task-btn" ${canAfford ? '' : 'disabled'} onclick="window.handleRedeem('${it.id}')">
+                <span class="coin-icon-wrap">🪙${it.cost || 0}</span>
+            </button>
+        </div>`;
+    }).join('');
+}
+
+window.handleRedeem = async function (itemId) {
+    const item = (siteData.shopItems || []).find(i => i.id === itemId);
+    if (!item || !currentUser) return;
+    if (!confirm(`確定要用 ${item.cost} 金幣兌換「${item.name}」嗎？`)) return;
+
+    const r = await redeemShopItem(currentUser.uid, item, currentUser.coins, currentUser.dailyGuard);
+    if (!r.ok) { alert(r.reason || '兌換失敗，請稍後再試'); return; }
+
+    currentUser = { ...currentUser, coins: r.newCoins, dailyGuard: r.guard };
+    renderUserBar();
+    renderShop();
+
+    // 兌換成功後，把這張「收據」用詳情彈窗顯示出來，玩家截圖給店家看即可核銷
+    document.getElementById('detail-modal-title').innerText = '兌換成功！';
+    document.getElementById('detail-modal-body').innerHTML = `
+        <div class="detail-modal-icon">${item.iconUrl ? `<img src="${item.iconUrl}" alt="${item.name}">` : '🎁'}</div>
+        <p style="font-weight:800;font-size:16px;">${item.name}</p>
+        <p class="detail-meta">花費 ${item.cost} 金幣</p>
+        <p class="detail-meta">${new Date(r.redemption.redeemedAt).toLocaleString()}</p>
+        <p class="detail-meta" style="margin-top:10px;">📸 請把這個畫面截圖給店家看即可核銷</p>
+    `;
+    document.getElementById('detail-modal').classList.remove('hidden');
+};
+
 /* ---------------- 排行榜 ---------------- */
 function renderLeaderboardOptions() {
     const select = document.getElementById('leaderboard-task-select');
@@ -512,12 +567,12 @@ window.renderLeaderboard = async function () {
 
 /* ---------------- 分頁切換 ---------------- */
 window.switchTab = function (tabName) {
-    if (tabName === 'bag' && !currentUser) {
+    if ((tabName === 'bag' || tabName === 'shop') && !currentUser) {
         document.getElementById('auth-modal').classList.remove('hidden');
         return;
     }
 
-    ['home', 'news', 'bag', 'leaderboard'].forEach(t => {
+    ['home', 'news', 'bag', 'leaderboard', 'shop'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.add('hidden');
         document.getElementById(`nav-${t}`).classList.remove('tab-active');
     });
@@ -527,14 +582,15 @@ window.switchTab = function (tabName) {
     if (tabName === 'news') { renderNews(); markNewsAsRead(); }
     if (tabName === 'bag') renderBag();
     if (tabName === 'leaderboard') renderLeaderboardOptions();
+    if (tabName === 'shop') renderShop();
 };
 
 /* ---------------- 初始化 ---------------- */
 async function loadAllContent() {
-    const [banners, tasks, news, badges, certificates, avatarPresets] = await Promise.all([
-        loadActiveBanners(), loadTasks(), loadNews(), loadBadges(), loadCertificates(), loadAvatarPresets()
+    const [banners, tasks, news, badges, certificates, avatarPresets, shopItems] = await Promise.all([
+        loadActiveBanners(), loadTasks(), loadNews(), loadBadges(), loadCertificates(), loadAvatarPresets(), loadShopItems()
     ]);
-    siteData = { banners, tasks, news, badges, certificates, avatarPresets };
+    siteData = { banners, tasks, news, badges, certificates, avatarPresets, shopItems };
 }
 
 function hideLoadingScreen() {

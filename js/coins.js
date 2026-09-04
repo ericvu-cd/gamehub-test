@@ -90,6 +90,45 @@ export async function deductTaskCost(uid, task, currentCoins, currentGuard) {
     }
 }
 
+// --- 商店兌換：扣款樣式基本上跟 deductTaskCost 一樣，但額外多寫一筆 shopRedemptions
+//     紀錄（玩家兌換成功後要給店家看的那筆「收據」），單筆金額上限用 MAX_SHOP_ITEM_COST，
+//     跟任務用的 MAX_SINGLE_TX 分開算（見 firestore.rules 開頭的參數說明） ---
+export async function redeemShopItem(uid, item, currentCoins, currentGuard) {
+    const cost = item.cost || 0;
+    if (cost <= 0) return { ok: false, reason: '這個品項尚未設定兌換價格' };
+    if (currentCoins < cost) return { ok: false, reason: `通行金幣不足，需要 ${cost} 枚` };
+
+    const newCoins = currentCoins - cost;
+    const guard = nextDailyGuard(currentGuard, -cost);
+    const redeemedAt = Date.now();
+
+    const batch = writeBatch(db);
+    const userRef = doc(db, 'users', uid);
+    batch.update(userRef, {
+        coins: newCoins,
+        dailyGuard: guard,
+        lastTransaction: { type: 'shop_redemption', amount: cost, taskId: null, at: redeemedAt }
+    });
+
+    const ledgerRef = doc(collection(db, 'coinLedger', uid, 'entries'));
+    batch.set(ledgerRef, {
+        type: 'shop_redemption', amount: -cost, balanceAfter: newCoins,
+        relatedTaskId: null, note: `商店兌換：${item.name}`, createdAt: redeemedAt
+    });
+
+    const redemptionRef = doc(collection(db, 'shopRedemptions', uid, 'entries'));
+    batch.set(redemptionRef, {
+        itemId: item.id, itemName: item.name, cost, redeemedAt
+    });
+
+    try {
+        await batch.commit();
+        return { ok: true, newCoins, cost, guard, redemption: { itemName: item.name, cost, redeemedAt } };
+    } catch (err) {
+        return friendlyError(err);
+    }
+}
+
 // --- 任務獎勵（不再核對任務個別上限，改受當日總量防護限制） ---
 export async function claimTaskReward(uid, taskId, requestedAmount, currentCoins, currentGuard) {
     if (!requestedAmount || requestedAmount <= 0) return { ok: true, coinsAwarded: 0 };

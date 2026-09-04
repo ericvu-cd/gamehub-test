@@ -81,3 +81,11 @@ export async function loadCertificates() {
 export async function loadAvatarPresets() {
     return fetchJson('./data/avatarPresets.json');
 }
+
+// 商店品項：跟任務清單一樣的慣例（isActive 篩選、sortOrder 排序）
+export async function loadShopItems() {
+    const items = await fetchJson('./data/shopItems.json');
+    return items
+        .filter(i => i.isActive !== false)
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+}

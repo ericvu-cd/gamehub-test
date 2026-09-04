@@ -20,7 +20,7 @@
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://identitytoolkit.googleapis.com">
 <link rel="preconnect" href="https://firestore.googleapis.com">
@@ -161,6 +161,12 @@
             <div id="leaderboard-list" class="leaderboard-list"></div>
         </section>
 
+        <section id="tab-shop" class="tab-panel hidden">
+            <h2 class="page-title">通行商店</h2>
+            <p style="font-size:11px;color:var(--text-dim);margin:-6px 0 12px;">兌換成功後，把畫面截圖給店家看即可核銷。</p>
+            <div id="shop-list" class="shop-list"></div>
+        </section>
+
     </main>
 
     <nav class="bottom-nav">
@@ -180,6 +186,10 @@
         <button id="nav-leaderboard" class="nav-item" onclick="switchTab('leaderboard')">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/></svg>
             <span>排行榜</span>
+        </button>
+        <button id="nav-shop" class="nav-item" onclick="switchTab('shop')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9z"/><path d="M9 13a3 3 0 0 0 6 0"/></svg>
+            <span>商店</span>
         </button>
     </nav>
 

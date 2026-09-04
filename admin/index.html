@@ -125,6 +125,7 @@
         <nav class="tabs">
             <button data-tab="banners" class="active" onclick="switchAdminTab('banners')">Banner</button>
             <button data-tab="tasks" onclick="switchAdminTab('tasks')">任務</button>
+            <button data-tab="shopItems" onclick="switchAdminTab('shopItems')">商店</button>
             <button data-tab="news" onclick="switchAdminTab('news')">公告</button>
             <button data-tab="badges" onclick="switchAdminTab('badges')">徽章</button>
             <button data-tab="certificates" onclick="switchAdminTab('certificates')">證書</button>
@@ -232,6 +233,42 @@
             </div>
         </section>
 
+        <section id="panel-shopItems" class="panel">
+            <div class="panel-layout">
+                <div class="card">
+                    <h2>商店品項</h2>
+                    <p style="font-size:11px;color:#8B8577;margin-top:-6px;">用金幣兌換的低價值推廣券（例如消費滿百折抵10元、消費送飲料）。核銷是玩家把兌換成功畫面截圖給店家看，系統不做掃碼核銷。</p>
+                    <div id="shopItems-msg"></div>
+                    <div id="shopItems-list"></div>
+                </div>
+                <div class="card">
+                    <span id="shopItems-form-badge" class="form-mode-badge new">新增模式</span>
+                    <form class="entity-form" id="shopItems-form" onsubmit="return submitShopItem(event)">
+                        <div class="field">
+                            <label>圖示</label>
+                            <label class="image-upload-box">
+                                <img id="shopItems-image-preview">
+                                <span class="placeholder" id="shopItems-image-placeholder">點擊上傳圖示（選填）</span>
+                                <input type="file" accept="image/*" onchange="handleImageSelect(event,'shopItems')">
+                            </label>
+                            <div id="shopItems-upload-progress" class="upload-progress"></div>
+                        </div>
+                        <div class="field"><label>品項 ID（英數，建立後不可更改）</label><input id="shopItems-id" required></div>
+                        <div class="field"><label>名稱</label><input id="shopItems-name" required></div>
+                        <div class="field"><label>說明</label><textarea id="shopItems-description"></textarea></div>
+                        <div class="two-col">
+                            <div class="field"><label>兌換金幣數</label><input id="shopItems-cost" type="number" min="1" required></div>
+                            <div class="field"><label>排序</label><input id="shopItems-sortOrder" type="number" value="0"></div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-save" id="shopItems-save-btn">新增品項</button>
+                            <button type="button" class="btn-cancel hidden" id="shopItems-cancel-btn" onclick="cancelEdit('shopItems')">取消編輯</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
         <section id="panel-news" class="panel">
             <div class="panel-layout">
                 <div class="card">
@@ -280,6 +317,7 @@
                         <div class="field"><label>名稱</label><input id="badges-name" required></div>
                         <div class="field"><label>說明</label><textarea id="badges-description"></textarea></div>
                         <div class="field"><label>來源任務 ID（僅供顯示，不再驗證）</label><input id="badges-sourceTaskId"></div>
+                        <div class="field"><label>等級權重（算等級用，1個徽章預設算1分，沒特別調整就留 1）</label><input id="badges-weight" type="number" min="0" step="1" value="1"></div>
                         <div class="form-actions">
                             <button type="submit" class="btn-save" id="badges-save-btn">新增徽章</button>
                             <button type="button" class="btn-cancel hidden" id="badges-cancel-btn" onclick="cancelEdit('badges')">取消編輯</button>
@@ -312,6 +350,7 @@
                         <div class="field"><label>名稱</label><input id="certificates-name" required></div>
                         <div class="field"><label>說明</label><textarea id="certificates-description"></textarea></div>
                         <div class="field"><label>來源任務 ID（僅供顯示，不再驗證）</label><input id="certificates-sourceTaskId"></div>
+                        <div class="field"><label>等級權重（算等級用，1張證書預設算1分，沒特別調整就留 1）</label><input id="certificates-weight" type="number" min="0" step="1" value="1"></div>
                         <div class="form-actions">
                             <button type="submit" class="btn-save" id="certificates-save-btn">新增證書</button>
                             <button type="button" class="btn-cancel hidden" id="certificates-cancel-btn" onclick="cancelEdit('certificates')">取消編輯</button>

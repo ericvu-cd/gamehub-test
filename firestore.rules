@@ -20,6 +20,16 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ===================================================================
+    // dailyGuard／單筆上限相關參數（調整數值只要改這裡，其他地方都是引用）
+    // ===================================================================
+
+    function DAILY_CAP() { return 200; }        // 每人每日金幣淨變動上限
+    function MAX_TX_PER_DAY() { return 100; }    // 每人每日交易次數上限
+    function MAX_SINGLE_TX() { return 20; }      // 任務單筆金幣異動（獎勵/扣款）上限，不適用於商店兌換
+    function MAX_SHOP_ITEM_COST() { return 100; } // 商店單次兌換上限，跟 MAX_SINGLE_TX 分開算，
+                                                    // 因為兌換價格是後台自訂的合法金額，不是任務頁面片面宣稱的數字
+
+    // ===================================================================
     // 共用工具函式
     // ===================================================================
 
@@ -92,7 +102,8 @@ service cloud.firestore {
         isDailyLoginClaim(resource.data, request.resource.data) ||
         isTaskCostDeduction(resource.data, request.resource.data) ||
         isTaskRewardClaim(resource.data, request.resource.data) ||
-        isCollectibleClaim(resource.data, request.resource.data)
+        isCollectibleClaim(resource.data, request.resource.data) ||
+        isShopRedemption(resource.data, request.resource.data)
       );
 
       // --- 樣式 1：只改暱稱／頭像／公告已讀時間，不動金幣與 dailyGuard ---
@@ -120,8 +131,8 @@ service cloud.firestore {
         return g.day == today
           && g.netChange == prevNet + netDelta
           && g.txCount == prevTx + 1
-          && g.netChange <= 200   // DAILY_CAP
-          && g.txCount <= 100;    // MAX_TX_PER_DAY
+          && g.netChange <= DAILY_CAP()
+          && g.txCount <= MAX_TX_PER_DAY();
       }
 
       // --- 樣式 2：每日登入獎勵，同一自然日（UTC+8）只能領一次，固定 +10 ---
@@ -144,6 +155,7 @@ service cloud.firestore {
         let cost = before.coins - after.coins;
         return tx.type == 'task_cost'
           && cost > 0
+          && cost <= MAX_SINGLE_TX()
           && after.coins >= 0
           && tx.amount == cost
           && changedKeys(before, after).hasOnly(['coins', 'dailyGuard', 'lastTransaction'])
@@ -157,6 +169,7 @@ service cloud.firestore {
         let amount = after.coins - before.coins;
         return tx.type == 'task_reward'
           && amount > 0
+          && amount <= MAX_SINGLE_TX()
           && tx.amount == amount
           && changedKeys(before, after).hasOnly(['coins', 'dailyGuard', 'lastTransaction'])
           && isValidDailyGuardUpdate(before, after, amount);
@@ -174,6 +187,21 @@ service cloud.firestore {
           && (changedBadges || changedCerts)
           && isValidDailyGuardUpdate(before, after, 0);
       }
+      // --- 樣式 6：商店兌換扣款。商品目錄跟任務一樣不在 Firestore（放 GitHub），
+      //     規則無法核對兌換的品項是否真的存在、金額是否正確，只能限制單筆金額上限
+      //     （跟任務用不同的上限 MAX_SHOP_ITEM_COST，因為商店價格是後台自訂的合法金額，
+      //     不是任務頁面片面宣稱的數字），並受 dailyGuard 總量防護限制 ---
+      function isShopRedemption(before, after) {
+        let tx = after.lastTransaction;
+        let cost = before.coins - after.coins;
+        return tx.type == 'shop_redemption'
+          && cost > 0
+          && cost <= MAX_SHOP_ITEM_COST()
+          && after.coins >= 0
+          && tx.amount == cost
+          && changedKeys(before, after).hasOnly(['coins', 'dailyGuard', 'lastTransaction'])
+          && isValidDailyGuardUpdate(before, after, -cost);
+      }
     }
 
     // ===================================================================
@@ -184,7 +212,7 @@ service cloud.firestore {
       allow read: if isOwner(uid) || isAdmin();
 
       allow create: if (isOwner(uid) || isAdmin())
-        && request.resource.data.type in ['daily_login', 'task_cost', 'task_reward', 'admin_adjust']
+        && request.resource.data.type in ['daily_login', 'task_cost', 'task_reward', 'shop_redemption', 'admin_adjust']
         && (request.resource.data.type != 'admin_adjust' || isAdmin())
         && request.resource.data.amount is number
         && request.resource.data.balanceAfter ==
@@ -226,6 +254,28 @@ service cloud.firestore {
         || (isAdmin() && request.resource.data.scoreValue is number);
 
       allow delete: if isAdmin();
+    }
+
+    // ===================================================================
+    // 商店兌換紀錄：shopRedemptions/{uid}/entries/{entryId}
+    // 玩家兌換商品時的紀錄快照（品項名稱、花費、時間），核銷流程是玩家把這筆紀錄的畫面
+    // 截圖給店家看（信任制，不做系統核銷，見「架構調整討論記錄.md」商店功能那輪討論），
+    // 只能新增、不能改或刪，避免有人事後竄改兌換紀錄的內容或花費金額。
+    // ===================================================================
+
+    match /shopRedemptions/{uid}/entries/{entryId} {
+      allow read: if isOwner(uid) || isAdmin();
+
+      allow create: if (isOwner(uid) || isAdmin())
+        && request.resource.data.itemId is string
+        && request.resource.data.itemName is string
+        && request.resource.data.itemName.size() <= 60
+        && request.resource.data.cost is number
+        && request.resource.data.cost > 0
+        && request.resource.data.cost <= MAX_SHOP_ITEM_COST()
+        && request.resource.data.redeemedAt is number;
+
+      allow update, delete: if false;
     }
 
     // ===================================================================
