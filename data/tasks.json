@@ -101,6 +101,7 @@
   },
   {
     "id": "fishball",
+    "bannerUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/tasks/1788663490971_fbbnr.jpg",
     "title": "魚丸追追樂",
     "description": "走讀苑港漁港",
     "colorTheme": "gold",
