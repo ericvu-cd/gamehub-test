@@ -45,6 +45,7 @@
   },
   {
     "id": "fishmarket",
+    "bannerUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/tasks/1788663458963_fmbnr.jpg",
     "title": "永續魚市拍賣",
     "description": "走讀龍鳳漁港",
     "colorTheme": "sky",
