@@ -73,6 +73,7 @@
   },
   {
     "id": "stoneweir",
+    "bannerUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/tasks/1788663475740_swbnr.jpg",
     "title": "石滬修復",
     "description": "走讀外埔漁港",
     "colorTheme": "peach",
