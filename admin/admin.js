@@ -11,7 +11,7 @@ import {
 import {
     doc, getDoc, updateDoc, deleteDoc, collection, getDocs, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { resolveTaskIcon } from '../js/content.js';
+// 徽章/證書/商店/任務共用的圖片上傳工具函式（見下方 uploadPendingImage 等函式）
 
 // 把使用者可控的字串（暱稱、排行榜玩家名）安全地插入 HTML，避免有人繞過網頁介面
 // 直接寫入含 HTML/script 的內容時，在後台畫面被當成程式碼執行（儲存型 XSS 防護）。
@@ -399,7 +399,7 @@ function renderTasksList() {
     const items = editState.tasks.items;
     if (items.length === 0) { wrap.innerHTML = `<p class="empty-note">尚無資料</p>`; return; }
     wrap.innerHTML = items.map((t, i) => `<div class="item-row ${t.isActive === false ? 'inactive' : ''}">
-        <div class="item-thumb" id="task-thumb-${i}"></div>
+        ${t.bannerUrl ? `<img class="item-thumb" src="${t.bannerUrl}">` : `<div class="item-thumb"></div>`}
         <div class="item-info"><div class="item-title">${t.title} <span style="color:#999;font-weight:400;">(${t.id})</span></div>
             <div class="item-meta">扣 ${t.entryCost || 0} 金幣 · ${t.isActive === false ? '已下架' : '上架中'} · ${t.hasLeaderboard === false ? '無排行榜' : '有排行榜'}</div></div>
         <div class="item-actions">
@@ -408,16 +408,6 @@ function renderTasksList() {
             <button class="icon-btn danger" onclick="window.deleteTask(${i})">刪除</button>
         </div>
     </div>`).join('');
-
-    // 縮圖是去抓任務網址的 <link rel="icon">，需要非同步，不擋列表顯示，抓到後再各自補上
-    items.forEach((t, i) => {
-        if (!t.link) return;
-        resolveTaskIcon(t.link).then(iconUrl => {
-            if (!iconUrl) return;
-            const el = document.getElementById(`task-thumb-${i}`);
-            if (el) el.innerHTML = `<img src="${iconUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`;
-        }).catch(() => { /* 抓不到就維持空白縮圖，不擋後台其他功能 */ });
-    });
 }
 
 window.editTask = function (index) {
@@ -430,6 +420,7 @@ window.editTask = function (index) {
     document.getElementById('tasks-link').value = t.link || '';
     document.getElementById('tasks-entryCost').value = t.entryCost || 0;
     document.getElementById('tasks-hasLeaderboard').checked = t.hasLeaderboard !== false;
+    showExistingImage('tasks', t.bannerUrl);
 
     document.getElementById('tasks-unlockLevel').value = '';
     document.getElementById('tasks-unlockCoin').value = '';
@@ -500,8 +491,10 @@ window.submitTask = async function (e) {
         if (certsStr) conditions.push({ type: 'CERTIFICATE', value: certsStr.split(',').map(s => s.trim()).filter(Boolean) });
         if (startStr || endStr) conditions.push({ type: 'DATE', startDate: dateToMs(startStr) || 0, endDate: dateToMs(endStr) || 9999999999999 });
 
+        const bannerUrl = await uploadPendingImage('tasks', existing?.bannerUrl);
         const data = {
             id,
+            bannerUrl,
             title: document.getElementById('tasks-title').value,
             description: document.getElementById('tasks-description').value || '',
             colorTheme: document.getElementById('tasks-colorTheme').value,

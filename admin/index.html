@@ -191,11 +191,16 @@
                 </div>
                 <div class="card">
                     <span id="tasks-form-badge" class="form-mode-badge new">新增模式</span>
-                    <p style="font-size:11px;color:#8B8577;background:#FBF8F0;padding:8px 10px;border-radius:6px;">
-                        💡 縮圖不用在這裡設定，平台會自動讀取任務網址那個 HTML 檔案的
-                        <code>&lt;link rel="icon"&gt;</code> 設定。
-                    </p>
                     <form class="entity-form" id="tasks-form" onsubmit="return submitTask(event)">
+                        <div class="field">
+                            <label>橫幅圖（前台任務列表用，寬度會撐滿卡片、不裁切，高度依圖片比例自動調整）</label>
+                            <label class="image-upload-box">
+                                <img id="tasks-image-preview">
+                                <span class="placeholder" id="tasks-image-placeholder">點擊上傳橫幅圖（選填，沒上傳會顯示預設圖示）</span>
+                                <input type="file" accept="image/*" onchange="handleImageSelect(event,'tasks')">
+                            </label>
+                            <div id="tasks-upload-progress" class="upload-progress"></div>
+                        </div>
                         <div class="field"><label>任務 ID（英數，建立後不可更改）</label><input id="tasks-id" required></div>
                         <div class="field"><label>標題</label><input id="tasks-title" required></div>
                         <div class="field"><label>簡介</label><textarea id="tasks-description"></textarea></div>

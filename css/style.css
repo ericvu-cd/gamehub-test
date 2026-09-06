@@ -149,60 +149,46 @@ body::after {
 
 /* ---------------- 任務清單 ---------------- */
 .task-list {
-    display: flex; flex-direction: column; gap: 13px;
+    display: flex; flex-direction: column; gap: 16px;
     position: relative; margin-top: 20px;
 }
 .task-list::before { content: none; } /* 深色風格不用虛線地圖路徑，改用卡片自身的層次感 */
 
 .task-card {
-    display: flex; align-items: center; gap: 12px;
-    height: 100px;
-    padding: 12px 12px 12px 13px;
     border-radius: var(--radius-lg); background: var(--surface);
     border: 2px solid var(--surface-border);
     box-shadow: var(--hard-shadow);
+    overflow: hidden;
     position: relative; z-index: 2;
 }
+.grad-locked { opacity: 0.6; filter: grayscale(0.75); }
 
-/* 圓形任務縮圖 */
-.task-thumb {
-    width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
-    border: 3px solid rgba(255,255,255,0.55); background: var(--gold-b);
-    box-shadow: inset 0 -4px 0 rgba(0,0,0,0.18), 0 0 14px rgba(120,150,255,0.35);
-    margin-left: 0;
-    z-index: 5;
+/* 橫幅圖：寬度撐滿卡片、不裁切，高度依圖片比例自動調整 */
+.task-banner-wrap { width: 100%; line-height: 0; }
+.task-banner-wrap[onclick] { cursor: pointer; }
+.task-banner-img { width: 100%; height: auto; display: block; }
+.task-banner-fallback {
+    width: 100%; aspect-ratio: 16 / 7;
+    display: flex; align-items: center; justify-content: center; font-size: 36px;
+    background: linear-gradient(160deg, #3a4a9c, #22307e);
 }
-.task-thumb-img { width: 100%; height: 100%; object-fit: cover; }
-.task-thumb-fallback {
-    width: 100%; height: 100%;
-    display: flex; align-items: center; justify-content: center; font-size: 24px;
+
+.task-row-title {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 13px 4px;
 }
-.theme-mint  { background: linear-gradient(160deg, #7fe3b0, #22a06b); }
-.theme-peach { background: linear-gradient(160deg, #ff9f6b, #ef4f7a); }
-.theme-gold  { background: linear-gradient(160deg, #ffcf5c, #f08a1c); }
-.theme-sky   { background: linear-gradient(160deg, #7ad4ff, #3f7bea); }
-.theme-lilac { background: linear-gradient(160deg, #b78bff, #7a3fe0); }
-.grayscale { filter: grayscale(1) brightness(0.85); }
-.grad-locked { opacity: 0.45; filter: grayscale(0.5); }
-
-.task-info { flex: 1; min-width: 0; padding-left: 2px; overflow: hidden; }
-.task-title { font-size: 15.5px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.task-desc { font-size: 11.5px; color: var(--text-dim); margin-top: 1px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.task-tags { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 6px; }
-
-.task-status {
-    display: inline-block; max-width: 100%; font-size: 10px; font-weight: 800;
-    padding: 2px 10px; border-radius: 20px; background: rgba(255,255,255,0.85); color: #1a2465;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+.task-name { font-size: 15.5px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .task-cost {
     display: inline-flex; align-items: center; flex-shrink: 0; gap: 3px; font-size: 10px; font-weight: 800;
     padding: 2px 9px; border-radius: 20px;
     background: linear-gradient(180deg, var(--gold-a), var(--gold-b)); color: #7a3c00;
 }
+.task-row-status {
+    font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.75);
+    padding: 0 13px 11px;
+}
 
-/* GO 按鈕 */
+/* GO 按鈕（商店兌換鈕共用這個 class） */
 .task-btn {
     font-size: 13.5px; font-weight: 800; padding: 9px 18px;
     border-radius: 24px; border: none;

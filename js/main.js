@@ -374,28 +374,25 @@ function renderTasks() {
         container.innerHTML = `<p class="empty-hint">目前尚未上架任何任務</p>`;
         return;
     }
+    const coinIconSvg = `<svg class="coin-icon" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#E8B84B" stroke="#B8863B" stroke-width="1.5"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="#B8863B" stroke-width="1.2" opacity="0.6"/><text x="12" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#8A5A16">$</text></svg>`;
+
     container.innerHTML = siteData.tasks.map((task) => {
         const status = computeUnlockStatus(task, currentUser);
-        const themeClass = `theme-${task.colorTheme || 'mint'}`;
         const lockedClass = status.canPlay ? '' : 'grad-locked';
-        const fallbackClass = `task-thumb-fallback ${status.canPlay ? themeClass : ''}`.trim();
-        const thumbHtml = task.iconUrl
-            ? `<img src="${task.iconUrl}" alt="" class="task-thumb-img ${status.canPlay ? '' : 'grayscale'}"
-                 onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'${fallbackClass}',textContent:'🎯'}))">`
-            : `<div class="${fallbackClass}">🎯</div>`;
-        const statusHtml = status.canPlay ? '' : `<span class="task-status">${status.reason}</span>`;
-        const coinIconSvg = `<svg class="coin-icon" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#E8B84B" stroke="#B8863B" stroke-width="1.5"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="#B8863B" stroke-width="1.2" opacity="0.6"/><text x="12" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#8A5A16">$</text></svg>`;
-        const costHtml = `<span class="task-cost">${coinIconSvg}${task.entryCost || 0}</span>`;
+        const bannerHtml = task.bannerUrl
+            ? `<img src="${task.bannerUrl}" alt="${task.title}" class="task-banner-img"
+                 onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'task-banner-fallback',textContent:'🎯'}))">`
+            : `<div class="task-banner-fallback">🎯</div>`;
+        const clickAttr = status.canPlay ? ` onclick="window.handleTaskClick('${task.id}')"` : '';
+
         return `
             <div class="task-card ${lockedClass}">
-                <div class="task-thumb">${thumbHtml}</div>
-                <div class="task-info">
-                    <h4 class="task-title">${task.title}</h4>
-                    <p class="task-desc">${task.description || ''}</p>
-                    <div class="task-tags">${costHtml}${statusHtml}</div>
+                <div class="task-banner-wrap"${clickAttr}>${bannerHtml}</div>
+                <div class="task-row-title">
+                    <span class="task-name">${task.title}</span>
+                    <span class="task-cost">${coinIconSvg}${task.entryCost || 0}</span>
                 </div>
-                <button class="task-btn" ${status.canPlay ? '' : 'disabled'}
-                    onclick="window.handleTaskClick('${task.id}')">${status.canPlay ? '出發' : '未解鎖'}</button>
+                ${status.canPlay ? '' : `<div class="task-row-status">${status.reason}</div>`}
             </div>
         `;
     }).join('');
