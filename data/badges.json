@@ -382,8 +382,9 @@
   "6htw_behavior_完美永續局": {
     "name": "完美永續局",
     "description": "友魚守護團．單局全綠燈＋全符合召喚＋獲勝",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_06.png",
     "sourceTaskId": "6htw",
-    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_06.png"
+    "weight": 2
   },
   "6htw_behavior_浴火重生": {
     "name": "浴火重生",
