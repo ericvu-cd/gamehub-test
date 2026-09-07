@@ -396,8 +396,9 @@
   "6htw_behavior_百發百中": {
     "name": "百發百中",
     "description": "友魚守護團．單局零退牌且至少出4張獲勝",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_08.png",
     "sourceTaskId": "6htw",
-    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_08.png"
+    "weight": 2
   },
   "6htw_behavior_珊瑚守護者": {
     "name": "珊瑚守護者",
