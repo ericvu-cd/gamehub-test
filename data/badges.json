@@ -395,8 +395,9 @@
   "6htw_behavior_珊瑚守護者": {
     "name": "珊瑚守護者",
     "description": "友魚守護團．單局出過全部3種定棲性綠燈魚",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_09.png",
     "sourceTaskId": "6htw",
-    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_09.png"
+    "weight": 2
   },
   "6htw_behavior_漁法通": {
     "name": "漁法通",
