@@ -354,8 +354,9 @@
   "6htw_behavior_一支釣達人": {
     "name": "一支釣達人",
     "description": "友魚守護團．單局出4張以上一支釣漁法的魚",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_02.png",
     "sourceTaskId": "6htw",
-    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_02.png"
+    "weight": 2
   },
   "6htw_behavior_紅燈護送員": {
     "name": "紅燈護送員",
