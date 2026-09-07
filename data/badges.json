@@ -401,8 +401,9 @@
   "6htw_behavior_漁法通": {
     "name": "漁法通",
     "description": "友魚守護團．單局出牌涵蓋5種以上不同漁法",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_10.png",
     "sourceTaskId": "6htw",
-    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_10.png"
+    "weight": 1
   },
   "6htw_behavior_近海英雄": {
     "name": "近海英雄",
