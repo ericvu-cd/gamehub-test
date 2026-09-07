@@ -10,7 +10,8 @@
     "name": "石滬達人",
     "description": "800分以上",
     "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/1788317156445_swbd1.jpg",
-    "sourceTaskId": "stoneweir"
+    "sourceTaskId": "stoneweir",
+    "weight": 3
   },
   "fishball_guardian": {
     "name": "魚丸守護神",
