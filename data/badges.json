@@ -407,8 +407,9 @@
   "6htw_behavior_近海英雄": {
     "name": "近海英雄",
     "description": "友魚守護團．單局全近海魚＋全符合召喚（至少4張）獲勝",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_11.png",
     "sourceTaskId": "6htw",
-    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_11.png"
+    "weight": 2
   },
   "6htw_behavior_海紋守護王": {
     "name": "海紋守護王",
