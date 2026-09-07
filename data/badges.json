@@ -17,4 +17,400 @@
     "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/1788417730858_fbbd1.png",
     "sourceTaskId": "fishball"
   }
+    "6htw_fish_吳郭魚": {
+    "name": "吳郭魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_01.png"
+  },
+  "6htw_fish_竹筴魚": {
+    "name": "竹筴魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_02.png"
+  },
+  "6htw_fish_台灣鯖魚": {
+    "name": "台灣鯖魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_03.png"
+  },
+  "6htw_fish_飛魚": {
+    "name": "飛魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_04.png"
+  },
+  "6htw_fish_臭肚魚": {
+    "name": "臭肚魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_05.png"
+  },
+  "6htw_fish_紅魽": {
+    "name": "紅魽",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_06.png"
+  },
+  "6htw_fish_小卷": {
+    "name": "小卷",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_07.png"
+  },
+  "6htw_fish_星雞魚": {
+    "name": "星雞魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_08.png"
+  },
+  "6htw_fish_巴鰹": {
+    "name": "巴鰹",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_09.png"
+  },
+  "6htw_fish_虱目魚": {
+    "name": "虱目魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_10.png"
+  },
+  "6htw_fish_白帶魚": {
+    "name": "白帶魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_11.png"
+  },
+  "6htw_fish_養殖鱸魚": {
+    "name": "養殖鱸魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_12.png"
+  },
+  "6htw_fish_養殖烏魚": {
+    "name": "養殖烏魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_13.png"
+  },
+  "6htw_fish_皮刀": {
+    "name": "皮刀",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_14.png"
+  },
+  "6htw_fish_剝皮魚": {
+    "name": "剝皮魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_15.png"
+  },
+  "6htw_fish_鰆魚": {
+    "name": "鰆魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_16.png"
+  },
+  "6htw_fish_鯽仔": {
+    "name": "鯽仔",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_17.png"
+  },
+  "6htw_fish_紅目鰱": {
+    "name": "紅目鰱",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_18.png"
+  },
+  "6htw_fish_白鯧": {
+    "name": "白鯧",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_19.png"
+  },
+  "6htw_fish_石狗公": {
+    "name": "石狗公",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_20.png"
+  },
+  "6htw_fish_鰻魚": {
+    "name": "鰻魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_21.png"
+  },
+  "6htw_fish_花枝": {
+    "name": "花枝",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_22.png"
+  },
+  "6htw_fish_笛鯛": {
+    "name": "笛鯛",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_23.png"
+  },
+  "6htw_fish_肉魚": {
+    "name": "肉魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_24.png"
+  },
+  "6htw_fish_午仔魚": {
+    "name": "午仔魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_25.png"
+  },
+  "6htw_fish_養殖黑鯛": {
+    "name": "養殖黑鯛",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_26.png"
+  },
+  "6htw_fish_黃鰭鯛": {
+    "name": "黃鰭鯛",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_27.png"
+  },
+  "6htw_fish_牛舌": {
+    "name": "牛舌",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_28.png"
+  },
+  "6htw_fish_比目魚": {
+    "name": "比目魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_29.png"
+  },
+  "6htw_fish_海鱺": {
+    "name": "海鱺",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_30.png"
+  },
+  "6htw_fish_赤鯮": {
+    "name": "赤鯮",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_31.png"
+  },
+  "6htw_fish_金線魚": {
+    "name": "金線魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_32.png"
+  },
+  "6htw_fish_三點蟹": {
+    "name": "三點蟹",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_33.png"
+  },
+  "6htw_fish_鬼頭刀": {
+    "name": "鬼頭刀",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_34.png"
+  },
+  "6htw_fish_秋刀魚": {
+    "name": "秋刀魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_35.png"
+  },
+  "6htw_fish_魩仔魚": {
+    "name": "魩仔魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_36.png"
+  },
+  "6htw_fish_野生石斑": {
+    "name": "野生石斑",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_37.png"
+  },
+  "6htw_fish_鯊魚": {
+    "name": "鯊魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_38.png"
+  },
+  "6htw_fish_龍占": {
+    "name": "龍占",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_39.png"
+  },
+  "6htw_fish_鸚哥魚": {
+    "name": "鸚哥魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_40.png"
+  },
+  "6htw_fish_曼波魚": {
+    "name": "曼波魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_41.png"
+  },
+  "6htw_fish_黑鮪魚": {
+    "name": "黑鮪魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_42.png"
+  },
+  "6htw_fish_旗魚": {
+    "name": "旗魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_43.png"
+  },
+  "6htw_fish_鯨鯊": {
+    "name": "鯨鯊",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_44.png"
+  },
+  "6htw_fish_泥鰍": {
+    "name": "泥鰍",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_45.png"
+  },
+  "6htw_fish_對蝦": {
+    "name": "對蝦",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_46.png"
+  },
+  "6htw_fish_魔鬼魚": {
+    "name": "魔鬼魚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_47.png"
+  },
+  "6htw_fish_白海豚": {
+    "name": "白海豚",
+    "description": "友魚守護團．魚紋章",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/fish_48.png"
+  },
+  "6htw_harbor_龍鳳初航章": {
+    "name": "龍鳳初航章",
+    "description": "友魚守護團．從苗栗龍鳳漁港啟航",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/harbor_01.jpg"
+  },
+  "6htw_harbor_北岬海紋章": {
+    "name": "北岬海紋章",
+    "description": "友魚守護團．從基隆八斗子漁港啟航",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/harbor_02.jpg"
+  },
+  "6htw_harbor_洄光海紋章": {
+    "name": "洄光海紋章",
+    "description": "友魚守護團．從宜蘭南方澳漁港啟航",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/harbor_03.jpg"
+  },
+  "6htw_harbor_中港豐海章": {
+    "name": "中港豐海章",
+    "description": "友魚守護團．從台中梧棲漁港啟航",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/harbor_04.jpg"
+  },
+  "6htw_harbor_安平豐海章": {
+    "name": "安平豐海章",
+    "description": "友魚守護團．從台南安平漁港啟航",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/harbor_05.jpg"
+  },
+  "6htw_harbor_黑潮守護章": {
+    "name": "黑潮守護章",
+    "description": "友魚守護團．從屏東東港漁港啟航",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/harbor_06.jpg"
+  },
+  "6htw_behavior_綠燈先鋒": {
+    "name": "綠燈先鋒",
+    "description": "友魚守護團．單局出牌全為綠燈（至少3張）",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_01.png"
+  },
+  "6htw_behavior_一支釣達人": {
+    "name": "一支釣達人",
+    "description": "友魚守護團．單局出4張以上一支釣漁法的魚",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_02.png"
+  },
+  "6htw_behavior_紅燈護送員": {
+    "name": "紅燈護送員",
+    "description": "友魚守護團．單局出3張以上紅燈魚",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_03.png"
+  },
+  "6htw_behavior_養殖支持者": {
+    "name": "養殖支持者",
+    "description": "友魚守護團．單局出3張以上養殖魚",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_04.png"
+  },
+  "6htw_behavior_深海傳說": {
+    "name": "深海傳說",
+    "description": "友魚守護團．單局出過鯨鯊（禁止捕撈）",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_05.png"
+  },
+  "6htw_behavior_完美永續局": {
+    "name": "完美永續局",
+    "description": "友魚守護團．單局全綠燈＋全符合召喚＋獲勝",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_06.png"
+  },
+  "6htw_behavior_浴火重生": {
+    "name": "浴火重生",
+    "description": "友魚守護團．單局被退牌3張以上仍獲勝",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_07.png"
+  },
+  "6htw_behavior_百發百中": {
+    "name": "百發百中",
+    "description": "友魚守護團．單局零退牌且至少出4張獲勝",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_08.png"
+  },
+  "6htw_behavior_珊瑚守護者": {
+    "name": "珊瑚守護者",
+    "description": "友魚守護團．單局出過全部3種定棲性綠燈魚",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_09.png"
+  },
+  "6htw_behavior_漁法通": {
+    "name": "漁法通",
+    "description": "友魚守護團．單局出牌涵蓋5種以上不同漁法",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_10.png"
+  },
+  "6htw_behavior_近海英雄": {
+    "name": "近海英雄",
+    "description": "友魚守護團．單局全近海魚＋全符合召喚（至少4張）獲勝",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_11.png"
+  },
+  "6htw_behavior_海紋守護王": {
+    "name": "海紋守護王",
+    "description": "友魚守護團．單局完美永續局＋百發百中＋浴火重生同時達成",
+    "sourceTaskId": "6htw",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_12.png"
+  }
 }
