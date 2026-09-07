@@ -347,8 +347,9 @@
   "6htw_behavior_綠燈先鋒": {
     "name": "綠燈先鋒",
     "description": "友魚守護團．單局出牌全為綠燈（至少3張）",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_01.png",
     "sourceTaskId": "6htw",
-    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_01.png"
+    "weight": 2
   },
   "6htw_behavior_一支釣達人": {
     "name": "一支釣達人",
