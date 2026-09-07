@@ -389,8 +389,9 @@
   "6htw_behavior_浴火重生": {
     "name": "浴火重生",
     "description": "友魚守護團．單局被退牌3張以上仍獲勝",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_07.png",
     "sourceTaskId": "6htw",
-    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_07.png"
+    "weight": 2
   },
   "6htw_behavior_百發百中": {
     "name": "百發百中",
