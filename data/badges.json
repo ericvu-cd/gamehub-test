@@ -361,8 +361,9 @@
   "6htw_behavior_紅燈護送員": {
     "name": "紅燈護送員",
     "description": "友魚守護團．單局出3張以上紅燈魚",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_03.png",
     "sourceTaskId": "6htw",
-    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/behavior_03.png"
+    "weight": 2
   },
   "6htw_behavior_養殖支持者": {
     "name": "養殖支持者",
