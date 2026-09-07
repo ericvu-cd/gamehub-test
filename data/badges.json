@@ -16,8 +16,8 @@
     "description": "通過10關且1000分以上",
     "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/badges/1788417730858_fbbd1.png",
     "sourceTaskId": "fishball"
-  }
-    "6htw_fish_吳郭魚": {
+  },
+  "6htw_fish_吳郭魚": {
     "name": "吳郭魚",
     "description": "友魚守護團．魚紋章",
     "sourceTaskId": "6htw",
