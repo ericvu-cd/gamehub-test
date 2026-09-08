@@ -8,7 +8,7 @@
 // 對應「架構調整討論記錄.md」第三輪確認的設計。
 // =====================================================
 import { db } from './firebase-config.js';
-import { doc, writeBatch, collection, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, writeBatch, collection, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 function utc8DayNumber(date = new Date()) {
     return Math.floor((date.getTime() + 8 * 60 * 60 * 1000) / (24 * 60 * 60 * 1000));
@@ -130,65 +130,89 @@ export async function redeemShopItem(uid, item, currentCoins, currentGuard) {
 }
 
 // --- 任務獎勵（不再核對任務個別上限，改受當日總量防護限制） ---
-export async function claimTaskReward(uid, taskId, requestedAmount, currentCoins, currentGuard) {
+// 改用 runTransaction：短時間內多個任務視窗同時各自送 complete 訊息時
+// （例如一次解鎖好幾個徽章、各自送一則），每一筆都要讀「當下最新」的
+// coins/dailyGuard 去算，不能用呼叫者傳進來的舊快照，不然快照過期的那幾筆
+// 會各自根據舊資料算出新值、互相覆寫掉別人剛寫好的結果（遺失更新）。
+// runTransaction 會自動偵測衝突並重試，讀到的一定是當下最新資料。
+export async function claimTaskReward(uid, taskId, requestedAmount) {
     if (!requestedAmount || requestedAmount <= 0) return { ok: true, coinsAwarded: 0 };
 
-    const newCoins = currentCoins + requestedAmount;
-    const guard = nextDailyGuard(currentGuard, requestedAmount);
-
-    const batch = writeBatch(db);
     const userRef = doc(db, 'users', uid);
-    batch.update(userRef, {
-        coins: newCoins,
-        dailyGuard: guard,
-        lastTransaction: { type: 'task_reward', amount: requestedAmount, taskId, at: Date.now() }
-    });
-
-    const ledgerRef = doc(collection(db, 'coinLedger', uid, 'entries'));
-    batch.set(ledgerRef, {
-        type: 'task_reward', amount: requestedAmount, balanceAfter: newCoins,
-        relatedTaskId: taskId, note: '', createdAt: Date.now()
-    });
-
     try {
-        await batch.commit();
-        return { ok: true, coinsAwarded: requestedAmount, newCoins, guard };
+        const result = await runTransaction(db, async (tx) => {
+            const snap = await tx.get(userRef);
+            const data = snap.data();
+            const newCoins = (data.coins || 0) + requestedAmount;
+            const guard = nextDailyGuard(data.dailyGuard, requestedAmount);
+
+            tx.update(userRef, {
+                coins: newCoins,
+                dailyGuard: guard,
+                lastTransaction: { type: 'task_reward', amount: requestedAmount, taskId, at: Date.now() }
+            });
+            const ledgerRef = doc(collection(db, 'coinLedger', uid, 'entries'));
+            tx.set(ledgerRef, {
+                type: 'task_reward', amount: requestedAmount, balanceAfter: newCoins,
+                relatedTaskId: taskId, note: '', createdAt: Date.now()
+            });
+            return { newCoins, guard };
+        });
+        return { ok: true, coinsAwarded: requestedAmount, newCoins: result.newCoins, guard: result.guard };
     } catch (err) {
         return friendlyError(err);
     }
 }
 
 // --- 授予徽章（不再核對來源任務，見架構調整討論記錄第三輪確認） ---
-export async function awardBadge(uid, taskId, badgeId, currentBadges, currentGuard) {
-    if (currentBadges.includes(badgeId)) return { ok: true, alreadyOwned: true };
-    const newBadges = [...currentBadges, badgeId];
-    const guard = nextDailyGuard(currentGuard, 0);
-
+// 同樣改用 runTransaction，理由跟上面 claimTaskReward 一樣：badges 陣列跟
+// dailyGuard 都要讀「當下最新」的去算，才不會被同時進來的其他徽章覆寫掉。
+export async function awardBadge(uid, taskId, badgeId) {
+    const userRef = doc(db, 'users', uid);
     try {
-        await writeBatch(db).update(doc(db, 'users', uid), {
-            badges: newBadges,
-            dailyGuard: guard,
-            lastTransaction: { type: 'collectible_award', taskId, at: Date.now() }
-        }).commit();
-        return { ok: true, badges: newBadges, guard };
+        const result = await runTransaction(db, async (tx) => {
+            const snap = await tx.get(userRef);
+            const data = snap.data();
+            const currentBadges = data.badges || [];
+            if (currentBadges.includes(badgeId)) return { alreadyOwned: true };
+
+            const newBadges = [...currentBadges, badgeId];
+            const guard = nextDailyGuard(data.dailyGuard, 0);
+            tx.update(userRef, {
+                badges: newBadges,
+                dailyGuard: guard,
+                lastTransaction: { type: 'collectible_award', taskId, at: Date.now() }
+            });
+            return { alreadyOwned: false, badges: newBadges, guard };
+        });
+        if (result.alreadyOwned) return { ok: true, alreadyOwned: true };
+        return { ok: true, badges: result.badges, guard: result.guard };
     } catch (err) {
         return friendlyError(err);
     }
 }
 
 // --- 授予證書（同上，不核對來源任務） ---
-export async function awardCertificate(uid, taskId, certificateId, currentCertificates, currentGuard) {
-    if (currentCertificates.includes(certificateId)) return { ok: true, alreadyOwned: true };
-    const newCerts = [...currentCertificates, certificateId];
-    const guard = nextDailyGuard(currentGuard, 0);
-
+export async function awardCertificate(uid, taskId, certificateId) {
+    const userRef = doc(db, 'users', uid);
     try {
-        await writeBatch(db).update(doc(db, 'users', uid), {
-            certificates: newCerts,
-            dailyGuard: guard,
-            lastTransaction: { type: 'collectible_award', taskId, at: Date.now() }
-        }).commit();
-        return { ok: true, certificates: newCerts, guard };
+        const result = await runTransaction(db, async (tx) => {
+            const snap = await tx.get(userRef);
+            const data = snap.data();
+            const currentCerts = data.certificates || [];
+            if (currentCerts.includes(certificateId)) return { alreadyOwned: true };
+
+            const newCerts = [...currentCerts, certificateId];
+            const guard = nextDailyGuard(data.dailyGuard, 0);
+            tx.update(userRef, {
+                certificates: newCerts,
+                dailyGuard: guard,
+                lastTransaction: { type: 'collectible_award', taskId, at: Date.now() }
+            });
+            return { alreadyOwned: false, certificates: newCerts, guard };
+        });
+        if (result.alreadyOwned) return { ok: true, alreadyOwned: true };
+        return { ok: true, certificates: result.certificates, guard: result.guard };
     } catch (err) {
         return friendlyError(err);
     }

@@ -122,7 +122,7 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
 
                 try {
                     if (msg.payload?.coins > 0) {
-                        const r = await claimTaskReward(user.uid, msg.taskId, msg.payload.coins, user.coins, user.dailyGuard);
+                        const r = await claimTaskReward(user.uid, msg.taskId, msg.payload.coins);
                         if (r.ok) {
                             detail.coinsAwarded = r.coinsAwarded;
                             user = { ...user, coins: r.newCoins ?? user.coins, dailyGuard: r.guard ?? user.dailyGuard };
@@ -133,7 +133,7 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                         }
                     }
                     for (const badgeId of msg.payload?.badgeIds || []) {
-                        const r = await awardBadge(user.uid, msg.taskId, badgeId, user.badges, user.dailyGuard);
+                        const r = await awardBadge(user.uid, msg.taskId, badgeId);
                         if (r.ok && !r.alreadyOwned) {
                             detail.badgesAwarded.push(badgeId);
                             user = { ...user, badges: r.badges, dailyGuard: r.guard ?? user.dailyGuard };
@@ -145,7 +145,7 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                         }
                     }
                     for (const certId of msg.payload?.certificateIds || []) {
-                        const r = await awardCertificate(user.uid, msg.taskId, certId, user.certificates, user.dailyGuard);
+                        const r = await awardCertificate(user.uid, msg.taskId, certId);
                         if (r.ok && !r.alreadyOwned) {
                             detail.certificatesAwarded.push(certId);
                             user = { ...user, certificates: r.certificates, dailyGuard: r.guard ?? user.dailyGuard };
