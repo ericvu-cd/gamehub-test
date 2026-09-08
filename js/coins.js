@@ -15,10 +15,13 @@ function utc8DayNumber(date = new Date()) {
 }
 
 function friendlyError(err) {
+    // 保留原始 code/message，不要只留翻譯過的說法——不然像這次「已達上限」
+    // 這種通用說法會把「其實是別的規則不符合」的真正原因蓋掉，事後完全查不出來。
+    const raw = { rawCode: err?.code || null, rawMessage: err?.message || null };
     if (err?.code === 'permission-denied') {
-        return { ok: false, reason: '今天的異動次數或金額已達上限，請明天再試' };
+        return { ok: false, reason: '今天的異動次數或金額已達上限，請明天再試', ...raw };
     }
-    return { ok: false, reason: err?.message || '發生未知錯誤' };
+    return { ok: false, reason: err?.message || '發生未知錯誤', ...raw };
 }
 
 // 計算這次異動後，dailyGuard 應該變成什麼樣子（今天第一次異動要重置歸零再累計）

@@ -129,7 +129,7 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                             logTaskEvent(uid, msg.taskId, 'info', `金幣發放成功 +${r.coinsAwarded}`, { newCoins: r.newCoins, guard: r.guard });
                         } else {
                             detail.rejectedReason = r.reason;
-                            logTaskEvent(uid, msg.taskId, 'warn', `金幣發放被拒絕：${r.reason}`, { requested: msg.payload.coins, guardBefore: user.dailyGuard });
+                            logTaskEvent(uid, msg.taskId, 'warn', `金幣發放被拒絕：${r.reason}`, { requested: msg.payload.coins, guardBefore: user.dailyGuard, rawCode: r.rawCode, rawMessage: r.rawMessage });
                         }
                     }
                     for (const badgeId of msg.payload?.badgeIds || []) {
@@ -141,7 +141,7 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                         } else if (r.ok && r.alreadyOwned) {
                             logTaskEvent(uid, msg.taskId, 'info', `徽章 ${badgeId} 已擁有，略過`);
                         } else {
-                            logTaskEvent(uid, msg.taskId, 'warn', `徽章 ${badgeId} 發放失敗：${r.reason}`, { guardBefore: user.dailyGuard });
+                            logTaskEvent(uid, msg.taskId, 'warn', `徽章 ${badgeId} 發放失敗：${r.reason}`, { guardBefore: user.dailyGuard, rawCode: r.rawCode, rawMessage: r.rawMessage });
                         }
                     }
                     for (const certId of msg.payload?.certificateIds || []) {
