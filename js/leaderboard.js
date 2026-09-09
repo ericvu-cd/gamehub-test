@@ -14,6 +14,7 @@ import { db } from './firebase-config.js';
 import {
     doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { withRetry } from './coins.js';
 
 const CACHE_PREFIX = 'lb_cache_';
 const MY_SCORE_CACHE_PREFIX = 'my_score_';
@@ -54,17 +55,23 @@ export async function submitLeaderboardScore(uid, playerName, taskId, payload) {
     if (typeof scoreValue !== 'number') return { ok: false, reason: '缺少 scoreValue' };
 
     const ref = doc(db, 'leaderboard', taskId, 'entries', uid);
-    const existing = await getDoc(ref);
-
-    if (existing.exists() && existing.data().scoreValue >= scoreValue) {
-        return { ok: true, updated: false, reason: '未超過個人最佳成績，未更新' };
-    }
 
     try {
-        await setDoc(ref, { playerName, scoreLabel, scoreValue, updatedAt: Date.now() });
-        clearCache(taskId); // 有更好的成績寫入，下次讀取要拿最新排行，不能用舊快取
-        writeMyScoreCache(taskId, { scoreLabel, scoreValue }); // 就地覆寫，不用再多打一次 Firestore 確認
-        return { ok: true, updated: true };
+        // 讀取＋比較＋寫入包在同一個重試裡：短暫網路抖動導致的失敗，整段重來一次
+        // 是安全的（每次重算的結果都一樣，不會因為重試造成分數被錯誤覆寫）。
+        const result = await withRetry(async () => {
+            const existing = await getDoc(ref);
+            if (existing.exists() && existing.data().scoreValue >= scoreValue) {
+                return { ok: true, updated: false, reason: '未超過個人最佳成績，未更新' };
+            }
+            await setDoc(ref, { playerName, scoreLabel, scoreValue, updatedAt: Date.now() });
+            return { ok: true, updated: true };
+        });
+        if (result.updated) {
+            clearCache(taskId); // 有更好的成績寫入，下次讀取要拿最新排行，不能用舊快取
+            writeMyScoreCache(taskId, { scoreLabel, scoreValue }); // 就地覆寫，不用再多打一次 Firestore 確認
+        }
+        return result;
     } catch (err) {
         return { ok: false, reason: err.message };
     }

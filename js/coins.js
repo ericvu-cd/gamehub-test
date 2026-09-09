@@ -10,6 +10,26 @@
 import { db } from './firebase-config.js';
 import { doc, writeBatch, collection, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// ── 通用重試包裝：短暫的網路抖動、Firestore 一時連不上，重試一兩次多半就過了 ──
+// 原本任何 Firestore 讀寫只要失敗一次就直接放棄，玩家的分數/徽章/連稽核記錄
+// 都可能因為那一瞬間的網路問題就悄悄不見、事後也查不到任何痕跡。
+// 注意：只適合包住「本身就具備冪等性」的操作（runTransaction 本來就是全有全無；
+// getDoc+setDoc 這種讀取後覆寫的也是每次重算都一樣的結果），不會因為重試造成重複寫入。
+export async function withRetry(fn, { retries = 2, delayMs = 400 } = {}) {
+    let lastErr;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            return await fn();
+        } catch (err) {
+            lastErr = err;
+            if (attempt < retries) {
+                await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)));
+            }
+        }
+    }
+    throw lastErr;
+}
+
 function utc8DayNumber(date = new Date()) {
     return Math.floor((date.getTime() + 8 * 60 * 60 * 1000) / (24 * 60 * 60 * 1000));
 }
@@ -143,7 +163,7 @@ export async function claimTaskReward(uid, taskId, requestedAmount) {
 
     const userRef = doc(db, 'users', uid);
     try {
-        const result = await runTransaction(db, async (tx) => {
+        const result = await withRetry(() => runTransaction(db, async (tx) => {
             const snap = await tx.get(userRef);
             const data = snap.data();
             const newCoins = (data.coins || 0) + requestedAmount;
@@ -160,7 +180,7 @@ export async function claimTaskReward(uid, taskId, requestedAmount) {
                 relatedTaskId: taskId, note: '', createdAt: Date.now()
             });
             return { newCoins, guard };
-        });
+        }));
         return { ok: true, coinsAwarded: requestedAmount, newCoins: result.newCoins, guard: result.guard };
     } catch (err) {
         return friendlyError(err);
@@ -173,7 +193,7 @@ export async function claimTaskReward(uid, taskId, requestedAmount) {
 export async function awardBadge(uid, taskId, badgeId) {
     const userRef = doc(db, 'users', uid);
     try {
-        const result = await runTransaction(db, async (tx) => {
+        const result = await withRetry(() => runTransaction(db, async (tx) => {
             const snap = await tx.get(userRef);
             const data = snap.data();
             const currentBadges = data.badges || [];
@@ -187,7 +207,7 @@ export async function awardBadge(uid, taskId, badgeId) {
                 lastTransaction: { type: 'collectible_award', taskId, at: Date.now() }
             });
             return { alreadyOwned: false, badges: newBadges, guard };
-        });
+        }));
         if (result.alreadyOwned) return { ok: true, alreadyOwned: true };
         return { ok: true, badges: result.badges, guard: result.guard };
     } catch (err) {
@@ -199,7 +219,7 @@ export async function awardBadge(uid, taskId, badgeId) {
 export async function awardCertificate(uid, taskId, certificateId) {
     const userRef = doc(db, 'users', uid);
     try {
-        const result = await runTransaction(db, async (tx) => {
+        const result = await withRetry(() => runTransaction(db, async (tx) => {
             const snap = await tx.get(userRef);
             const data = snap.data();
             const currentCerts = data.certificates || [];
@@ -213,7 +233,7 @@ export async function awardCertificate(uid, taskId, certificateId) {
                 lastTransaction: { type: 'collectible_award', taskId, at: Date.now() }
             });
             return { alreadyOwned: false, certificates: newCerts, guard };
-        });
+        }));
         if (result.alreadyOwned) return { ok: true, alreadyOwned: true };
         return { ok: true, certificates: result.certificates, guard: result.guard };
     } catch (err) {

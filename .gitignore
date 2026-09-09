@@ -2,3 +2,4 @@ node_modules/
 serviceAccountKey.json
 .DS_Store
 *.log
+不要上傳的APIKey.txt

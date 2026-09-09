@@ -2,29 +2,133 @@
 // 任務視窗溝通：開新視窗 + postMessage
 // 對應「任務頁面通訊介面規格.md」
 // =====================================================
-import { deductTaskCost, claimTaskReward, awardBadge, awardCertificate } from './coins.js';
+import { deductTaskCost, claimTaskReward, awardBadge, awardCertificate, withRetry } from './coins.js';
 import { submitLeaderboardScore, fetchMyScore } from './leaderboard.js';
 import { db } from './firebase-config.js';
 import { addDoc, collection } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const openTaskWindows = new Map(); // taskId -> { win, origin }
 
+// 存到 localStorage 的退路 key：重試過還是寫不進 Firestore 時，先存在本機，
+// 至少不會真的憑空消失、事後完全查不到。上限只留最新 200 筆，避免 localStorage 塞爆。
+const FALLBACK_LOG_KEY = 'taskEventLogs_fallback';
+function saveFallbackLog(entry) {
+    try {
+        const raw = localStorage.getItem(FALLBACK_LOG_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        list.push(entry);
+        while (list.length > 200) list.shift();
+        localStorage.setItem(FALLBACK_LOG_KEY, JSON.stringify(list));
+    } catch { /* localStorage 也滿了或不可用，這種極端情況就真的沒辦法了 */ }
+}
+
+// ── 待補送寫入佇列：分數／金幣／徽章／證書重試過還是失敗時，存在這裡當退路 ──
+// 跟上面的 FALLBACK_LOG_KEY 不一樣：那個只是「記一筆失敗了」的稽核記錄，這個是
+// 「這筆資料本身還沒真的寫進去，之後要想辦法補寫」，兩者都要有、缺一不可。
+const PENDING_WRITES_KEY = 'pendingTaskWrites';
+const MAX_PENDING_ATTEMPTS = 5; // 補送到這個次數還失敗，多半是永久性的拒絕（例如規則不符），不再無限重試
+
+function savePendingWrite(item) {
+    try {
+        const raw = localStorage.getItem(PENDING_WRITES_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        list.push({ ...item, attempts: 0, savedAt: Date.now() });
+        while (list.length > 100) list.shift();
+        localStorage.setItem(PENDING_WRITES_KEY, JSON.stringify(list));
+    } catch { /* localStorage 也滿了或不可用，這種極端情況就真的沒辦法了 */ }
+}
+
+// 平台重新載入、使用者登入後呼叫：把本機待補送的分數/金幣/徽章/證書都試著重送一次。
+// 只補送屬於「目前登入這個人」的項目——換了別的帳號在同一台裝置上用，
+// Firestore 規則本來就不會讓你寫進別人的文件，硬送也只會一直失敗。
+async function flushPendingWrites(currentUser) {
+    if (!currentUser) return;
+    let list;
+    try {
+        const raw = localStorage.getItem(PENDING_WRITES_KEY);
+        list = raw ? JSON.parse(raw) : [];
+    } catch { return; }
+    if (!list.length) return;
+
+    const remaining = [];
+    for (const item of list) {
+        if (item.uid !== currentUser.uid) { remaining.push(item); continue; } // 不是這個帳號的，先留著
+
+        let r;
+        try {
+            if (item.kind === 'coins') r = await claimTaskReward(item.uid, item.taskId, item.amount);
+            else if (item.kind === 'badge') r = await awardBadge(item.uid, item.taskId, item.badgeId);
+            else if (item.kind === 'cert') r = await awardCertificate(item.uid, item.taskId, item.certId);
+            else if (item.kind === 'score') r = await submitLeaderboardScore(item.uid, item.playerName, item.taskId, item.payload);
+            else r = { ok: true }; // 不認得的種類，丟掉比留著卡住好
+        } catch (err) {
+            r = { ok: false, reason: err?.message };
+        }
+
+        if (r.ok) {
+            logTaskEvent(item.uid, item.taskId, 'info', `本機待補送的 ${item.kind} 補寫成功`, { item });
+        } else {
+            const attempts = (item.attempts || 0) + 1;
+            if (attempts >= MAX_PENDING_ATTEMPTS) {
+                logTaskEvent(item.uid, item.taskId, 'error', `本機待補送的 ${item.kind} 重試 ${attempts} 次仍失敗，放棄補送`, { item, reason: r.reason });
+            } else {
+                remaining.push({ ...item, attempts });
+            }
+        }
+    }
+    try {
+        if (remaining.length) localStorage.setItem(PENDING_WRITES_KEY, JSON.stringify(remaining));
+        else localStorage.removeItem(PENDING_WRITES_KEY);
+    } catch { /* 略過 */ }
+}
+
+// 平台重新載入時，試著把本機備份的記錄補送回 Firestore——不然本機備份只會一直
+// 堆著、沒有出口。成功送出的就從本機清掉，失敗的留著、下次載入再試一次。
+async function flushFallbackLogs() {
+    let list;
+    try {
+        const raw = localStorage.getItem(FALLBACK_LOG_KEY);
+        list = raw ? JSON.parse(raw) : [];
+    } catch { return; }
+    if (!list.length) return;
+
+    const stillFailed = [];
+    for (const entry of list) {
+        try {
+            await addDoc(collection(db, 'taskEventLogs'), entry);
+        } catch {
+            stillFailed.push(entry);
+        }
+    }
+    try {
+        if (stillFailed.length) localStorage.setItem(FALLBACK_LOG_KEY, JSON.stringify(stillFailed));
+        else localStorage.removeItem(FALLBACK_LOG_KEY);
+    } catch { /* 略過 */ }
+}
+
 // 把任務訊息處理過程中的關鍵事件寫進 Firestore（taskEventLogs），供事後在後台查，
 // 不用即時盯著瀏覽器 console 看。同時也印一份到 console，方便當下有開著時直接看。
-// 寫入失敗（例如離線）不應該讓任務處理流程跟著中斷，所以用 catch 吞掉、只印警告。
+// 寫入失敗（例如離線）不應該讓任務處理流程跟著中斷，所以重試幾次、還是不行就存進
+// localStorage 當退路，不要整個記錄悄悄不見、事後完全沒有痕跡可查。
 function logTaskEvent(uid, taskId, level, message, extra) {
     if (level === 'error') console.error(`[tasks] ${message}`, extra || '');
     else if (level === 'warn') console.warn(`[tasks] ${message}`, extra || '');
     else console.log(`[tasks] ${message}`, extra || '');
 
-    addDoc(collection(db, 'taskEventLogs'), {
+    const entry = {
         uid: uid || null,
         taskId: taskId || null,
         level,
         message,
         extra: extra ? JSON.stringify(extra).slice(0, 2000) : null, // 避免單筆記錄太大
         at: Date.now()
-    }).catch(err => console.warn('[tasks] 寫入 taskEventLogs 失敗', err));
+    };
+
+    withRetry(() => addDoc(collection(db, 'taskEventLogs'), entry), { retries: 1, delayMs: 500 })
+        .catch(err => {
+            console.warn('[tasks] 寫入 taskEventLogs 失敗，改存本機備份', err);
+            saveFallbackLog(entry);
+        });
 }
 
 // 定期清掉使用者手動關閉分頁（沒送 exit 訊息）的殘留記錄
@@ -73,6 +177,8 @@ export async function openTask(task, currentUser, onCoinsChanged) {
 
 // 掛上全站唯一的訊息監聽器，在平台初始化時呼叫一次
 export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
+    flushFallbackLogs(); // 平台每次重新載入都試一次，之前補不進去的舊記錄有機會慢慢清空
+    flushPendingWrites(getCurrentUser()); // 同樣道理，之前沒補送成功的分數/金幣/徽章/證書也試著補一次
     window.addEventListener('message', async (event) => {
         const msg = event.data;
         if (!msg || msg.source !== 'culture-task') return;
@@ -130,6 +236,7 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                         } else {
                             detail.rejectedReason = r.reason;
                             logTaskEvent(uid, msg.taskId, 'warn', `金幣發放被拒絕：${r.reason}`, { requested: msg.payload.coins, guardBefore: user.dailyGuard, rawCode: r.rawCode, rawMessage: r.rawMessage });
+                            savePendingWrite({ kind: 'coins', uid: user.uid, taskId: msg.taskId, amount: msg.payload.coins });
                         }
                     }
                     for (const badgeId of msg.payload?.badgeIds || []) {
@@ -142,6 +249,7 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                             logTaskEvent(uid, msg.taskId, 'info', `徽章 ${badgeId} 已擁有，略過`);
                         } else {
                             logTaskEvent(uid, msg.taskId, 'warn', `徽章 ${badgeId} 發放失敗：${r.reason}`, { guardBefore: user.dailyGuard, rawCode: r.rawCode, rawMessage: r.rawMessage });
+                            savePendingWrite({ kind: 'badge', uid: user.uid, taskId: msg.taskId, badgeId });
                         }
                     }
                     for (const certId of msg.payload?.certificateIds || []) {
@@ -154,6 +262,7 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                             logTaskEvent(uid, msg.taskId, 'info', `證書 ${certId} 已擁有，略過`);
                         } else {
                             logTaskEvent(uid, msg.taskId, 'warn', `證書 ${certId} 發放失敗：${r.reason}`, { guardBefore: user.dailyGuard });
+                            savePendingWrite({ kind: 'cert', uid: user.uid, taskId: msg.taskId, certId });
                         }
                     }
                 } catch (err) {
@@ -175,8 +284,12 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                 try {
                     const r = await submitLeaderboardScore(currentUser.uid, currentUser.nickname, msg.taskId, msg.payload);
                     logTaskEvent(uid, msg.taskId, r?.ok === false ? 'warn' : 'info', 'score 訊息處理完成', { payload: msg.payload, result: r });
+                    if (r?.ok === false) {
+                        savePendingWrite({ kind: 'score', uid: currentUser.uid, playerName: currentUser.nickname, taskId: msg.taskId, payload: msg.payload });
+                    }
                 } catch (err) {
                     logTaskEvent(uid, msg.taskId, 'error', 'score 處理過程發生未預期例外', { message: err?.message });
+                    savePendingWrite({ kind: 'score', uid: currentUser.uid, playerName: currentUser.nickname, taskId: msg.taskId, payload: msg.payload });
                 }
                 break;
             }
