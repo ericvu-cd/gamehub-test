@@ -35,17 +35,21 @@ function clearCache(taskId) {
 }
 
 // 讀「我的成績」快取，回傳 { fetched: true, value } 或 null（null 代表這個分頁還沒查過）
-function readMyScoreCache(taskId) {
+// ⚠️ key 一定要包含 uid，不能只用 taskId——sessionStorage 是跟著瀏覽器分頁走的，
+// 不是跟著登入帳號走的。同一個分頁如果先後登入過不同帳號（例如測試多個玩家），
+// 只用 taskId 當 key 會讓後面登入的帳號直接讀到前一個帳號留下的快取值，
+// 誤以為自己有一個根本不屬於自己的歷史最佳成績。
+function readMyScoreCache(taskId, uid) {
     try {
-        const raw = sessionStorage.getItem(MY_SCORE_CACHE_PREFIX + taskId);
+        const raw = sessionStorage.getItem(MY_SCORE_CACHE_PREFIX + uid + '_' + taskId);
         return raw ? JSON.parse(raw) : null;
     } catch { return null; }
 }
 
 // 寫「我的成績」快取，value 為 null 代表「查過了，但這個玩家沒玩過這個任務」
-function writeMyScoreCache(taskId, value) {
+function writeMyScoreCache(taskId, uid, value) {
     try {
-        sessionStorage.setItem(MY_SCORE_CACHE_PREFIX + taskId, JSON.stringify({ fetched: true, value }));
+        sessionStorage.setItem(MY_SCORE_CACHE_PREFIX + uid + '_' + taskId, JSON.stringify({ fetched: true, value }));
     } catch { /* 略過寫入失敗 */ }
 }
 
@@ -69,7 +73,7 @@ export async function submitLeaderboardScore(uid, playerName, taskId, payload) {
         });
         if (result.updated) {
             clearCache(taskId); // 有更好的成績寫入，下次讀取要拿最新排行，不能用舊快取
-            writeMyScoreCache(taskId, { scoreLabel, scoreValue }); // 就地覆寫，不用再多打一次 Firestore 確認
+            writeMyScoreCache(taskId, uid, { scoreLabel, scoreValue }); // 就地覆寫，不用再多打一次 Firestore 確認
         }
         return result;
     } catch (err) {
@@ -79,7 +83,7 @@ export async function submitLeaderboardScore(uid, playerName, taskId, payload) {
 
 // 查詢玩家自己在某任務的個人最佳成績；有快取（含「查過但沒玩過」）時優先用快取，不佔讀取額度
 export async function fetchMyScore(taskId, uid) {
-    const cached = readMyScoreCache(taskId);
+    const cached = readMyScoreCache(taskId, uid);
     if (cached && cached.fetched) return cached.value;
 
     const ref = doc(db, 'leaderboard', taskId, 'entries', uid);
@@ -87,7 +91,7 @@ export async function fetchMyScore(taskId, uid) {
     const value = snap.exists()
         ? { scoreLabel: snap.data().scoreLabel, scoreValue: snap.data().scoreValue }
         : null;
-    writeMyScoreCache(taskId, value);
+    writeMyScoreCache(taskId, uid, value);
     return value;
 }
 
