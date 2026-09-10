@@ -77,7 +77,7 @@ export async function submitLeaderboardScore(uid, playerName, taskId, payload) {
         }
         return result;
     } catch (err) {
-        return { ok: false, reason: err.message };
+        return { ok: false, reason: err.message, rawCode: err?.code };
     }
 }
 

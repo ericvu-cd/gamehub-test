@@ -2,7 +2,7 @@
 // 任務視窗溝通：開新視窗 + postMessage
 // 對應「任務頁面通訊介面規格.md」
 // =====================================================
-import { deductTaskCost, claimTaskReward, awardBadge, awardCertificate, withRetry } from './coins.js';
+import { deductTaskCost, claimTaskReward, awardBadge, awardCertificate, withRetry, RETRYABLE_CODES } from './coins.js';
 import { submitLeaderboardScore, fetchMyScore } from './leaderboard.js';
 import { db } from './firebase-config.js';
 import { addDoc, collection } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -62,11 +62,17 @@ async function flushPendingWrites(currentUser) {
             else if (item.kind === 'score') r = await submitLeaderboardScore(item.uid, item.playerName, item.taskId, item.payload);
             else r = { ok: true }; // 不認得的種類，丟掉比留著卡住好
         } catch (err) {
-            r = { ok: false, reason: err?.message };
+            r = { ok: false, reason: err?.message, rawCode: err?.code };
         }
 
         if (r.ok) {
             logTaskEvent(item.uid, item.taskId, 'info', `本機待補送的 ${item.kind} 補寫成功`, { item });
+        } else if (r.rawCode && !RETRYABLE_CODES.has(r.rawCode)) {
+            // 永久性錯誤（例如 permission-denied）：不管才重試第幾次，結果都一樣，
+            // 立刻放棄、不要留著等下次重新載入頁面又再試一次——這種項目如果留著，
+            // 每次重新載入都會再讀寫一次注定失敗的請求，白白浪費額度，
+            // 之前就是這樣跟 withRetry 的重試疊加，把浪費放大了好幾倍。
+            logTaskEvent(item.uid, item.taskId, 'error', `本機待補送的 ${item.kind} 遇到永久性錯誤，直接放棄補送`, { item, reason: r.reason, rawCode: r.rawCode });
         } else {
             const attempts = (item.attempts || 0) + 1;
             if (attempts >= MAX_PENDING_ATTEMPTS) {

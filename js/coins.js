@@ -15,6 +15,14 @@ import { doc, collection, runTransaction } from "https://www.gstatic.com/firebas
 // 都可能因為那一瞬間的網路問題就悄悄不見、事後也查不到任何痕跡。
 // 注意：只適合包住「本身就具備冪等性」的操作（runTransaction 本來就是全有全無；
 // getDoc+setDoc 這種讀取後覆寫的也是每次重算都一樣的結果），不會因為重試造成重複寫入。
+// Firestore 的錯誤代碼裡，只有這幾種是「暫時性」的（網路不穩、伺服器忙線），
+// 重試才有意義；其他像 permission-denied（規則拒絕）、invalid-argument（參數本身有問題）
+// 這種，不管重試幾次、間隔多久，用同樣的資料算出來的結果一定還是被拒絕，
+// 重試只是白白浪費讀寫額度，之前沒分這個，每一次真正的拒絕都變成 3 倍的無謂讀寫。
+export const RETRYABLE_CODES = new Set([
+    'unavailable', 'deadline-exceeded', 'aborted', 'cancelled', 'internal', 'unknown'
+]);
+
 export async function withRetry(fn, { retries = 2, delayMs = 400 } = {}) {
     let lastErr;
     for (let attempt = 0; attempt <= retries; attempt++) {
@@ -22,6 +30,8 @@ export async function withRetry(fn, { retries = 2, delayMs = 400 } = {}) {
             return await fn();
         } catch (err) {
             lastErr = err;
+            const retryable = !err?.code || RETRYABLE_CODES.has(err.code);
+            if (!retryable) throw err; // 永久性錯誤：立刻丟出去，不再重試
             if (attempt < retries) {
                 await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)));
             }
