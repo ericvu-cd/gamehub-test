@@ -58,6 +58,26 @@
     .form-mode-badge.new { background: #E4F5EC; color: #1E6B45; }
     .form-mode-badge.edit { background: #FBF1DD; color: #8A5A16; }
 
+    /* ── 徽章/證書挑選器（chip + 搜尋新增）：取代原本要手動輸入逗號分隔ID的文字框 ── */
+    .chip-picker { display: flex; flex-direction: column; gap: 8px; }
+    .chip-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+    .chip-list:empty::after { content: '目前沒有任何項目'; font-size: 12px; color: #999; }
+    .chip { display: flex; align-items: center; gap: 6px; background: #FBF8F0; border: 1px solid #E5DFD3;
+        border-radius: 999px; padding: 4px 6px 4px 10px; font-size: 12px; }
+    .chip img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
+    .chip .chip-remove { border: none; background: #EFE6D4; color: #8A5A16; border-radius: 50%;
+        width: 18px; height: 18px; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
+    .chip-search-wrap { position: relative; }
+    .chip-search-results { position: absolute; z-index: 20; top: 100%; left: 0; right: 0; margin-top: 4px;
+        background: #fff; border: 1px solid #ddd; border-radius: 8px; max-height: 220px; overflow-y: auto;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
+    .chip-search-results .result-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+        cursor: pointer; font-size: 12px; }
+    .chip-search-results .result-row:hover { background: #FBF8F0; }
+    .chip-search-results img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .chip-search-results .result-meta { color: #999; font-size: 11px; margin-left: auto; flex-shrink: 0; }
+    .chip-search-empty { padding: 10px; font-size: 12px; color: #999; text-align: center; }
+
     .msg { font-size: 12px; padding: 8px 10px; border-radius: 6px; margin-bottom: 12px; }
     .msg.ok { background: #E4F5EC; color: #1E6B45; }
     .msg.err { background: #FBE7E5; color: #A63D40; }

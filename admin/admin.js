@@ -836,8 +836,66 @@ function computeLevelAdmin(u) {
     return Math.floor((badgeWeight + certWeight) / 25) + 1;
 }
 
+// ── 徽章／證書挑選器：取代原本「逗號分隔ID」文字框 ──
+// 用一個全域狀態記著「目前這個使用者表單上，勾選了哪些徽章/證書」，
+// 因為 chip 是動態增減的，不像一般表單欄位可以直接用 FormData 讀出來。
+window.__userEditPicked = { badges: [], certificates: [] };
+
+function renderChipPicker(coll) {
+    const listEl = document.getElementById(`user-${coll}-chips`);
+    const items = editState[coll].items || {};
+    const picked = window.__userEditPicked[coll];
+    if (!listEl) return;
+    listEl.innerHTML = picked.map(id => {
+        const info = items[id];
+        const name = info ? info.name : `（找不到定義：${id}）`;
+        return `<span class="chip">
+            ${info?.iconUrl ? `<img src="${info.iconUrl}">` : ''}
+            <span>${escapeHtml(name)}</span>
+            <button type="button" class="chip-remove" onclick="window.userPickerRemove('${coll}','${id}')">✕</button>
+        </span>`;
+    }).join('');
+}
+
+window.userPickerRemove = function (coll, id) {
+    window.__userEditPicked[coll] = window.__userEditPicked[coll].filter(x => x !== id);
+    renderChipPicker(coll);
+};
+
+window.userPickerAdd = function (coll, id) {
+    if (!window.__userEditPicked[coll].includes(id)) window.__userEditPicked[coll].push(id);
+    renderChipPicker(coll);
+    const input = document.getElementById(`user-${coll}-search`);
+    if (input) input.value = '';
+    document.getElementById(`user-${coll}-results`).innerHTML = '';
+};
+
+// 打字即時搜尋：用名稱或 ID 比對，已經勾選的不會再出現在搜尋結果裡，
+// 免得同一個不小心加兩次（雖然 userPickerAdd 本身也擋重複，這裡先濾掉體驗更好）。
+window.userPickerSearch = function (coll, query) {
+    const resultsEl = document.getElementById(`user-${coll}-results`);
+    const q = query.trim().toLowerCase();
+    if (!q) { resultsEl.innerHTML = ''; return; }
+    const items = editState[coll].items || {};
+    const picked = window.__userEditPicked[coll];
+    const matches = Object.keys(items)
+        .filter(id => !picked.includes(id))
+        .filter(id => id.toLowerCase().includes(q) || (items[id].name || '').toLowerCase().includes(q))
+        .slice(0, 30); // 避免徽章一多，搜尋結果一次全塞出來卡畫面
+    if (!matches.length) { resultsEl.innerHTML = `<div class="chip-search-empty">找不到符合的項目</div>`; return; }
+    resultsEl.innerHTML = matches.map(id => {
+        const info = items[id];
+        return `<div class="result-row" onclick="window.userPickerAdd('${coll}','${id}')">
+            ${info.iconUrl ? `<img src="${info.iconUrl}">` : ''}
+            <span>${escapeHtml(info.name)}</span>
+            <span class="result-meta">${escapeHtml(info.sourceTaskId || '')}</span>
+        </div>`;
+    }).join('');
+};
+
 function renderUserEditForm(uid, u) {
     const area = document.getElementById('user-edit-area');
+    window.__userEditPicked = { badges: [...(u.badges || [])], certificates: [...(u.certificates || [])] };
     area.innerHTML = `
         <form class="entity-form" onsubmit="return window.submitUserEdit(event, '${uid}')">
             <div class="field"><label>暱稱</label><input name="nickname" value="${escapeHtml(u.nickname || '')}"></div>
@@ -845,8 +903,26 @@ function renderUserEditForm(uid, u) {
                 <div class="field"><label>等級（自動計算，不可手動改）</label><input value="Lv.${computeLevelAdmin(u)}" disabled style="opacity:0.7;"></div>
                 <div class="field"><label>通行金幣</label><input name="coins" type="number" value="${u.coins ?? 0}"></div>
             </div>
-            <div class="field"><label>徽章（逗號分隔ID）</label><input name="badges" value="${(u.badges || []).join(',')}"></div>
-            <div class="field"><label>證書（逗號分隔ID）</label><input name="certificates" value="${(u.certificates || []).join(',')}"></div>
+            <div class="field">
+                <label>徽章</label>
+                <div class="chip-picker">
+                    <div class="chip-list" id="user-badges-chips"></div>
+                    <div class="chip-search-wrap">
+                        <input id="user-badges-search" placeholder="輸入名稱搜尋要新增的徽章…" oninput="window.userPickerSearch('badges', this.value)">
+                        <div class="chip-search-results" id="user-badges-results"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="field">
+                <label>證書</label>
+                <div class="chip-picker">
+                    <div class="chip-list" id="user-certificates-chips"></div>
+                    <div class="chip-search-wrap">
+                        <input id="user-certificates-search" placeholder="輸入名稱搜尋要新增的證書…" oninput="window.userPickerSearch('certificates', this.value)">
+                        <div class="chip-search-results" id="user-certificates-results"></div>
+                    </div>
+                </div>
+            </div>
             <button class="btn-save" type="submit">儲存變更</button>
         </form>
         <div style="margin-top:20px;border-top:1px solid #E5DFD3;padding-top:14px;">
@@ -865,6 +941,8 @@ function renderUserEditForm(uid, u) {
             </p>
             <button class="icon-btn danger" onclick="window.deleteUserAccount('${uid}', '${escapeHtml(u.nickname || '').replace(/'/g, "\\'")}')">刪除此玩家的 Firestore 資料</button>
         </div>`;
+    renderChipPicker('badges');
+    renderChipPicker('certificates');
     loadUserLeaderboardEntries(uid);
 }
 
@@ -987,8 +1065,8 @@ window.submitUserEdit = async function (e, uid) {
         await updateDoc(doc(db, 'users', uid), {
             nickname: f.get('nickname'),
             coins: Number(f.get('coins')),
-            badges: f.get('badges').split(',').map(s => s.trim()).filter(Boolean),
-            certificates: f.get('certificates').split(',').map(s => s.trim()).filter(Boolean)
+            badges: [...window.__userEditPicked.badges],
+            certificates: [...window.__userEditPicked.certificates]
         });
         showMsg('users', '已儲存');
         window.loadUsersList(); // 存檔後刷新左側清單，讓等級/金幣顯示同步最新
