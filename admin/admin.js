@@ -943,10 +943,20 @@ function renderUserEditForm(uid, u) {
         </div>`;
     renderChipPicker('badges');
     renderChipPicker('certificates');
-    loadUserLeaderboardEntries(uid);
+    renderUserLeaderboardTrigger(uid);
 }
 
 // 用這個玩家的 uid，逐一比對每個任務底下有沒有他的排行榜紀錄（直接 getDoc 點查，不是搜尋，不怕改名字或打錯字）
+// 排行榜成績改成按鈕觸發才查（原本一開啟玩家資料就自動查全部任務，每個任務1次讀取，
+// 不管管理者有沒有要看都白白先查了；現在只有真的點下去才查，多數情況下只是想看
+// 金幣/徽章就不用順便花掉這 N 次讀取）
+function renderUserLeaderboardTrigger(uid) {
+    const listEl = document.getElementById('user-leaderboard-list');
+    if (!listEl) return;
+    listEl.innerHTML = `<button class="icon-btn" onclick="window.loadUserLeaderboardEntriesNow('${uid}')">載入排行榜成績</button>`;
+}
+window.loadUserLeaderboardEntriesNow = function (uid) { loadUserLeaderboardEntries(uid); };
+
 async function loadUserLeaderboardEntries(uid) {
     const listEl = document.getElementById('user-leaderboard-list');
     if (!listEl) return;
@@ -1039,7 +1049,7 @@ window.loadUsersList = async function () {
             .map(d => ({ uid: d.id, ...d.data() }))
             .sort((a, b) => (a.nickname || '').localeCompare(b.nickname || ''));
         listEl.innerHTML = rows.map(u => `
-            <div class="item-row">
+            <div class="item-row" data-uid="${u.uid}">
                 <div class="item-thumb"></div>
                 <div class="item-info">
                     <div class="item-title">${escapeHtml(u.nickname || '（未命名）')}</div>
@@ -1058,18 +1068,34 @@ window.loadUsersList = async function () {
 
 window.loadUserByUidFromList = function (uid) { loadUserByUid(uid); };
 
+// 存檔後只更新左側清單裡「這一列」的顯示（暱稱/等級/金幣），不必為了同步這一筆
+// 就重新整包讀取全部使用者——那樣的成本是 N 次讀取（N=目前使用者總數），
+// 只是想更新自己剛存的這一筆，完全不需要付出這個代價。
+// 如果這個使用者原本不在目前清單裡（例如清單還沒載入過、或這是全新註冊的帳號），
+// 就地更新會找不到對應的列，這時候才退回原本整包重讀的做法。
+function updateUserRowLocally(uid, patch) {
+    const row = document.querySelector(`#users-list .item-row[data-uid="${uid}"]`);
+    if (!row) { window.loadUsersList(); return; }
+    if (patch.nickname !== undefined) {
+        row.querySelector('.item-title').textContent = patch.nickname || '（未命名）';
+    }
+    if (patch.coins !== undefined || patch.level !== undefined) {
+        row.querySelector('.item-meta').textContent = `Lv.${patch.level} · ${patch.coins} 金幣`;
+    }
+}
+
 window.submitUserEdit = async function (e, uid) {
     e.preventDefault();
     const f = new FormData(e.target);
+    const nickname = f.get('nickname');
+    const coins = Number(f.get('coins'));
+    const badges = [...window.__userEditPicked.badges];
+    const certificates = [...window.__userEditPicked.certificates];
     try {
-        await updateDoc(doc(db, 'users', uid), {
-            nickname: f.get('nickname'),
-            coins: Number(f.get('coins')),
-            badges: [...window.__userEditPicked.badges],
-            certificates: [...window.__userEditPicked.certificates]
-        });
+        await updateDoc(doc(db, 'users', uid), { nickname, coins, badges, certificates });
         showMsg('users', '已儲存');
-        window.loadUsersList(); // 存檔後刷新左側清單，讓等級/金幣顯示同步最新
+        const level = computeLevelAdmin({ badges, certificates });
+        updateUserRowLocally(uid, { nickname, coins, level });
     } catch (err) { showMsg('users', err.message, true); }
     return false;
 };
@@ -1113,7 +1139,8 @@ window.deleteUserAccount = async function (uid, nickname) {
 
         showMsg('users', '已刪除此玩家的 Firestore 資料');
         document.getElementById('user-edit-area').innerHTML = '';
-        window.loadUsersList();
+        const row = document.querySelector(`#users-list .item-row[data-uid="${uid}"]`);
+        if (row) row.remove(); else window.loadUsersList();
     } catch (err) {
         showMsg('users', '刪除失敗：' + err.message, true);
     }
