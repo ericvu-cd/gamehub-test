@@ -8,7 +8,7 @@
 // 對應「架構調整討論記錄.md」第三輪確認的設計。
 // =====================================================
 import { db } from './firebase-config.js';
-import { doc, writeBatch, collection, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, collection, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ── 通用重試包裝：短暫的網路抖動、Firestore 一時連不上，重試一兩次多半就過了 ──
 // 原本任何 Firestore 讀寫只要失敗一次就直接放棄，玩家的分數/徽章/連稽核記錄
@@ -54,60 +54,73 @@ function nextDailyGuard(currentGuard, netDelta) {
 }
 
 // --- 每日登入獎勵 ---
-export async function claimDailyLogin(uid, currentCoins, currentGuard) {
+// 改用 runTransaction：跟 claimTaskReward 同樣理由，讀「當下最新」的 coins/dailyGuard
+// 去算，不能用呼叫者傳進來的舊快照，不然快照過期會被 Firestore 規則拒絕、
+// 或錯誤覆寫掉別的地方剛寫好的結果。
+export async function claimDailyLogin(uid) {
     const today = utc8DayNumber();
-    const newCoins = currentCoins + 10;
-    const guard = nextDailyGuard(currentGuard, 10);
-
-    const batch = writeBatch(db);
     const userRef = doc(db, 'users', uid);
-    batch.update(userRef, {
-        lastDailyLoginDay: today,
-        coins: newCoins,
-        dailyGuard: guard,
-        lastTransaction: { type: 'daily_login', amount: 10, taskId: null, at: Date.now() }
-    });
-
-    const ledgerRef = doc(collection(db, 'coinLedger', uid, 'entries'));
-    batch.set(ledgerRef, {
-        type: 'daily_login', amount: 10, balanceAfter: newCoins,
-        relatedTaskId: null, note: '', createdAt: Date.now()
-    });
 
     try {
-        await batch.commit();
-        return { ok: true, newCoins, guard };
+        const result = await withRetry(() => runTransaction(db, async (tx) => {
+            const snap = await tx.get(userRef);
+            const data = snap.data();
+            if (data.lastDailyLoginDay === today) return { alreadyClaimed: true };
+
+            const newCoins = (data.coins || 0) + 10;
+            const guard = nextDailyGuard(data.dailyGuard, 10);
+
+            tx.update(userRef, {
+                lastDailyLoginDay: today,
+                coins: newCoins,
+                dailyGuard: guard,
+                lastTransaction: { type: 'daily_login', amount: 10, taskId: null, at: Date.now() }
+            });
+            const ledgerRef = doc(collection(db, 'coinLedger', uid, 'entries'));
+            tx.set(ledgerRef, {
+                type: 'daily_login', amount: 10, balanceAfter: newCoins,
+                relatedTaskId: null, note: '', createdAt: Date.now()
+            });
+            return { alreadyClaimed: false, newCoins, guard };
+        }));
+        if (result.alreadyClaimed) return { ok: true, alreadyClaimed: true };
+        return { ok: true, newCoins: result.newCoins, guard: result.guard };
     } catch (err) {
         return friendlyError(err);
     }
 }
 
 // --- 進入任務扣款（task 為 content.js 讀回的任務物件，含 entryCost） ---
-export async function deductTaskCost(uid, task, currentCoins, currentGuard) {
+export async function deductTaskCost(uid, task) {
     const cost = task.entryCost || 0;
-    if (cost <= 0) return { ok: true, newCoins: currentCoins, cost: 0 };
-    if (currentCoins < cost) return { ok: false, reason: `通行金幣不足，需要 ${cost} 枚` };
+    if (cost <= 0) return { ok: true, cost: 0 };
 
-    const newCoins = currentCoins - cost;
-    const guard = nextDailyGuard(currentGuard, -cost);
-
-    const batch = writeBatch(db);
     const userRef = doc(db, 'users', uid);
-    batch.update(userRef, {
-        coins: newCoins,
-        dailyGuard: guard,
-        lastTransaction: { type: 'task_cost', amount: cost, taskId: task.id, at: Date.now() }
-    });
-
-    const ledgerRef = doc(collection(db, 'coinLedger', uid, 'entries'));
-    batch.set(ledgerRef, {
-        type: 'task_cost', amount: -cost, balanceAfter: newCoins,
-        relatedTaskId: task.id, note: '', createdAt: Date.now()
-    });
-
     try {
-        await batch.commit();
-        return { ok: true, newCoins, cost, guard };
+        const result = await withRetry(() => runTransaction(db, async (tx) => {
+            const snap = await tx.get(userRef);
+            const data = snap.data();
+            const currentCoins = data.coins || 0;
+            if (currentCoins < cost) {
+                return { insufficient: true };
+            }
+
+            const newCoins = currentCoins - cost;
+            const guard = nextDailyGuard(data.dailyGuard, -cost);
+            tx.update(userRef, {
+                coins: newCoins,
+                dailyGuard: guard,
+                lastTransaction: { type: 'task_cost', amount: cost, taskId: task.id, at: Date.now() }
+            });
+            const ledgerRef = doc(collection(db, 'coinLedger', uid, 'entries'));
+            tx.set(ledgerRef, {
+                type: 'task_cost', amount: -cost, balanceAfter: newCoins,
+                relatedTaskId: task.id, note: '', createdAt: Date.now()
+            });
+            return { insufficient: false, newCoins, guard };
+        }));
+        if (result.insufficient) return { ok: false, reason: `通行金幣不足，需要 ${cost} 枚` };
+        return { ok: true, newCoins: result.newCoins, cost, guard: result.guard };
     } catch (err) {
         return friendlyError(err);
     }
@@ -116,37 +129,40 @@ export async function deductTaskCost(uid, task, currentCoins, currentGuard) {
 // --- 商店兌換：扣款樣式基本上跟 deductTaskCost 一樣，但額外多寫一筆 shopRedemptions
 //     紀錄（玩家兌換成功後要給店家看的那筆「收據」），單筆金額上限用 MAX_SHOP_ITEM_COST，
 //     跟任務用的 MAX_SINGLE_TX 分開算（見 firestore.rules 開頭的參數說明） ---
-export async function redeemShopItem(uid, item, currentCoins, currentGuard) {
+export async function redeemShopItem(uid, item) {
     const cost = item.cost || 0;
     if (cost <= 0) return { ok: false, reason: '這個品項尚未設定兌換價格' };
-    if (currentCoins < cost) return { ok: false, reason: `通行金幣不足，需要 ${cost} 枚` };
 
-    const newCoins = currentCoins - cost;
-    const guard = nextDailyGuard(currentGuard, -cost);
-    const redeemedAt = Date.now();
-
-    const batch = writeBatch(db);
     const userRef = doc(db, 'users', uid);
-    batch.update(userRef, {
-        coins: newCoins,
-        dailyGuard: guard,
-        lastTransaction: { type: 'shop_redemption', amount: cost, taskId: null, at: redeemedAt }
-    });
-
-    const ledgerRef = doc(collection(db, 'coinLedger', uid, 'entries'));
-    batch.set(ledgerRef, {
-        type: 'shop_redemption', amount: -cost, balanceAfter: newCoins,
-        relatedTaskId: null, note: `商店兌換：${item.name}`, createdAt: redeemedAt
-    });
-
-    const redemptionRef = doc(collection(db, 'shopRedemptions', uid, 'entries'));
-    batch.set(redemptionRef, {
-        itemId: item.id, itemName: item.name, cost, redeemedAt
-    });
-
     try {
-        await batch.commit();
-        return { ok: true, newCoins, cost, guard, redemption: { itemName: item.name, cost, redeemedAt } };
+        const result = await withRetry(() => runTransaction(db, async (tx) => {
+            const snap = await tx.get(userRef);
+            const data = snap.data();
+            const currentCoins = data.coins || 0;
+            if (currentCoins < cost) return { insufficient: true };
+
+            const newCoins = currentCoins - cost;
+            const guard = nextDailyGuard(data.dailyGuard, -cost);
+            const redeemedAt = Date.now();
+
+            tx.update(userRef, {
+                coins: newCoins,
+                dailyGuard: guard,
+                lastTransaction: { type: 'shop_redemption', amount: cost, taskId: null, at: redeemedAt }
+            });
+            const ledgerRef = doc(collection(db, 'coinLedger', uid, 'entries'));
+            tx.set(ledgerRef, {
+                type: 'shop_redemption', amount: -cost, balanceAfter: newCoins,
+                relatedTaskId: null, note: `商店兌換：${item.name}`, createdAt: redeemedAt
+            });
+            const redemptionRef = doc(collection(db, 'shopRedemptions', uid, 'entries'));
+            tx.set(redemptionRef, {
+                itemId: item.id, itemName: item.name, cost, redeemedAt
+            });
+            return { insufficient: false, newCoins, guard, redemption: { itemName: item.name, cost, redeemedAt } };
+        }));
+        if (result.insufficient) return { ok: false, reason: `通行金幣不足，需要 ${cost} 枚` };
+        return { ok: true, newCoins: result.newCoins, cost, guard: result.guard, redemption: result.redemption };
     } catch (err) {
         return friendlyError(err);
     }

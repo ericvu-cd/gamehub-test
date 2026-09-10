@@ -13,7 +13,7 @@ import {
     EmailAuthProvider
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-    doc, getDoc, setDoc, runTransaction
+    doc, getDoc, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const DEFAULT_PROFILE = { level: 1, coins: 0, badges: [], certificates: [] };
@@ -62,18 +62,26 @@ export async function registerUser(username, password, avatarPresetIds = []) {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     const uid = cred.user.uid;
 
-    // 建立 usernames 保留紀錄 + users 個人資料。
-    // usernames/{username} 的安全規則只允許「create」、不允許覆寫，
-    // 天然達成唯一性（兩人同時搶註冊，Firestore 只會讓一個 create 成功）。
+    // 用 runTransaction 把「保留使用者名稱」跟「寫入個人資料」綁成同一個不可分割的
+    // 操作：以前用兩次獨立的 setDoc，如果第一個成功、第二個因為網路問題等原因失敗，
+    // 會留下一個「名稱已保留、但個人資料不存在」的孤兒帳號——這個帳號密碼登得進
+    // Firebase Auth，但 ensureUserProfile() 永遠查不到資料，玩家永遠卡在「未登記隊員」，
+    // 這個名稱也永久卡死、沒辦法重新註冊，沒有自助復原的路。改成 transaction 之後，
+    // 兩份文件要嘛一起寫成功、要嘛一起失敗，不會再有寫一半的中間狀態。
     try {
-        await setDoc(doc(db, 'usernames', usernameLower), { uid });
-        await setDoc(doc(db, 'users', uid), {
-            nickname: username,
-            avatarId: pickDefaultAvatar(avatarPresetIds),
-            ...DEFAULT_PROFILE
+        await runTransaction(db, async (tx) => {
+            const usernameRef = doc(db, 'usernames', usernameLower);
+            const usersRef = doc(db, 'users', uid);
+            tx.set(usernameRef, { uid });
+            tx.set(usersRef, {
+                nickname: username,
+                avatarId: pickDefaultAvatar(avatarPresetIds),
+                ...DEFAULT_PROFILE
+            });
         });
     } catch (err) {
-        // 名稱保留失敗（例如race condition下被搶先註冊），盡量清理，但 Auth 帳號無法在用戶端自行刪除，
+        // 名稱保留失敗（例如 race condition 下被搶先註冊），交易整個回滾，
+        // 不會留下孤兒帳號；但 Auth 帳號本身無法在用戶端自行刪除，
         // 提示使用者這組帳密已建立但名稱重複，請聯繫管理者或改用別的名稱重新嘗試。
         throw new Error('註冊過程發生問題（可能名稱剛好被搶註），請換一個名稱再試一次');
     }

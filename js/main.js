@@ -106,8 +106,13 @@ async function maybeClaimDailyLogin() {
     if (!currentUser) return;
     const today = utc8DayNumber();
     if (currentUser.lastDailyLoginDay === today) return;
-    const result = await claimDailyLogin(currentUser.uid, currentUser.coins, currentUser.dailyGuard);
-    if (result.ok) {
+    const result = await claimDailyLogin(currentUser.uid);
+    if (result.ok && result.alreadyClaimed) {
+        // 交易內部發現 Firestore 上其實已經領過了（例如同一天在別的裝置/分頁先領過），
+        // 本地快取還沒跟上——只更新這個日期欄位，coins/dailyGuard 不要跟著覆寫成
+        // undefined，下次 currentUser 自然會被其他讀取路徑刷新成正確餘額。
+        currentUser = { ...currentUser, lastDailyLoginDay: today };
+    } else if (result.ok) {
         currentUser = { ...currentUser, coins: result.newCoins, lastDailyLoginDay: today, dailyGuard: result.guard };
         renderUserBar();
         renderTasks(); // 金幣餘額變了，任務卡片的「金幣夠不夠」判斷要跟著重新算，不然會用領獎勵前的舊餘額判斷
@@ -528,7 +533,7 @@ window.handleRedeem = async function (itemId) {
     if (!item || !currentUser) return;
     if (!confirm(`確定要用 ${item.cost} 金幣兌換「${item.name}」嗎？`)) return;
 
-    const r = await redeemShopItem(currentUser.uid, item, currentUser.coins, currentUser.dailyGuard);
+    const r = await redeemShopItem(currentUser.uid, item);
     if (!r.ok) { alert(r.reason || '兌換失敗，請稍後再試'); return; }
 
     currentUser = { ...currentUser, coins: r.newCoins, dailyGuard: r.guard };
@@ -609,11 +614,31 @@ window.switchTab = function (tabName) {
 };
 
 /* ---------------- 初始化 ---------------- */
+// 改用 Promise.allSettled：原本用 Promise.all，只要 7 個資料源裡有任何一個壞掉
+// （格式錯誤、404），整個 Promise 就會 reject，siteData 完全沒被賦值，
+// 導致 renderBanners()/renderTasks() 用到 undefined 的 siteData 直接壞掉、
+// 整個平台首頁一片空白（先前 badges.json 少一個逗號就整站掛掉，就是這個機制）。
+// 現在每個資料源獨立失敗、獨立記錄、獨立給空陣列預設值，壞一個只影響那個功能區塊
+// （例如 badges.json 壞了，徽章顯示不出來，但任務/公告/banner 照常運作）。
 async function loadAllContent() {
-    const [banners, tasks, news, badges, certificates, avatarPresets, shopItems] = await Promise.all([
-        loadActiveBanners(), loadTasks(), loadNews(), loadBadges(), loadCertificates(), loadAvatarPresets(), loadShopItems()
-    ]);
-    siteData = { banners, tasks, news, badges, certificates, avatarPresets, shopItems };
+    const loaders = {
+        banners: loadActiveBanners, tasks: loadTasks, news: loadNews,
+        badges: loadBadges, certificates: loadCertificates,
+        avatarPresets: loadAvatarPresets, shopItems: loadShopItems
+    };
+    const keys = Object.keys(loaders);
+    const results = await Promise.allSettled(keys.map(k => loaders[k]()));
+
+    siteData = {};
+    results.forEach((r, i) => {
+        const key = keys[i];
+        if (r.status === 'fulfilled') {
+            siteData[key] = r.value;
+        } else {
+            console.error(`讀取 ${key} 失敗，這個區塊會先顯示為空`, r.reason);
+            siteData[key] = [];
+        }
+    });
 }
 
 function hideLoadingScreen() {

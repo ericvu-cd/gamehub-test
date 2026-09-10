@@ -158,7 +158,7 @@ export async function openTask(task, currentUser, onCoinsChanged) {
     // 扣款的同時平行查詢玩家在這個任務的個人最佳成績（架構調整討論記錄第四輪、方案A）：
     // 扣款本來就要 await，順便平行查成績幾乎不增加等待時間，查詢結果有 sessionStorage 快取。
     const [costResult, myScore] = await Promise.all([
-        deductTaskCost(currentUser.uid, task, currentUser.coins, currentUser.dailyGuard),
+        deductTaskCost(currentUser.uid, task),
         fetchMyScore(task.id, currentUser.uid)
     ]);
     if (!costResult.ok) {

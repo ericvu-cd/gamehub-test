@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>友魚守護團 · 簡報展示台</title>
+<link rel="icon" href="data:,">
+<style>
+    :root {
+        --ink-deep: #05141c;
+        --ink: #0b2430;
+        --panel: #0e2e3c;
+        --line: rgba(140, 200, 220, 0.16);
+        --teal: #2fb6a8;
+        --teal-bright: #5fe3d1;
+        --text: #dfeef2;
+        --text-dim: rgba(223, 238, 242, 0.5);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+        margin: 0; height: 100%;
+        background:
+            radial-gradient(ellipse 90% 60% at 50% -10%, #123c46 0%, transparent 60%),
+            radial-gradient(ellipse 80% 50% at 85% 110%, #0d3230 0%, transparent 55%),
+            var(--ink-deep);
+        color: var(--text);
+        font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+        overflow: hidden;
+    }
+
+    /* ── 兩欄版面：左側捷徑清單，右側手機畫面 ── */
+    #layout {
+        height: 100%;
+        display: flex;
+    }
+
+    #sidebar {
+        flex: 0 0 220px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 24px 16px;
+        border-right: 1px solid var(--line);
+        overflow-y: auto;
+    }
+    .chip {
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 10px 12px 16px;
+        font-size: 0.86rem;
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+    }
+    .chip span.name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chip:hover { border-color: var(--teal); }
+    .chip.active { border-color: var(--teal-bright); background: #103a3a; color: var(--teal-bright); }
+    .chip .edit-dot {
+        flex-shrink: 0;
+        width: 22px; height: 22px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 50%;
+        font-size: 0.72rem;
+        color: var(--text-dim);
+        opacity: 0.6;
+    }
+    .chip .edit-dot:hover { opacity: 1; background: rgba(255,255,255,0.08); }
+    .chip.add-new { color: var(--text-dim); border-style: dashed; justify-content: center; padding: 12px; }
+
+    #present-btn {
+        margin-top: auto;
+        background: var(--teal);
+        color: #04211d;
+        border: none;
+        border-radius: 12px;
+        padding: 12px;
+        font-size: 0.86rem;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+    }
+    #present-btn:hover { background: var(--teal-bright); }
+
+    /* ── 右側：手機畫面舞台 ── */
+    #stage {
+        flex: 1 1 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 0;
+        position: relative;
+    }
+
+    #phone {
+        position: relative;
+        background: #000;
+        border-radius: 24px;
+        padding: 5px; /* 邊框盡量薄，讓畫面本身佔滿大部分空間 */
+        box-shadow:
+            0 30px 70px rgba(0,0,0,0.5),
+            0 0 0 1px rgba(255,255,255,0.06) inset;
+    }
+    #phone-screen {
+        position: relative;
+        width: 100%; height: 100%;
+        border-radius: 18px;
+        overflow: hidden;
+        background: #000;
+    }
+    #frame-scaler {
+        position: absolute; inset: 0;
+        overflow: hidden;
+    }
+    #frame {
+        border: 0;
+        background: #fff;
+        display: block;
+        transform-origin: top left;
+    }
+
+    #phone-empty {
+        position: absolute; inset: 0;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 10px; padding: 30px; text-align: center;
+        background: linear-gradient(180deg, #0c2e38 0%, #071a20 100%);
+        color: rgba(223,238,242,0.5);
+        font-size: 0.82rem; line-height: 1.7;
+    }
+    #phone-empty .icon { font-size: 2.2rem; opacity: 0.7; }
+
+    /* ── 簡報模式：整個側欄藏起來，只留純淨的手機畫面 ── */
+    body.present-mode #sidebar { display: none; }
+    body.present-mode #stage { cursor: none; }
+    #exit-present {
+        position: fixed;
+        top: 18px; right: 18px;
+        z-index: 50;
+        display: none;
+        background: transparent;
+        border: none;
+        color: var(--text-dim);
+        font-size: 1.1rem;
+        cursor: pointer;
+        opacity: 0.35;
+    }
+    #exit-present:hover { opacity: 1; }
+    body.present-mode #exit-present { display: block; }
+
+    /* ── 編輯捷徑的小彈窗 ── */
+    #edit-overlay {
+        position: fixed; inset: 0; z-index: 100;
+        background: rgba(4, 14, 20, 0.72);
+        display: none; align-items: center; justify-content: center;
+    }
+    #edit-overlay.show { display: flex; }
+    #edit-card {
+        width: 90%; max-width: 380px;
+        background: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 22px 22px 18px;
+    }
+    #edit-card h2 { margin: 0 0 16px; font-size: 1rem; }
+    #edit-card label { display: block; font-size: 0.76rem; color: var(--text-dim); margin: 12px 0 5px; }
+    #edit-card input {
+        width: 100%; background: var(--panel); border: 1px solid var(--line);
+        border-radius: 8px; padding: 9px 12px; color: var(--text); font-size: 0.86rem;
+        outline: none; font-family: inherit;
+    }
+    #edit-card input:focus { border-color: var(--teal); }
+    #edit-card .btn-row { display: flex; gap: 8px; margin-top: 18px; }
+    #edit-card .btn-row .btn {
+        flex: 1; text-align: center;
+        background: var(--panel); border: 1px solid var(--line); color: var(--text);
+        border-radius: 8px; padding: 9px; font-size: 0.85rem; cursor: pointer; font-family: inherit;
+    }
+    #edit-card .btn:hover { border-color: var(--teal); }
+    #edit-card .btn.primary { background: var(--teal); color: #04211d; border-color: var(--teal); }
+    #edit-card .btn.primary:hover { background: var(--teal-bright); }
+</style>
+</head>
+<body>
+
+<div id="layout">
+    <div id="sidebar">
+        <div id="shortcuts-list"></div>
+        <button id="present-btn" onclick="enterPresentMode()">🖥 簡報模式</button>
+    </div>
+
+    <div id="stage">
+        <div id="phone">
+            <div id="phone-screen">
+                <div id="phone-empty">
+                    <div class="icon">⚓</div>
+                    <div>點左側捷徑載入畫面</div>
+                </div>
+                <div id="frame-scaler">
+                    <iframe id="frame" style="display:none;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button id="exit-present" onclick="exitPresentMode()">✕</button>
+
+<div id="edit-overlay">
+    <div id="edit-card">
+        <h2 id="edit-title">新增捷徑</h2>
+        <label>名稱</label>
+        <input id="edit-name" type="text" placeholder="6htw 台灣海線任務">
+        <label>網址</label>
+        <input id="edit-url" type="text" placeholder="https://xxx.github.io/6htw/">
+        <div class="btn-row">
+            <button class="btn" onclick="closeEditOverlay()">取消</button>
+            <button class="btn" id="edit-delete-btn" onclick="deleteEditingShortcut()" style="display:none;">刪除</button>
+            <button class="btn primary" onclick="saveEditingShortcut()">儲存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = 'phoneDemoShortcuts';
+    let shortcuts = [];
+    let activeIndex = -1;
+    let editingIndex = -1; // -1 代表「新增」，>=0 代表「編輯第幾個」
+
+    function loadShortcutsFromStorage() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            shortcuts = raw ? JSON.parse(raw) : defaultShortcuts();
+        } catch { shortcuts = defaultShortcuts(); }
+    }
+    function saveShortcutsToStorage() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(shortcuts)); } catch {}
+    }
+    function defaultShortcuts() {
+        return [
+            { name: '平台首頁', url: '' },
+            { name: '6htw 台灣海線任務', url: '' },
+            { name: 'fishmarket', url: '' },
+            { name: 'mlhbtrip', url: '' },
+            { name: 'fishball', url: '' },
+            { name: 'stoneweir', url: '' },
+        ];
+    }
+
+    function renderShortcuts() {
+        const box = document.getElementById('shortcuts-list');
+        box.innerHTML = '';
+        shortcuts.forEach((s, i) => {
+            const chip = document.createElement('div');
+            chip.className = 'chip' + (i === activeIndex ? ' active' : '');
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'name';
+            nameSpan.textContent = s.name || '未命名';
+            chip.appendChild(nameSpan);
+            chip.onclick = () => {
+                if (!s.url) { openEditOverlay(i); return; }
+                setFrame(s.url);
+                activeIndex = i;
+                renderShortcuts();
+            };
+            const editDot = document.createElement('span');
+            editDot.className = 'edit-dot';
+            editDot.textContent = '✎';
+            editDot.title = '編輯這個捷徑';
+            editDot.onclick = (e) => { e.stopPropagation(); openEditOverlay(i); };
+            chip.appendChild(editDot);
+            box.appendChild(chip);
+        });
+        const addChip = document.createElement('div');
+        addChip.className = 'chip add-new';
+        addChip.textContent = '+ 新增捷徑';
+        addChip.onclick = () => openEditOverlay(-1);
+        box.appendChild(addChip);
+    }
+
+    function setFrame(url) {
+        if (!url) return;
+        const frame = document.getElementById('frame');
+        const empty = document.getElementById('phone-empty');
+        frame.src = url;
+        frame.style.display = 'block';
+        empty.style.display = 'none';
+    }
+
+    // ── 編輯捷徑彈窗 ──
+    function openEditOverlay(index) {
+        editingIndex = index;
+        const isNew = index === -1;
+        document.getElementById('edit-title').textContent = isNew ? '新增捷徑' : '編輯捷徑';
+        document.getElementById('edit-name').value = isNew ? '' : shortcuts[index].name;
+        document.getElementById('edit-url').value = isNew ? '' : shortcuts[index].url;
+        document.getElementById('edit-delete-btn').style.display = isNew ? 'none' : 'block';
+        document.getElementById('edit-overlay').classList.add('show');
+    }
+    function closeEditOverlay() {
+        document.getElementById('edit-overlay').classList.remove('show');
+    }
+    function saveEditingShortcut() {
+        const name = document.getElementById('edit-name').value.trim() || '未命名';
+        const url = document.getElementById('edit-url').value.trim();
+        if (editingIndex === -1) {
+            shortcuts.push({ name, url });
+        } else {
+            shortcuts[editingIndex] = { name, url };
+        }
+        saveShortcutsToStorage();
+        renderShortcuts();
+        closeEditOverlay();
+    }
+    function deleteEditingShortcut() {
+        if (editingIndex >= 0) {
+            shortcuts.splice(editingIndex, 1);
+            saveShortcutsToStorage();
+            renderShortcuts();
+        }
+        closeEditOverlay();
+    }
+
+    // ── 簡報模式 ──
+    // 進入時順便叫瀏覽器全螢幕（比 F11 更乾淨：連網址列、分頁列都會一起消失）。
+    // 全螢幕 API 一定要在真正的使用者點擊事件裡呼叫才會生效，不能在頁面載入時
+    // 自動觸發（瀏覽器會擋掉），所以掛在「簡報模式」這顆按鈕的 click 上剛剛好。
+    function enterPresentMode() {
+        document.body.classList.add('present-mode');
+        requestAnimationFrame(fitFrame);
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {
+                // 有些瀏覽器/情境會擋（例如不是使用者直接點擊觸發），
+                // 全螢幕失敗不影響簡報模式本身，畫面一樣會切換乾淨。
+            });
+        }
+    }
+    function exitPresentMode() {
+        document.body.classList.remove('present-mode');
+        requestAnimationFrame(fitFrame);
+        if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+        }
+    }
+    // 玩家自己按瀏覽器內建的全螢幕退出鍵、或按 Esc 離開全螢幕時，
+    // 簡報模式也要跟著一起退出，兩邊狀態才不會對不上。
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && document.body.classList.contains('present-mode')) {
+            document.body.classList.remove('present-mode');
+            requestAnimationFrame(fitFrame);
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') exitPresentMode();
+    });
+
+    // ── 手機外框大小 + iframe 縮放比例，全部由 JS 算，不靠 CSS aspect-ratio ──
+    // （CSS aspect-ratio 搭配 max-height 用固定 width 會讓寬高比跑掉，改用 JS 算才穩）
+    const DESIGN_W = 390;
+    const DESIGN_H = 844;
+
+    function fitFrame() {
+        const stage = document.getElementById('stage');
+        const phone = document.getElementById('phone');
+        const screenEl = document.getElementById('phone-screen');
+        const frame = document.getElementById('frame');
+
+        const availW = stage.clientWidth * 0.98;
+        const availH = stage.clientHeight * 0.98;
+        const outerRatio = DESIGN_W / DESIGN_H;
+        let phoneW = availH * outerRatio;
+        let phoneH = availH;
+        if (phoneW > availW) { phoneW = availW; phoneH = availW / outerRatio; }
+
+        phone.style.width = phoneW + 'px';
+        phone.style.height = phoneH + 'px';
+
+        const innerW = screenEl.clientWidth;
+        const innerH = screenEl.clientHeight;
+        if (!innerW || !innerH) return;
+        const scale = Math.min(innerW / DESIGN_W, innerH / DESIGN_H);
+        frame.style.width = DESIGN_W + 'px';
+        frame.style.height = DESIGN_H + 'px';
+        frame.style.transform = 'scale(' + scale + ')';
+    }
+
+    if (typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(fitFrame).observe(document.getElementById('stage'));
+    }
+
+    loadShortcutsFromStorage();
+    renderShortcuts();
+    fitFrame();
+</script>
+</body>
+</html>

@@ -6,8 +6,13 @@
 
 function nowMs() { return Date.now(); }
 
+// 內容資料改動不頻繁（banner/任務/徽章字典這些），沒必要每次進站都無視瀏覽器快取
+// 重新下載一次——原本的 cache:'no-store' 會讓每個玩家每次打開平台首頁都重新抓
+// 這 7 個 JSON 檔，增加不必要的載入時間跟流量。改用瀏覽器預設快取行為即可：
+// GitHub Pages 本身有設定合理的 Cache-Control，內容真的更新後，使用者重新整理
+// 幾次、或瀏覽器快取到期，自然就會抓到新版本，不需要強制每次都繞過快取。
 async function fetchJson(path) {
-    const res = await fetch(path, { cache: 'no-store' });
+    const res = await fetch(path);
     if (!res.ok) throw new Error(`讀取 ${path} 失敗（HTTP ${res.status}）`);
     return res.json();
 }
