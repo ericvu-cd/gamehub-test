@@ -9,29 +9,43 @@
 //   - 「我的成績」用獨立快取（my_score_ 前綴），跟前十名快取（lb_cache_）分開，互不影響
 //   - 快取要能區分「還沒查過」跟「查過、結果是沒玩過（null）」，見 MY_SCORE_CACHE_PREFIX 相關函式
 //   - 玩家交出更好成績時，快取用「就地覆寫」，不清掉重查（見 submitLeaderboardScore 內的 writeMyScoreCache）
+//
+// 減少讀取量的兩個調整（架構調整討論記錄第五輪）：
+//   1. 快取從 sessionStorage 改成 localStorage + 時間戳記：原本 sessionStorage 只要分頁一關
+//      就整個失效，玩家換分頁/重開瀏覽器都要重新查一次；改成 localStorage 並帶著時間戳記，
+//      在效期內（TOP10_CACHE_TTL_MS）不管開幾次分頁都直接用快取，過期才真的重查。
+//   2. 前十名改成讀「排行榜快照」單一文件（leaderboardSummary/{taskId}），而不是每次都
+//      對 leaderboard/{taskId}/entries 下 orderBy+limit(10) 查詢——後者每次沒快取都是
+//      10 次讀取（讀幾筆算幾次），快照只要讀 1 份文件＝1 次讀取。快照只在玩家真的
+//      破紀錄、可能擠進前十名時才更新（見 submitLeaderboardScore 內的 updateLeaderboardSnapshot），
+//      這種情況本來就有 gate 擋著、不常發生，用「查詢次數遠多於破紀錄次數」換算下來非常划算。
 // =====================================================
 import { db } from './firebase-config.js';
 import {
-    doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit
+    doc, getDoc, setDoc, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { withRetry } from './coins.js';
 
 const CACHE_PREFIX = 'lb_cache_';
 const MY_SCORE_CACHE_PREFIX = 'my_score_';
+const TOP10_CACHE_TTL_MS = 5 * 60 * 1000; // 前十名快取效期：5 分鐘
 
 function readCache(taskId) {
     try {
-        const raw = sessionStorage.getItem(CACHE_PREFIX + taskId);
-        return raw ? JSON.parse(raw) : null;
+        const raw = localStorage.getItem(CACHE_PREFIX + taskId);
+        if (!raw) return null;
+        const { rows, at } = JSON.parse(raw);
+        if (Date.now() - at > TOP10_CACHE_TTL_MS) return null; // 過期，當作沒有快取
+        return rows;
     } catch { return null; }
 }
 
 function writeCache(taskId, rows) {
-    try { sessionStorage.setItem(CACHE_PREFIX + taskId, JSON.stringify(rows)); } catch { /* 略過寫入失敗 */ }
+    try { localStorage.setItem(CACHE_PREFIX + taskId, JSON.stringify({ rows, at: Date.now() })); } catch { /* 略過寫入失敗 */ }
 }
 
 function clearCache(taskId) {
-    try { sessionStorage.removeItem(CACHE_PREFIX + taskId); } catch { /* 略過 */ }
+    try { localStorage.removeItem(CACHE_PREFIX + taskId); } catch { /* 略過 */ }
 }
 
 // 讀「我的成績」快取，回傳 { fetched: true, value } 或 null（null 代表這個分頁還沒查過）
@@ -51,6 +65,28 @@ function writeMyScoreCache(taskId, uid, value) {
     try {
         sessionStorage.setItem(MY_SCORE_CACHE_PREFIX + uid + '_' + taskId, JSON.stringify({ fetched: true, value }));
     } catch { /* 略過寫入失敗 */ }
+}
+
+// 更新「排行榜前十名快照」：用 runTransaction 讀取目前快照、把這筆新成績併進去重新
+// 排序取前十，寫回同一份文件。只有 submitLeaderboardScore 判斷「真的破紀錄」時才會呼叫，
+// 平常查看排行榜完全不會走到這裡，不會增加查詢端的負擔。
+async function updateLeaderboardSnapshot(taskId, uid, playerName, scoreLabel, scoreValue) {
+    const snapRef = doc(db, 'leaderboardSummary', taskId);
+    try {
+        await withRetry(() => runTransaction(db, async (tx) => {
+            const snap = await tx.get(snapRef);
+            let entries = snap.exists() ? (snap.data().entries || []) : [];
+            entries = entries.filter(e => e.uid !== uid); // 先移除這位玩家的舊資料，避免重複
+            entries.push({ uid, playerName, scoreLabel, scoreValue });
+            entries.sort((a, b) => b.scoreValue - a.scoreValue);
+            entries = entries.slice(0, 10);
+            tx.set(snapRef, { entries, updatedAt: Date.now() });
+        }));
+    } catch (err) {
+        // 快照更新失敗不影響玩家分數本身已經寫入成功，只是「前十名顯示」這塊可能暫時
+        // 不是最新，下次有人破紀錄時還是會再嘗試更新，不用特別處理、印個警告即可。
+        console.warn('[leaderboard] 更新排行榜快照失敗', err);
+    }
 }
 
 // 提交成績：只有比原本個人最佳成績更好時才會真的覆寫
@@ -74,6 +110,7 @@ export async function submitLeaderboardScore(uid, playerName, taskId, payload) {
         if (result.updated) {
             clearCache(taskId); // 有更好的成績寫入，下次讀取要拿最新排行，不能用舊快取
             writeMyScoreCache(taskId, uid, { scoreLabel, scoreValue }); // 就地覆寫，不用再多打一次 Firestore 確認
+            await updateLeaderboardSnapshot(taskId, uid, playerName, scoreLabel, scoreValue);
         }
         return result;
     } catch (err) {
@@ -95,17 +132,14 @@ export async function fetchMyScore(taskId, uid) {
     return value;
 }
 
-// 讀取某任務的排行榜前 10 名，有 sessionStorage 快取時優先用快取（不佔讀取額度）
+// 讀取某任務的排行榜前 10 名：改讀快照文件（1 次讀取），不再對 entries 下
+// orderBy+limit(10) 查詢（10 次讀取）。有本機快取（5 分鐘內）時優先用快取，完全不佔額度。
 export async function fetchLeaderboard(taskId) {
     const cached = readCache(taskId);
     if (cached) return cached;
 
-    const snap = await getDocs(query(
-        collection(db, 'leaderboard', taskId, 'entries'),
-        orderBy('scoreValue', 'desc'),
-        limit(10)
-    ));
-    const rows = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    const snap = await getDoc(doc(db, 'leaderboardSummary', taskId));
+    const rows = snap.exists() ? (snap.data().entries || []) : [];
     writeCache(taskId, rows);
     return rows;
 }
