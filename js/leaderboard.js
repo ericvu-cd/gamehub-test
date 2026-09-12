@@ -22,7 +22,7 @@
 // =====================================================
 import { db } from './firebase-config.js';
 import {
-    doc, getDoc, setDoc, runTransaction
+    doc, getDoc, setDoc, runTransaction, collection, getDocs, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { withRetry } from './coins.js';
 
@@ -134,12 +134,33 @@ export async function fetchMyScore(taskId, uid) {
 
 // 讀取某任務的排行榜前 10 名：改讀快照文件（1 次讀取），不再對 entries 下
 // orderBy+limit(10) 查詢（10 次讀取）。有本機快取（5 分鐘內）時優先用快取，完全不佔額度。
+//
+// ⚠️ 新舊資料銜接：leaderboardSummary 是全新的集合，上線當下是空的，既有的歷史
+// 成績都還在 leaderboard/{taskId}/entries 裡（後台管理畫面看到的就是這份）。
+// 如果快照文件還不存在，就自動退回舊的查詢方式抓一次（只有這一次是 10 次讀取），
+// 順便把結果回填進快照——之後同一個任務的查詢就都能吃到快照的低成本，
+// 不需要另外寫一次性的遷移程式。
 export async function fetchLeaderboard(taskId) {
     const cached = readCache(taskId);
     if (cached) return cached;
 
-    const snap = await getDoc(doc(db, 'leaderboardSummary', taskId));
-    const rows = snap.exists() ? (snap.data().entries || []) : [];
+    const snapRef = doc(db, 'leaderboardSummary', taskId);
+    const snap = await getDoc(snapRef);
+    let rows;
+    if (snap.exists()) {
+        rows = snap.data().entries || [];
+    } else {
+        // 快照還沒建立過（新任務，或這是上線後第一次查詢這個任務）：退回舊方式查一次
+        const oldSnap = await getDocs(query(
+            collection(db, 'leaderboard', taskId, 'entries'),
+            orderBy('scoreValue', 'desc'),
+            limit(10)
+        ));
+        rows = oldSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        setDoc(snapRef, { entries: rows, updatedAt: Date.now() }).catch(() => {
+            // 回填失敗不影響這次查詢結果本身，只是下次可能又要再查一次舊方式，略過即可
+        });
+    }
     writeCache(taskId, rows);
     return rows;
 }
