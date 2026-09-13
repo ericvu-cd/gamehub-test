@@ -819,13 +819,25 @@ function renderSettingsForm() {
                 「升等所需」是背包裡徽章+證書的加權總數每滿這個數字就升一級（權重讀各徽章/證書自己的 weight 欄位）。
                 這兩個值玩家端有做快取，改完之後玩家要重新整理頁面（或等快取過期）才會套用到新的值，不是存檔當下全部人立刻更新。
             </p>
+            <div class="field">
+                <label>確認碼</label>
+                <input name="confirmCode" type="password" autocomplete="off" placeholder="這兩個數字牽動全平台的金幣/等級規則，存檔前需要輸入確認碼">
+            </div>
             <button class="btn-save" type="submit">儲存設定</button>
         </form>`;
 }
 
+// 這兩個數字改動範圍是「全平台所有玩家」，存檔前多一道確認碼防呆，避免手滑誤觸。
+// 目前先寫死在這裡、不提供從介面更改，之後如果要開放改確認碼再另外處理。
+const SETTINGS_CONFIRM_CODE = 'huansia30';
+
 window.submitSettings = async function (e) {
     e.preventDefault();
     const f = new FormData(e.target);
+    if (f.get('confirmCode') !== SETTINGS_CONFIRM_CODE) {
+        showMsg('settings', '確認碼錯誤，未儲存', true);
+        return false;
+    }
     const data = {
         dailyLoginCoins: Number(f.get('dailyLoginCoins')),
         levelStep: Number(f.get('levelStep'))
