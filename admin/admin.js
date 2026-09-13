@@ -176,7 +176,8 @@ const editState = {
     news: { editingId: null, pendingFile: null, sha: null, items: [] },
     badges: { editingId: null, pendingFile: null, sha: null, items: {} },
     certificates: { editingId: null, pendingFile: null, sha: null, items: {} },
-    shopItems: { editingId: null, pendingFile: null, sha: null, items: [] }
+    shopItems: { editingId: null, pendingFile: null, sha: null, items: [] },
+    settings: { sha: null, data: { dailyLoginCoins: 10, levelStep: 25 } }
 };
 
 function showMsg(panelKey, text, isError = false) {
@@ -789,9 +790,56 @@ window.submitCertificate = (e) => submitDict('certificates', e);
 async function loadAllContentLists() {
     await Promise.all([
         loadBannersList(), loadTasksList(), loadNewsList(),
-        loadDictList('badges'), loadDictList('certificates'), loadShopItemsList()
+        loadDictList('badges'), loadDictList('certificates'), loadShopItemsList(),
+        loadSettingsAdmin()
     ]);
 }
+
+// 平台參數設定：每日登入贈送金幣數、升等所需加權物件數。單一物件的設定檔，
+// 不是清單，所以不用套用其他內容那套「新增/編輯/刪除個別項目」的介面，
+// 就是一個簡單表單、兩個數字欄位、存檔直接整份覆寫。
+async function loadSettingsAdmin() {
+    const { data, sha } = await readJsonFile('data/settings.json', { dailyLoginCoins: 10, levelStep: 25 });
+    editState.settings.data = data;
+    editState.settings.sha = sha;
+    renderSettingsForm();
+}
+
+function renderSettingsForm() {
+    const area = document.getElementById('settings-form-area');
+    if (!area) return;
+    const s = editState.settings.data;
+    area.innerHTML = `
+        <form class="entity-form" onsubmit="return window.submitSettings(event)">
+            <div class="two-col">
+                <div class="field"><label>每日登入贈送金幣數</label><input name="dailyLoginCoins" type="number" min="0" value="${s.dailyLoginCoins}"></div>
+                <div class="field"><label>升等所需加權物件數</label><input name="levelStep" type="number" min="1" value="${s.levelStep}"></div>
+            </div>
+            <p style="font-size:11px;color:#8B8577;margin:-4px 0 10px;line-height:1.6;">
+                「升等所需」是背包裡徽章+證書的加權總數每滿這個數字就升一級（權重讀各徽章/證書自己的 weight 欄位）。
+                這兩個值玩家端有做快取，改完之後玩家要重新整理頁面（或等快取過期）才會套用到新的值，不是存檔當下全部人立刻更新。
+            </p>
+            <button class="btn-save" type="submit">儲存設定</button>
+        </form>`;
+}
+
+window.submitSettings = async function (e) {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const data = {
+        dailyLoginCoins: Number(f.get('dailyLoginCoins')),
+        levelStep: Number(f.get('levelStep'))
+    };
+    try {
+        const res = await writeJsonFile('data/settings.json', data, editState.settings.sha, '後台更新平台設定');
+        editState.settings.data = data;
+        editState.settings.sha = res.content.sha;
+        showMsg('settings', '已儲存');
+    } catch (err) {
+        showMsg('settings', err.message, true);
+    }
+    return false;
+};
 
 /* =====================================================
    使用者資料編修（維持 Firebase Google 登入 + Firestore）
@@ -826,14 +874,17 @@ async function loadUserIntoForm(username) {
     await loadUserByUid(unameSnap.data().uid);
 }
 
-// 等級純計算，做法跟 js/main.js 的 computeLevel 一致：背包物件（徽章+證書）加權合計，每 25 個升一級。
+// 等級純計算，做法跟 js/main.js 的 computeLevel 一致：背包物件（徽章+證書）加權合計，
+// 每 N 個升一級，N 讀 editState.settings（來自 data/settings.json），跟玩家端讀同一份設定，
+// 兩邊才不會算出不一樣的等級。
 // 後台不再提供手動改等級的欄位（改了也會被這個算出來的值蓋掉，保留只會誤導管理者）。
 function computeLevelAdmin(u) {
     const badges = editState.badges.items || {};
     const certificates = editState.certificates.items || {};
     const badgeWeight = (u.badges || []).reduce((sum, id) => sum + (badges[id]?.weight ?? 1), 0);
     const certWeight = (u.certificates || []).reduce((sum, id) => sum + (certificates[id]?.weight ?? 1), 0);
-    return Math.floor((badgeWeight + certWeight) / 25) + 1;
+    const levelStep = editState.settings?.data?.levelStep ?? 25;
+    return Math.floor((badgeWeight + certWeight) / levelStep) + 1;
 }
 
 // ── 徽章／證書挑選器：取代原本「逗號分隔ID」文字框 ──

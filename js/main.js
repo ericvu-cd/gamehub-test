@@ -6,7 +6,7 @@ import {
     registerUser, loginUser, logoutUser, changePassword, watchAuthState, validateUsername, validatePassword
 } from './auth.js';
 import {
-    loadActiveBanners, loadTasks, loadNews, loadBadges, loadCertificates, loadAvatarPresets, loadShopItems
+    loadActiveBanners, loadTasks, loadNews, loadBadges, loadCertificates, loadAvatarPresets, loadShopItems, loadSettings
 } from './content.js';
 import { claimDailyLogin, redeemShopItem } from './coins.js';
 import { openTask, initTaskMessageListener } from './tasks.js';
@@ -33,21 +33,25 @@ let selectedAvatarId = null;
 })();
 
 /* ---------------- 解鎖條件判定（多條件 AND） ---------------- */
-// 等級純計算，不存進 Firestore：背包裡每 25 個已得物件（徽章+證書加權合計）升一級。
+// 等級純計算，不存進 Firestore：背包裡每 N 個已得物件（徽章+證書加權合計）升一級，
+// N 是 data/settings.json 的 levelStep，後台可以直接改、不用改程式碼——
+// 這裡不再寫死常數，改成每次都讀 siteData.settings，萬一 loadAllContent() 還沒
+// 跑完（siteData 尚未賦值）就有地方呼叫到，用 25 當一個合理的備援預設值。
 // 權重讀 data/badges.json／certificates.json 的 weight 欄位，沒設定就當作 1（等同「每個算1個」）。
-const LEVEL_STEP = 25; // 每 25 個加權物件升一級，跟後台的權重欄位是同一套邏輯
+function getLevelStep() {
+    return siteData?.settings?.levelStep ?? 25;
+}
 
-// 等級純計算，不存進 Firestore：背包裡每 25 個已得物件（徽章+證書加權合計）升一級。
-// 權重讀 data/badges.json／certificates.json 的 weight 欄位，沒設定就當作 1（等同「每個算1個」）。
 function computeLevelInfo(user) {
-    if (!user) return { level: 1, current: 0, target: LEVEL_STEP };
+    const levelStep = getLevelStep();
+    if (!user) return { level: 1, current: 0, target: levelStep };
     const badgeWeight = (user.badges || []).reduce((sum, id) => sum + (siteData.badges[id]?.weight ?? 1), 0);
     const certWeight = (user.certificates || []).reduce((sum, id) => sum + (siteData.certificates[id]?.weight ?? 1), 0);
     const totalWeight = badgeWeight + certWeight;
     return {
-        level: Math.floor(totalWeight / LEVEL_STEP) + 1,
-        current: totalWeight % LEVEL_STEP,
-        target: LEVEL_STEP
+        level: Math.floor(totalWeight / levelStep) + 1,
+        current: totalWeight % levelStep,
+        target: levelStep
     };
 }
 
@@ -106,7 +110,8 @@ async function maybeClaimDailyLogin() {
     if (!currentUser) return;
     const today = utc8DayNumber();
     if (currentUser.lastDailyLoginDay === today) return;
-    const result = await claimDailyLogin(currentUser.uid);
+    const coinsAmount = siteData?.settings?.dailyLoginCoins ?? 10;
+    const result = await claimDailyLogin(currentUser.uid, coinsAmount);
     if (result.ok && result.alreadyClaimed) {
         // 交易內部發現 Firestore 上其實已經領過了（例如同一天在別的裝置/分頁先領過），
         // 本地快取還沒跟上——只更新這個日期欄位，coins/dailyGuard 不要跟著覆寫成
@@ -116,7 +121,7 @@ async function maybeClaimDailyLogin() {
         currentUser = { ...currentUser, coins: result.newCoins, lastDailyLoginDay: today, dailyGuard: result.guard };
         renderUserBar();
         renderTasks(); // 金幣餘額變了，任務卡片的「金幣夠不夠」判斷要跟著重新算，不然會用領獎勵前的舊餘額判斷
-        showToast('每日登入獎勵 +10 通行金幣！');
+        showToast(`每日登入獎勵 +${coinsAmount} 通行金幣！`);
     } else {
         console.warn('每日登入獎勵領取失敗：', result.reason);
     }
@@ -624,8 +629,15 @@ async function loadAllContent() {
     const loaders = {
         banners: loadActiveBanners, tasks: loadTasks, news: loadNews,
         badges: loadBadges, certificates: loadCertificates,
-        avatarPresets: loadAvatarPresets, shopItems: loadShopItems
+        avatarPresets: loadAvatarPresets, shopItems: loadShopItems,
+        settings: loadSettings
     };
+    // 大部分內容源失敗時給空陣列當預設沒問題（顯示為空清單），但 settings 是物件
+    // 不是清單，玩家端會用 siteData.settings.dailyLoginCoins 這樣的欄位存取，
+    // 給空陣列的話會變成 undefined、後面用到的地方就出錯了，所以要給對應的物件預設值。
+    // 實務上 loadSettings() 自己內部已經處理過讀取失敗的情況、幾乎不會真的走到這裡，
+    // 這裡只是多一層保險。
+    const FALLBACKS = { settings: { dailyLoginCoins: 10, levelStep: 25 } };
     const keys = Object.keys(loaders);
     const results = await Promise.allSettled(keys.map(k => loaders[k]()));
 
@@ -636,7 +648,7 @@ async function loadAllContent() {
             siteData[key] = r.value;
         } else {
             console.error(`讀取 ${key} 失敗，這個區塊會先顯示為空`, r.reason);
-            siteData[key] = [];
+            siteData[key] = FALLBACKS[key] ?? [];
         }
     });
 }

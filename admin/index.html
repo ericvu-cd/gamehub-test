@@ -152,6 +152,7 @@
             <button data-tab="users" onclick="switchAdminTab('users')">使用者資料</button>
             <button data-tab="leaderboard" onclick="switchAdminTab('leaderboard')">排行榜</button>
             <button data-tab="logs" onclick="switchAdminTab('logs')">系統記錄</button>
+            <button data-tab="settings" onclick="switchAdminTab('settings')">平台設定</button>
         </nav>
 
         <section id="panel-banners" class="panel active">
@@ -478,6 +479,17 @@
                     <button class="icon-btn" onclick="window.loadTaskLogs()">重新整理</button>
                     <div id="logs-list-loading" class="empty-note hidden">載入中...</div>
                     <div id="logs-list" style="margin-top:10px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="panel-settings" class="panel">
+            <div class="panel-layout">
+                <div class="card">
+                    <h2>平台設定</h2>
+                    <p style="font-size:12px;color:#8B8577;margin-top:-6px;">每日登入贈送金幣數、升等所需加權物件數，這兩個原本寫死在程式碼裡的數字，現在改成存在這裡，改了不用重新部署程式碼。</p>
+                    <div id="settings-msg"></div>
+                    <div id="settings-form-area">載入中...</div>
                 </div>
             </div>
         </section>

@@ -63,3 +63,18 @@ export async function loadShopItems() {
         .filter(i => i.isActive !== false)
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 }
+
+// 平台參數設定：每日登入贈送金幣數、升等所需加權物件數。
+// 這兩個數字原本是寫死在程式碼裡的常數，現在讀這份設定檔，後台可以直接改、
+// 不用改程式碼重新部署。用 { ...DEFAULT_SETTINGS, ...raw } 合併預設值：
+// 萬一設定檔缺了某個欄位（例如管理者手動編輯漏寫），對應的功能還是有一個
+// 合理的預設可以用，不會直接壞掉或變成 undefined 到處出錯。
+const DEFAULT_SETTINGS = { dailyLoginCoins: 10, levelStep: 25 };
+export async function loadSettings() {
+    try {
+        const raw = await fetchJson('./data/settings.json');
+        return { ...DEFAULT_SETTINGS, ...raw };
+    } catch {
+        return { ...DEFAULT_SETTINGS }; // 設定檔還沒建立/讀取失敗，整個平台不該因此掛掉
+    }
+}

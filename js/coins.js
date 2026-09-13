@@ -67,7 +67,7 @@ function nextDailyGuard(currentGuard, netDelta) {
 // 改用 runTransaction：跟 claimTaskReward 同樣理由，讀「當下最新」的 coins/dailyGuard
 // 去算，不能用呼叫者傳進來的舊快照，不然快照過期會被 Firestore 規則拒絕、
 // 或錯誤覆寫掉別的地方剛寫好的結果。
-export async function claimDailyLogin(uid) {
+export async function claimDailyLogin(uid, amount) {
     const today = utc8DayNumber();
     const userRef = doc(db, 'users', uid);
 
@@ -77,18 +77,18 @@ export async function claimDailyLogin(uid) {
             const data = snap.data();
             if (data.lastDailyLoginDay === today) return { alreadyClaimed: true };
 
-            const newCoins = (data.coins || 0) + 10;
-            const guard = nextDailyGuard(data.dailyGuard, 10);
+            const newCoins = (data.coins || 0) + amount;
+            const guard = nextDailyGuard(data.dailyGuard, amount);
 
             tx.update(userRef, {
                 lastDailyLoginDay: today,
                 coins: newCoins,
                 dailyGuard: guard,
-                lastTransaction: { type: 'daily_login', amount: 10, taskId: null, at: Date.now() }
+                lastTransaction: { type: 'daily_login', amount, taskId: null, at: Date.now() }
             });
             const ledgerRef = doc(collection(db, 'coinLedger', uid, 'entries'));
             tx.set(ledgerRef, {
-                type: 'daily_login', amount: 10, balanceAfter: newCoins,
+                type: 'daily_login', amount, balanceAfter: newCoins,
                 relatedTaskId: null, note: '', createdAt: Date.now()
             });
             return { alreadyClaimed: false, newCoins, guard };
