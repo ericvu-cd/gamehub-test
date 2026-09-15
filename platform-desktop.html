@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>在地文化知識型互動平台 - 桌面版</title>
+<link rel="icon" href="data:,">
+<style>
+    html, body {
+        margin: 0;
+        height: 100%;
+        background: #0a0a0a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+    }
+    /* 外框：純裝飾用的邊框，跟縮放計算完全分開，不會裁切到內容 */
+    #frame-border {
+        padding: 6px;
+        background: #1a1a1a;
+        border-radius: 32px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+    /* 真正裁切內容的容器：大小 = 設計尺寸 × 縮放倍率（由 JS 算出來寫進這裡） */
+    #frame-outer {
+        position: relative;
+        overflow: hidden;
+        border-radius: 26px;
+        background: #000;
+    }
+    /* iframe 本身永遠鎖定在設計尺寸 436x892，內部看到的 CSS 像素永遠一致，
+       不會因為畫面縮放而擠壓變形，排版永遠正確；縮放交給 transform 處理，
+       transform 只是「視覺上」把整個畫面等比例縮小/放大，不影響內部佈局計算。
+       跟 4 支任務用同一組設計尺寸，整個平台的桌機展示外觀一致。 */
+    #frame-outer iframe {
+        display: block;
+        width: 436px;
+        height: 892px;
+        border: 0;
+        transform-origin: top left;
+    }
+</style>
+</head>
+<body>
+    <div id="frame-border">
+        <div id="frame-outer">
+            <iframe id="frame-iframe" src="index.html?embedded=1" title="在地文化知識型互動平台"></iframe>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        var DESIGN_W = 436;
+        var DESIGN_H = 892;
+        var outer = document.getElementById('frame-outer');
+        var iframe = document.getElementById('frame-iframe');
+
+        function fit() {
+            var availW = window.innerWidth * 0.94;
+            var availH = window.innerHeight * 0.94;
+            var scale = Math.min(availW / DESIGN_W, availH / DESIGN_H);
+
+            iframe.style.transform = 'scale(' + scale + ')';
+            outer.style.width = (DESIGN_W * scale) + 'px';
+            outer.style.height = (DESIGN_H * scale) + 'px';
+        }
+
+        fit();
+        window.addEventListener('resize', fit);
+
+        /* 這裡不需要做訊息轉發——平台是「開啟者」，不是「被開啟者」。平台（就算被
+           包在這個 iframe 裡）呼叫 window.open() 開任務時，任務視窗的 .opener 會
+           直接、正確地指向這個 iframe 本身（因為 iframe 才是真正執行 window.open()
+           那個呼叫的執行環境），不像任務套桌機外框時需要多轉一手。任務送回來的
+           ready／complete／score／exit 訊息，會直接送達這個 iframe，平台自己的
+           js/tasks.js 監聽器就能正確收到，不需要這一層額外處理。 */
+    })();
+    </script>
+</body>
+</html>
