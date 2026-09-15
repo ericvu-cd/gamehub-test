@@ -1352,6 +1352,41 @@ window.loadTaskLogs = async function () {
     }
 };
 
+// 清除全部系統記錄：taskEventLogs 只是純診斷用途、唯讀稽核記錄，不是玩家資料的一部分，
+// 清掉不影響任何玩家的金幣/徽章/分數。Firestore 用戶端沒有「整個集合一次刪光」的
+// API，只能分批查詢、逐批刪除，直到查不到剩餘文件為止；每批用 300 筆（低於 Firestore
+// 單批寫入上限 500，留一點餘裕）。這是不可逆的操作，動手前一定要先跳確認視窗。
+window.clearTaskLogs = async function () {
+    const total = await (async () => {
+        // 先問一次「大概有多少筆」讓管理者有個底，避免誤觸清掉大量記錄卻不知情——
+        // 這裡查詢筆數上限抓 2000，只是給管理者一個「大概規模」的參考值，不是精確計數，
+        // 真正清除時是不管這個數字、查到什麼刪什麼，一直刪到空為止。
+        try {
+            const snap = await getDocs(query(collection(db, 'taskEventLogs'), limit(2000)));
+            return snap.size;
+        } catch { return null; }
+    })();
+    const hint = total === null ? '' : (total >= 2000 ? '（至少 2000 筆以上）' : `（約 ${total} 筆）`);
+    if (!confirm(`確定要清除全部系統記錄${hint}嗎？這是不可逆的操作，清掉之後無法復原，但不會影響任何玩家的金幣/徽章/分數資料。`)) return;
+
+    const msgEl = document.getElementById('logs-msg');
+    const listEl2 = document.getElementById('logs-list');
+    let deletedCount = 0;
+    try {
+        while (true) {
+            const snap = await getDocs(query(collection(db, 'taskEventLogs'), limit(300)));
+            if (snap.empty) break;
+            await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+            deletedCount += snap.size;
+            msgEl.innerHTML = `<p class="empty-note">清除中…已刪除 ${deletedCount} 筆</p>`;
+        }
+        msgEl.innerHTML = `<p class="empty-note">已清除完成，共刪除 ${deletedCount} 筆記錄</p>`;
+        listEl2.innerHTML = `<p class="empty-note">目前沒有記錄</p>`;
+    } catch (err) {
+        msgEl.innerHTML = `<p class="empty-note">清除過程發生錯誤（已刪除 ${deletedCount} 筆）：${err.message}</p>`;
+    }
+};
+
 onAuthStateChanged(auth, async (user) => {
     document.getElementById('users-login-screen').classList.add('hidden');
     document.getElementById('users-not-admin').classList.add('hidden');
