@@ -126,5 +126,27 @@
     "sortOrder": 5,
     "hasLeaderboard": true,
     "isActive": true
+  },
+  {
+    "id": "fishguide",
+    "bannerUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/tasks/1789895596481_6.jpg",
+    "title": "友魚小學堂",
+    "description": "",
+    "colorTheme": "sky",
+    "link": "https://ericvu-cd.github.io/fishguide/fishguide.html",
+    "entryCost": 0,
+    "unlockConditions": [
+      {
+        "type": "LEVEL",
+        "value": 0
+      },
+      {
+        "type": "COIN",
+        "value": 0
+      }
+    ],
+    "sortOrder": 0,
+    "hasLeaderboard": false,
+    "isActive": true
   }
 ]
