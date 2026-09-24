@@ -75,8 +75,6 @@ function injectStyles() {
         box-shadow: 0 3px 0 #5f471f, 0 8px 16px rgba(0,0,0,0.4); font-family: inherit; }
     .ds-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 0 0 #5f471f, 0 4px 10px rgba(0,0,0,0.4); }
     .ds-btn:disabled { background: #4c4d52; color: #8a8b90; cursor: default; box-shadow: 0 3px 0 #303135; }
-    .ds-later { display: block; margin: 10px auto 0; background: none; border: none; cursor: pointer;
-        font-size: 0.75rem; color: rgba(240,235,221,0.5); text-decoration: underline; font-family: inherit; }
     .ds-cabinet.ds-win { animation: dsWin 0.6s ease; }
     @keyframes dsWin { 0% { transform: scale(1); } 40% { transform: scale(1.05); } 100% { transform: scale(1); } }
     `;
@@ -101,10 +99,89 @@ function playTick() {
     osc.frequency.setValueAtTime(520, t);
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(1400, t);
-    gain.gain.setValueAtTime(0.045, t);
+    gain.gain.setValueAtTime(0.12, t); // 原本 0.045，手機喇叭上幾乎聽不到，拉高到明顯聽得見
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
     osc.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
     osc.start(t); osc.stop(t + 0.055);
+}
+
+// 白噪音緩衝（拉桿聲、滾動聲共用），只產生一次
+let noiseBuffer = null;
+function getNoiseBuffer() {
+    if (!noiseBuffer) {
+        noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuffer;
+}
+
+// 按下拉霸：拉桿「喀——咚」一聲
+function playLever() {
+    if (!audioCtx) return;
+    const t = audioCtx.currentTime;
+    const src = audioCtx.createBufferSource();
+    src.buffer = getNoiseBuffer();
+    const bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(2200, t);
+    bp.frequency.exponentialRampToValueAtTime(500, t + 0.18);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.35, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    src.connect(bp); bp.connect(g); g.connect(audioCtx.destination);
+    src.start(t); src.stop(t + 0.22);
+
+    const osc = audioCtx.createOscillator();
+    const og = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(140, t + 0.16);
+    osc.frequency.exponentialRampToValueAtTime(60, t + 0.32);
+    og.gain.setValueAtTime(0.0001, t + 0.16);
+    og.gain.exponentialRampToValueAtTime(0.4, t + 0.18);
+    og.gain.exponentialRampToValueAtTime(0.001, t + 0.34);
+    osc.connect(og); og.connect(audioCtx.destination);
+    osc.start(t + 0.16); osc.stop(t + 0.36);
+}
+
+// 轉動期間持續的機械滾動聲，回傳停止函式（停止時淡出，不會突然切斷）
+function startRolling() {
+    if (!audioCtx) return () => {};
+    const t = audioCtx.currentTime;
+    const src = audioCtx.createBufferSource();
+    src.buffer = getNoiseBuffer();
+    src.loop = true;
+    const bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(900, t);
+    bp.Q.setValueAtTime(1.2, t);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.1, t + 0.15);
+    src.connect(bp); bp.connect(g); g.connect(audioCtx.destination);
+    src.start(t);
+    return function stop() {
+        const now = audioCtx.currentTime;
+        g.gain.cancelScheduledValues(now);
+        g.gain.setValueAtTime(g.gain.value, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+        src.stop(now + 0.32);
+    };
+}
+
+// 每個轉輪停下時「卡」的一聲
+function playStop() {
+    if (!audioCtx) return;
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.exponentialRampToValueAtTime(90, t + 0.08);
+    g.gain.setValueAtTime(0.22, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.13);
 }
 function playWin() {
     if (!audioCtx) return;
@@ -151,7 +228,7 @@ function animateReel(strip, finalDigit, extraLoops, duration, delay) {
                 const idx = Math.floor(-y / DIGIT_H);
                 if (idx !== lastTick) { lastTick = idx; playTick(); }
                 if (p < 1) requestAnimationFrame(step);
-                else { strip.style.transform = `translateY(${targetY}px)`; resolve(); }
+                else { strip.style.transform = `translateY(${targetY}px)`; playStop(); resolve(); }
             }
             requestAnimationFrame(step);
         }, delay);
@@ -184,7 +261,6 @@ export function openDailySlot({ cap, claim }) {
                 <div class="ds-unit">通行金幣</div>
                 <div class="ds-msg"></div>
                 <button class="ds-btn" type="button">拉霸！</button>
-                <button class="ds-later" type="button">稍後再說</button>
             </div>`;
         document.body.appendChild(overlay);
 
@@ -192,7 +268,6 @@ export function openDailySlot({ cap, claim }) {
         const strips = [...overlay.querySelectorAll('.ds-strip')];
         const msgEl = overlay.querySelector('.ds-msg');
         const btn = overlay.querySelector('.ds-btn');
-        const laterBtn = overlay.querySelector('.ds-later');
 
         // 初始畫面顯示 00，並先建立足夠的數字方塊
         strips.forEach(strip => {
@@ -207,19 +282,13 @@ export function openDailySlot({ cap, claim }) {
         let stage = 'ready'; // ready → claiming → spinning → done（done 之後 2 秒自動關閉）
         function close() { overlay.remove(); resolve(); }
 
-        // 「稍後再說」：不領取直接關閉，下次登入／重新整理會再跳出來。
-        // 保留這個出口，是為了網路一直失敗時玩家不會被卡在視窗裡無法使用平台。
-        laterBtn.addEventListener('click', () => {
-            if (stage === 'ready') close();
-        });
-
         btn.addEventListener('click', async () => {
             if (stage !== 'ready') return;
             ensureAudio();
+            playLever();
             stage = 'claiming';
             btn.disabled = true;
             btn.textContent = '連線中…';
-            laterBtn.style.display = 'none';
             msgEl.classList.remove('error');
             msgEl.textContent = '';
 
@@ -243,17 +312,18 @@ export function openDailySlot({ cap, claim }) {
                 msgEl.textContent = '連線失敗，請再按一次';
                 btn.disabled = false;
                 btn.textContent = '拉霸！';
-                laterBtn.style.display = '';
                 return;
             }
 
             // 已經寫入成功，開始播動畫揭曉結果
             stage = 'spinning';
             btn.textContent = '轉動中…';
+            const stopRolling = startRolling();
             const digits = [Math.floor(amount / 10), amount % 10];
             await Promise.all(digits.map((d, i) =>
                 animateReel(strips[i], d, 7 + i * 2, 3000 + i * 1400, i * 300)
             ));
+            stopRolling();
 
             stage = 'done';
             playWin();
