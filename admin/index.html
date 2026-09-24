@@ -95,8 +95,32 @@
     .not-admin { text-align: center; padding: 40px 20px; color: #A63D40; }
     #gh-token.masked { -webkit-text-security: disc; text-security: disc; }
 </style>
+<style>
+    /* 進入後台前的安全碼：解鎖前除了安全碼畫面以外，其餘內容全部隱藏 */
+    body:not(.admin-unlocked) > *:not(#admin-gate) { display: none !important; }
+    #admin-gate { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center;
+        background: #F4F1EA; font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+    #admin-gate .gate-card { width: 100%; max-width: 320px; background: #fff; border-radius: 14px; padding: 26px 22px;
+        box-shadow: 0 8px 28px rgba(0,0,0,0.12); text-align: center; }
+    #admin-gate h2 { margin: 0 0 6px; font-size: 1.1rem; color: #2B2A26; }
+    #admin-gate p { margin: 0 0 16px; font-size: 12px; color: #8B8577; }
+    #admin-gate input { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #DDD6C8; border-radius: 8px;
+        font-size: 15px; margin-bottom: 10px; }
+    #admin-gate button { width: 100%; padding: 11px; border: none; border-radius: 8px; background: #3C8577; color: #fff;
+        font-weight: 700; font-size: 15px; cursor: pointer; }
+    #admin-gate .gate-error { min-height: 1.4em; margin-top: 8px; font-size: 12px; color: #A63D40; }
+</style>
 </head>
 <body>
+<div id="admin-gate">
+    <form class="gate-card" onsubmit="return window.submitAdminGate(event)">
+        <h2>🔒 管理後台</h2>
+        <p>請輸入安全碼才能進入</p>
+        <input id="admin-gate-input" type="password" autocomplete="off" placeholder="安全碼" autofocus>
+        <button type="submit">進入</button>
+        <div class="gate-error" id="admin-gate-error"></div>
+    </form>
+</div>
 
 <header>
     <h1>在地文化知識型互動平台 — 管理後台</h1>

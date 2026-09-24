@@ -22,6 +22,42 @@ function escapeHtml(str) {
 }
 
 /* =====================================================
+   進入後台前的安全碼
+   跟「平台設定」存檔時的確認碼共用同一個值（ADMIN_CODE），改一個地方兩邊一起變。
+   同一個瀏覽器分頁內輸入過一次就記住（sessionStorage），重新整理不用再輸入；
+   關掉分頁後重新開啟要再輸入一次。
+   ⚠️ 這個安全碼寫在程式碼裡，看原始碼就找得到，作用是擋住誤入後台網址的一般人，
+   不是真正的權限控管——真正的防護仍是 GitHub 權杖與 Firestore 的 admins 名單。
+===================================================== */
+const ADMIN_CODE = 'huansia30';
+const ADMIN_UNLOCK_KEY = 'admin_unlocked';
+
+function unlockAdmin() {
+    document.body.classList.add('admin-unlocked');
+    const gate = document.getElementById('admin-gate');
+    if (gate) gate.remove();
+}
+
+try {
+    if (sessionStorage.getItem(ADMIN_UNLOCK_KEY) === '1') unlockAdmin();
+} catch { /* 瀏覽器禁用 sessionStorage 時，每次都要輸入，不影響其他功能 */ }
+
+window.submitAdminGate = function (e) {
+    e.preventDefault();
+    const input = document.getElementById('admin-gate-input');
+    const errEl = document.getElementById('admin-gate-error');
+    if (input.value === ADMIN_CODE) {
+        try { sessionStorage.setItem(ADMIN_UNLOCK_KEY, '1'); } catch {}
+        unlockAdmin();
+    } else {
+        errEl.textContent = '安全碼錯誤';
+        input.value = '';
+        input.focus();
+    }
+    return false;
+};
+
+/* =====================================================
    GitHub Contents API 連線層
 ===================================================== */
 const GH_CONFIG_KEY = 'gh_admin_config';
@@ -831,7 +867,7 @@ function renderSettingsForm() {
 
 // 這兩個數字改動範圍是「全平台所有玩家」，存檔前多一道確認碼防呆，避免手滑誤觸。
 // 目前先寫死在這裡、不提供從介面更改，之後如果要開放改確認碼再另外處理。
-const SETTINGS_CONFIRM_CODE = 'huansia30';
+const SETTINGS_CONFIRM_CODE = ADMIN_CODE; // 跟進入後台的安全碼共用同一個值
 
 window.submitSettings = async function (e) {
     e.preventDefault();
