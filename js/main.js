@@ -11,6 +11,7 @@ import {
 import { claimDailyLogin, redeemShopItem } from './coins.js';
 import { openTask, initTaskMessageListener } from './tasks.js';
 import { fetchLeaderboard } from './leaderboard.js';
+import { openDailySlot } from './dailySlot.js';
 
 let currentUser = null;
 let siteData = { banners: [], tasks: [], news: [], badges: {}, certificates: {}, avatarPresets: [] };
@@ -106,24 +107,51 @@ function utc8DayNumber() {
     return Math.floor((Date.now() + 8 * 60 * 60 * 1000) / (24 * 60 * 60 * 1000));
 }
 
+// 每日拉霸上限：讀後台 data/settings.json 的 dailyLoginCoins，夾在 1 ~ 50 之間。
+// 50 是 firestore.rules 的 MAX_SINGLE_TX()，超過會被規則拒絕、玩家整筆領不到。
+function getDailySlotCap() {
+    const raw = Math.floor(Number(siteData?.settings?.dailyLoginCoins));
+    const n = Number.isFinite(raw) ? raw : 10;
+    return Math.min(50, Math.max(1, n));
+}
+
+// 當天首次登入：自動跳出拉霸視窗，玩家按下拉霸時才抽結果並發放金幣。
+// dailySlotOpen 防止 watchAuthState 短時間內觸發兩次（例如登入權杖刷新）時跳出兩個視窗。
+let dailySlotOpen = false;
 async function maybeClaimDailyLogin() {
-    if (!currentUser) return;
+    if (!currentUser || dailySlotOpen) return;
     const today = utc8DayNumber();
     if (currentUser.lastDailyLoginDay === today) return;
-    const coinsAmount = siteData?.settings?.dailyLoginCoins ?? 10;
-    const result = await claimDailyLogin(currentUser.uid, coinsAmount);
-    if (result.ok && result.alreadyClaimed) {
-        // 交易內部發現 Firestore 上其實已經領過了（例如同一天在別的裝置/分頁先領過），
-        // 本地快取還沒跟上——只更新這個日期欄位，coins/dailyGuard 不要跟著覆寫成
-        // undefined，下次 currentUser 自然會被其他讀取路徑刷新成正確餘額。
-        currentUser = { ...currentUser, lastDailyLoginDay: today };
-    } else if (result.ok) {
-        currentUser = { ...currentUser, coins: result.newCoins, lastDailyLoginDay: today, dailyGuard: result.guard };
+
+    dailySlotOpen = true;
+    let claimed = false;
+    try {
+        await openDailySlot({
+            cap: getDailySlotCap(),
+            claim: async (amount) => {
+                if (!currentUser) return { ok: false, reason: '尚未登入' };
+                const result = await claimDailyLogin(currentUser.uid, amount);
+                if (result.ok && result.alreadyClaimed) {
+                    // Firestore 上其實已經領過了（例如同一天在別的裝置/分頁先領過），
+                    // 只更新日期欄位，coins/dailyGuard 不要覆寫成 undefined
+                    currentUser = { ...currentUser, lastDailyLoginDay: today };
+                } else if (result.ok) {
+                    currentUser = { ...currentUser, coins: result.newCoins, lastDailyLoginDay: today, dailyGuard: result.guard };
+                    claimed = true;
+                } else {
+                    console.warn('每日拉霸金幣發放失敗：', result.reason);
+                }
+                return result;
+            }
+        });
+    } finally {
+        dailySlotOpen = false;
+    }
+    // 等轉盤揭曉、視窗 2 秒後自動關閉之後，才刷新頂部金幣顯示，
+    // 避免轉盤還沒停，背後的金幣數字就先跳出來、提前洩漏結果
+    if (claimed) {
         renderUserBar();
-        renderTasks(); // 金幣餘額變了，任務卡片的「金幣夠不夠」判斷要跟著重新算，不然會用領獎勵前的舊餘額判斷
-        showToast(`每日登入獎勵 +${coinsAmount} 通行金幣！`);
-    } else {
-        console.warn('每日登入獎勵領取失敗：', result.reason);
+        renderTasks(); // 金幣餘額變了，任務卡片的「金幣夠不夠」判斷要跟著重新算
     }
 }
 

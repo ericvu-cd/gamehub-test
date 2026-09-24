@@ -812,10 +812,12 @@ function renderSettingsForm() {
     area.innerHTML = `
         <form class="entity-form" onsubmit="return window.submitSettings(event)">
             <div class="two-col">
-                <div class="field"><label>每日登入贈送金幣數</label><input name="dailyLoginCoins" type="number" min="0" value="${s.dailyLoginCoins}"></div>
+                <div class="field"><label>每日拉霸金幣上限</label><input name="dailyLoginCoins" type="number" min="1" max="50" step="1" value="${s.dailyLoginCoins}"></div>
                 <div class="field"><label>升等所需加權物件數</label><input name="levelStep" type="number" min="1" value="${s.levelStep}"></div>
             </div>
             <p style="font-size:11px;color:#8B8577;margin:-4px 0 10px;line-height:1.6;">
+                「每日拉霸金幣上限」：玩家當天首次登入會跳出拉霸，抽出 1 ~ 上限之間的金幣（上限一半以上的數字機率較高），
+                範圍 1 ~ 50（50 是安全規則的單筆上限，超過玩家會領不到）。<br>
                 「升等所需」是背包裡徽章+證書的加權總數每滿這個數字就升一級（權重讀各徽章/證書自己的 weight 欄位）。
                 這兩個值玩家端有做快取，改完之後玩家要重新整理頁面（或等快取過期）才會套用到新的值，不是存檔當下全部人立刻更新。
             </p>
@@ -842,6 +844,15 @@ window.submitSettings = async function (e) {
         dailyLoginCoins: Number(f.get('dailyLoginCoins')),
         levelStep: Number(f.get('levelStep'))
     };
+    // 拉霸上限必須是 1~50 的整數：超過 50 會被 firestore.rules 的單筆上限擋下、玩家領不到
+    if (!Number.isInteger(data.dailyLoginCoins) || data.dailyLoginCoins < 1 || data.dailyLoginCoins > 50) {
+        showMsg('settings', '每日拉霸金幣上限必須是 1 ~ 50 的整數，未儲存', true);
+        return false;
+    }
+    if (!Number.isInteger(data.levelStep) || data.levelStep < 1) {
+        showMsg('settings', '升等所需加權物件數必須是 1 以上的整數，未儲存', true);
+        return false;
+    }
     try {
         const res = await writeJsonFile('data/settings.json', data, editState.settings.sha, '後台更新平台設定');
         editState.settings.data = data;
