@@ -4,3 +4,6 @@ serviceAccountKey.json
 *.log
 不要上傳的APIKey.txt
 firestore.rules
+README.md
+任務頁面通訊介面規格.md
+架構調整討論記錄.md
