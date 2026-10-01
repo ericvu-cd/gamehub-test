@@ -5,7 +5,7 @@
     "title": "友魚守護團",
     "description": "海線出任務",
     "colorTheme": "mint",
-    "link": "https://ericvu-cd.github.io/6htw/",
+    "link": "https://ericvu-cd.github.io/gamehub-test/6htw/",
     "entryCost": 0,
     "unlockConditions": [
       {
@@ -27,7 +27,7 @@
     "title": "苗栗漁港一日遊",
     "description": "LBS定址服務",
     "colorTheme": "peach",
-    "link": "https://ericvu-cd.github.io/lbsgame/mlhbtrip.html",
+    "link": "https://ericvu-cd.github.io/gamehub-test/lbsgame/mlhbtrip.html",
     "entryCost": 0,
     "unlockConditions": [
       {
@@ -49,7 +49,7 @@
     "title": "永續魚市拍賣",
     "description": "走讀龍鳳漁港",
     "colorTheme": "sky",
-    "link": "https://ericvu-cd.github.io/lbsgame/fishmarket.html",
+    "link": "https://ericvu-cd.github.io/gamehub-test/lbsgame/fishmarket.html",
     "entryCost": 1,
     "unlockConditions": [
       {
@@ -77,7 +77,7 @@
     "title": "石滬修復",
     "description": "走讀外埔漁港",
     "colorTheme": "peach",
-    "link": "https://ericvu-cd.github.io/lbsgame/stoneweir.html",
+    "link": "https://ericvu-cd.github.io/gamehub-test/lbsgame/stoneweir.html",
     "entryCost": 1,
     "unlockConditions": [
       {
@@ -133,7 +133,7 @@
     "title": "友魚小學堂",
     "description": "",
     "colorTheme": "sky",
-    "link": "https://ericvu-cd.github.io/fishguide/fishguide.html",
+    "link": "https://ericvu-cd.github.io/gamehub-test/fishguide/fishguide.html",
     "entryCost": 0,
     "unlockConditions": [
       {
