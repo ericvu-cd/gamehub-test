@@ -1,16 +1,19 @@
 // =====================================================================
-// 安裝到主畫面的引導
-// - Android（Chrome 等）：瀏覽器提供安裝事件，點「安裝」直接跳出系統安裝視窗
-// - iPhone／iPad：蘋果不允許網頁自己跳安裝視窗，只能圖文教學「分享 → 加入主畫面」
-// - LINE、Facebook 等 App 內建瀏覽器：在裡面無法安裝，提示改用 Safari／Chrome 開啟
+// 安裝到主畫面的引導（平台一開啟就檢查）
 // - 已經是從主畫面 App 打開的：完全不顯示
-// 顯示時機：玩家玩完（關閉）第一個任務後自動提示一次；使用者選單另有固定入口。
-// 玩家選「不再提示」後就不會再自動跳出，但選單入口一直都在。
+// - Android（Chrome 等）：點「安裝」跳出系統安裝視窗，接受後顯示「安裝中…」，
+//   安裝完成顯示「安裝完成，請從主畫面圖示打開」
+// - iPhone／iPad：蘋果不允許網頁自己安裝，也無法得知安裝進度，只能圖文教學
+// - LINE、Facebook 等 App 內建瀏覽器：在裡面無法安裝，提示改用 Safari／Chrome 開啟
+// - 桌機展示模式（平台被 platform-desktop.html 包在框架裡）：不顯示
+// 玩家選「先用網頁版」下次開啟還會再提示；選「不再提示」就不再自動出現，
+// 但使用者選單的「安裝到主畫面」入口一直都在。
 // =====================================================================
 
 const DISMISS_KEY = 'gh_install_guide_dismissed'; // 'never'＝不再自動提示
 let deferredPrompt = null;
-let shownThisSession = false;
+let installedResolvers = [];
+let startupPromise = null;
 
 // 越早掛越好：瀏覽器判斷可安裝時會發出這個事件，先攔下來，等玩家按按鈕才真正跳出
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -19,7 +22,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
-    try { localStorage.setItem(DISMISS_KEY, 'never'); } catch {}
+    installedResolvers.forEach(fn => fn(true));
+    installedResolvers = [];
     updateMenuEntry();
 });
 
@@ -39,20 +43,26 @@ function injectStyles() {
     const style = document.createElement('style');
     style.id = 'ig-style';
     style.textContent = `
-    .ig-overlay { position: fixed; inset: 0; z-index: 180; background: rgba(6,10,28,0.72);
-        display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
+    .ig-overlay { position: fixed; inset: 0; z-index: 180; background: rgba(6,10,28,0.78);
+        display: flex; align-items: center; justify-content: center; padding: 16px; }
     .ig-card { width: 100%; max-width: 380px; background: #151d52; color: #fff; border-radius: 18px;
-        padding: 20px 20px calc(16px + env(safe-area-inset-bottom)); box-shadow: 0 -6px 30px rgba(0,0,0,0.4);
+        padding: 22px 20px 18px; box-shadow: 0 10px 40px rgba(0,0,0,0.45);
         border: 1px solid rgba(255,255,255,0.14); font-family: inherit; }
     .ig-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .ig-head img { width: 48px; height: 48px; border-radius: 12px; }
-    .ig-title { font-size: 1.05rem; font-weight: 900; }
-    .ig-sub { font-size: 0.8rem; color: rgba(255,255,255,0.65); margin-top: 2px; }
-    .ig-steps { margin: 6px 0 14px; padding: 0; list-style: none; font-size: 0.92rem; line-height: 1.7; }
-    .ig-steps li { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+    .ig-head img { width: 52px; height: 52px; border-radius: 12px; flex: 0 0 auto; }
+    .ig-title { font-size: 1.1rem; font-weight: 900; }
+    .ig-sub { font-size: 0.82rem; color: rgba(255,255,255,0.7); margin-top: 2px; line-height: 1.5; }
+    .ig-steps { margin: 6px 0 12px; padding: 0; list-style: none; font-size: 0.92rem; line-height: 1.6; }
+    .ig-steps li { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
     .ig-num { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; background: #f6b32d; color: #1a1a1a;
         font-size: 0.75rem; font-weight: 900; display: flex; align-items: center; justify-content: center; }
     .ig-icon { display: inline-flex; vertical-align: middle; }
+    .ig-note { font-size: 0.78rem; color: rgba(255,255,255,0.6); margin: 0 0 12px; line-height: 1.5; }
+    .ig-status { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 14px 0 6px;
+        font-size: 0.95rem; font-weight: 700; text-align: center; line-height: 1.6; }
+    .ig-spinner { width: 36px; height: 36px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.18);
+        border-top-color: #f6b32d; animation: igSpin 0.9s linear infinite; }
+    @keyframes igSpin { to { transform: rotate(360deg); } }
     .ig-btns { display: flex; gap: 8px; }
     .ig-btn { flex: 1; padding: 11px 8px; border-radius: 12px; border: none; font-weight: 800; font-size: 0.9rem;
         cursor: pointer; font-family: inherit; }
@@ -62,7 +72,6 @@ function injectStyles() {
     document.head.appendChild(style);
 }
 
-// iPhone 分享按鈕的示意圖示（方框加向上箭頭）
 const SHARE_ICON = `<svg class="ig-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7fb8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>`;
 const ADD_ICON = `<svg class="ig-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`;
 
@@ -73,87 +82,150 @@ function buildContent({ isIOS, inApp }) {
             steps: [
                 '點右上角的選單（「⋯」或「⋮」）',
                 isIOS ? '選「在 Safari 中開啟」' : '選「在瀏覽器中開啟」或「以 Chrome 開啟」',
-                '在 Safari／Chrome 打開後，再依照指示加到主畫面'
+                '在 Safari／Chrome 打開後，就會看到安裝說明'
             ],
+            note: '',
             primary: null
         };
     }
     if (deferredPrompt) {
-        return { sub: '加到主畫面，像 App 一樣全螢幕使用', steps: [], primary: 'install' };
+        return { sub: '安裝到手機主畫面，像 App 一樣全螢幕使用，讀取也更快', steps: [], note: '', primary: 'install' };
     }
     if (isIOS) {
         return {
-            sub: '加到主畫面，像 App 一樣全螢幕使用',
+            sub: '安裝到手機主畫面，像 App 一樣全螢幕使用，讀取也更快',
             steps: [
                 `點瀏覽器的分享按鈕 ${SHARE_ICON}（Safari 在畫面下方，Chrome 在網址列右側）`,
                 `往下找到並點選「加入主畫面」${ADD_ICON}`,
-                '按右上角「新增」，之後從主畫面的圖示打開即可'
+                '按右上角「新增」，再到主畫面點「在地文化平台」圖示打開'
             ],
+            note: '提醒：iPhone 的主畫面 App 跟瀏覽器是分開的，第一次從主畫面打開時需要再登入一次。',
             primary: null
         };
     }
     return {
-        sub: '加到主畫面，像 App 一樣全螢幕使用',
+        sub: '安裝到手機主畫面，像 App 一樣全螢幕使用，讀取也更快',
         steps: [
             '點瀏覽器右上角的選單「⋮」',
             '選「安裝應用程式」或「加到主畫面」',
-            '確認後，之後從主畫面的圖示打開即可'
+            '確認後，到主畫面點「在地文化平台」圖示打開'
         ],
+        note: '如果已經安裝過，請直接從主畫面的圖示打開。',
         primary: null
     };
 }
 
+// 顯示引導視窗，關閉時 resolve。auto＝平台開啟時自動跳出（多一個「不再提示」）
 function showGuide({ auto }) {
-    if (document.querySelector('.ig-overlay')) return;
-    injectStyles();
-    const env = detectEnv();
-    const content = buildContent(env);
+    return new Promise(resolve => {
+        if (document.querySelector('.ig-overlay')) { resolve(); return; }
+        injectStyles();
+        const env = detectEnv();
+        const content = buildContent(env);
 
-    const overlay = document.createElement('div');
-    overlay.className = 'ig-overlay';
-    const stepsHtml = content.steps.map((s, i) => `<li><span class="ig-num">${i + 1}</span><span>${s}</span></li>`).join('');
-    overlay.innerHTML = `
-        <div class="ig-card">
-            <div class="ig-head">
-                <img src="icons/icon-192.png" alt="">
-                <div><div class="ig-title">安裝到主畫面</div><div class="ig-sub">${content.sub}</div></div>
-            </div>
-            ${stepsHtml ? `<ul class="ig-steps">${stepsHtml}</ul>` : ''}
-            <div class="ig-btns"></div>
-        </div>`;
-    const btns = overlay.querySelector('.ig-btns');
-    const close = () => overlay.remove();
+        const overlay = document.createElement('div');
+        overlay.className = 'ig-overlay';
+        overlay.innerHTML = `<div class="ig-card"></div>`;
+        const card = overlay.querySelector('.ig-card');
+        const close = () => { overlay.remove(); resolve(); };
 
-    if (auto) {
-        const never = document.createElement('button');
-        never.className = 'ig-btn ghost';
-        never.textContent = '不再提示';
-        never.onclick = () => { try { localStorage.setItem(DISMISS_KEY, 'never'); } catch {} close(); };
-        btns.appendChild(never);
-    }
-    const later = document.createElement('button');
-    later.className = 'ig-btn ghost';
-    later.textContent = auto ? '稍後再說' : '關閉';
-    later.onclick = close;
-    btns.appendChild(later);
+        function renderGuide() {
+            const stepsHtml = content.steps.map((s, i) => `<li><span class="ig-num">${i + 1}</span><span>${s}</span></li>`).join('');
+            card.innerHTML = `
+                <div class="ig-head">
+                    <img src="icons/icon-192.png" alt="">
+                    <div><div class="ig-title">安裝到主畫面</div><div class="ig-sub">${content.sub}</div></div>
+                </div>
+                ${stepsHtml ? `<ul class="ig-steps">${stepsHtml}</ul>` : ''}
+                ${content.note ? `<p class="ig-note">${content.note}</p>` : ''}
+                <div class="ig-btns"></div>`;
+            const btns = card.querySelector('.ig-btns');
 
-    if (content.primary === 'install') {
-        const install = document.createElement('button');
-        install.className = 'ig-btn primary';
-        install.textContent = '安裝';
-        install.onclick = async () => {
+            if (auto) addBtn(btns, '不再提示', 'ghost', () => {
+                try { localStorage.setItem(DISMISS_KEY, 'never'); } catch {}
+                close();
+            });
+            addBtn(btns, content.primary === 'install' ? '先用網頁版' : (auto ? '先用網頁版' : '關閉'), 'ghost', close);
+            if (content.primary === 'install') addBtn(btns, '安裝', 'primary', startInstall);
+        }
+
+        function renderStatus(html, { spinner, buttons }) {
+            card.innerHTML = `
+                <div class="ig-head">
+                    <img src="icons/icon-192.png" alt="">
+                    <div><div class="ig-title">安裝到主畫面</div></div>
+                </div>
+                <div class="ig-status">${spinner ? '<div class="ig-spinner"></div>' : ''}<div>${html}</div></div>
+                <div class="ig-btns"></div>`;
+            const btns = card.querySelector('.ig-btns');
+            (buttons || []).forEach(b => addBtn(btns, b.text, b.style, b.onClick));
+        }
+
+        // Android：跳出系統安裝視窗 → 安裝中 → 安裝完成
+        async function startInstall() {
             const prompt = deferredPrompt;
             deferredPrompt = null; // 安裝事件只能用一次
-            close();
-            if (!prompt) return;
+            if (!prompt) { renderGuide(); return; }
+            renderStatus('請在跳出的視窗中按「安裝」', { spinner: true });
             prompt.prompt();
-            try { await prompt.userChoice; } catch {}
-        };
-        btns.appendChild(install);
-    }
+            let choice = null;
+            try { choice = await prompt.userChoice; } catch {}
+            if (!choice || choice.outcome !== 'accepted') {
+                renderStatus('已取消安裝，之後可以從選單的「安裝到主畫面」再安裝', {
+                    spinner: false, buttons: [{ text: '先用網頁版', style: 'ghost', onClick: close }]
+                });
+                return;
+            }
+            renderStatus('安裝中，請稍候…', {
+                spinner: true, buttons: [{ text: '先用網頁版', style: 'ghost', onClick: close }]
+            });
+            // 等瀏覽器回報安裝完成（appinstalled）；一段時間沒回報也當作完成，
+            // 有些瀏覽器安裝好了但不會發出這個事件
+            const done = await new Promise(res => {
+                installedResolvers.push(res);
+                setTimeout(() => res(false), 20000);
+            });
+            renderStatus(
+                (done ? '✅ 安裝完成！' : '安裝應已完成') +
+                '<br>請回到手機主畫面，點「在地文化平台」圖示打開',
+                { spinner: false, buttons: [{ text: '繼續用網頁版', style: 'ghost', onClick: close }] }
+            );
+        }
 
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-    document.body.appendChild(overlay);
+        renderGuide();
+        document.body.appendChild(overlay);
+    });
+}
+
+function addBtn(container, text, style, onClick) {
+    const b = document.createElement('button');
+    b.className = 'ig-btn ' + style;
+    b.textContent = text;
+    b.onclick = onClick;
+    container.appendChild(b);
+}
+
+// 平台開啟時呼叫：沒有安裝就先引導安裝。回傳的 Promise 在引導視窗關閉（或不需要顯示）時完成，
+// 呼叫端等它完成才進行每日拉霸，避免兩個視窗疊在一起。同一次開啟只會檢查一次。
+export function runStartupInstallCheck() {
+    if (startupPromise) return startupPromise;
+    startupPromise = (async () => {
+        if (isStandalone()) return;                       // 已經是 App 模式
+        if (window.self !== window.top) return;           // 桌機展示模式（被外框包住），不在這裡安裝
+        try { if (localStorage.getItem(DISMISS_KEY) === 'never') return; } catch {}
+        const env = detectEnv();
+        // Android：瀏覽器判斷可安裝時才會發出安裝事件，頁面剛開時可能還沒發出，稍等一下
+        if (!env.isIOS && !env.inApp && !deferredPrompt) {
+            await new Promise(res => {
+                const start = Date.now();
+                const timer = setInterval(() => {
+                    if (deferredPrompt || Date.now() - start > 3000) { clearInterval(timer); res(); }
+                }, 200);
+            });
+        }
+        await showGuide({ auto: true });
+    })();
+    return startupPromise;
 }
 
 // 使用者選單的「安裝到主畫面」：手動打開，不受「不再提示」影響
@@ -163,14 +235,6 @@ export function openInstallGuide() {
         return;
     }
     showGuide({ auto: false });
-}
-
-// 自動提示：玩完（關閉）第一個任務後呼叫。同一次開啟只提示一次，選過「不再提示」就不再出現。
-export function maybeShowInstallGuide() {
-    if (isStandalone() || shownThisSession) return;
-    try { if (localStorage.getItem(DISMISS_KEY) === 'never') return; } catch {}
-    shownThisSession = true;
-    setTimeout(() => showGuide({ auto: true }), 800); // 等任務視窗收起、畫面回到大廳再跳出
 }
 
 // 已經是 App 模式時，把使用者選單裡的入口藏起來

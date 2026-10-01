@@ -9,10 +9,10 @@ import {
     loadActiveBanners, loadTasks, loadNews, loadBadges, loadCertificates, loadAvatarPresets, loadShopItems, loadSettings
 } from './content.js';
 import { claimDailyLogin, redeemShopItem } from './coins.js';
-import { openTask, initTaskMessageListener, setTaskOverlayClosedListener } from './tasks.js';
+import { openTask, initTaskMessageListener } from './tasks.js';
 import { fetchLeaderboard } from './leaderboard.js';
 import { openDailySlot } from './dailySlot.js';
-import { openInstallGuide, maybeShowInstallGuide, updateMenuEntry } from './installGuide.js';
+import { openInstallGuide, runStartupInstallCheck, updateMenuEntry } from './installGuide.js';
 
 let currentUser = null;
 let siteData = { banners: [], tasks: [], news: [], badges: {}, certificates: {}, avatarPresets: [] };
@@ -707,9 +707,7 @@ async function init() {
         (updatedUser) => { currentUser = updatedUser; renderUserBar(); renderTasks(); }
     );
 
-    // PWA：玩家玩完（關閉）任務、回到大廳時，提示一次「安裝到主畫面」
-    // （同一次開啟只提示一次，選過「不再提示」就不再自動出現，見 installGuide.js）
-    setTaskOverlayClosedListener(() => maybeShowInstallGuide());
+    // PWA：使用者選單的「安裝到主畫面」入口（已經是 App 模式時自動隱藏）
     window.openInstallGuide = () => { document.getElementById('user-menu').classList.add('hidden'); openInstallGuide(); };
     updateMenuEntry();
 
@@ -720,6 +718,10 @@ async function init() {
         renderNewsBadgeDot();
         document.getElementById('auth-modal').classList.toggle('hidden', !!user);
         hideLoadingScreen(); // 內容跟登入狀態都確認完了，這時候才收起「連線中」畫面
+        // PWA：平台一開啟就檢查有沒有安裝，沒有就先引導安裝（同一次開啟只檢查一次）。
+        // 等引導視窗關閉才進行每日拉霸，避免兩個視窗疊在一起；
+        // 引導視窗蓋在登入畫面上面，玩家可以先安裝、再從主畫面 App 登入。
+        await runStartupInstallCheck();
         if (user) await maybeClaimDailyLogin();
     });
 }
