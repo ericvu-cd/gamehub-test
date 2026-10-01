@@ -9,9 +9,10 @@ import {
     loadActiveBanners, loadTasks, loadNews, loadBadges, loadCertificates, loadAvatarPresets, loadShopItems, loadSettings
 } from './content.js';
 import { claimDailyLogin, redeemShopItem } from './coins.js';
-import { openTask, initTaskMessageListener } from './tasks.js';
+import { openTask, initTaskMessageListener, setTaskOverlayClosedListener } from './tasks.js';
 import { fetchLeaderboard } from './leaderboard.js';
 import { openDailySlot } from './dailySlot.js';
+import { openInstallGuide, maybeShowInstallGuide, updateMenuEntry } from './installGuide.js';
 
 let currentUser = null;
 let siteData = { banners: [], tasks: [], news: [], badges: {}, certificates: {}, avatarPresets: [] };
@@ -706,6 +707,12 @@ async function init() {
         (updatedUser) => { currentUser = updatedUser; renderUserBar(); renderTasks(); }
     );
 
+    // PWA：玩家玩完（關閉）任務、回到大廳時，提示一次「安裝到主畫面」
+    // （同一次開啟只提示一次，選過「不再提示」就不再自動出現，見 installGuide.js）
+    setTaskOverlayClosedListener(() => maybeShowInstallGuide());
+    window.openInstallGuide = () => { document.getElementById('user-menu').classList.add('hidden'); openInstallGuide(); };
+    updateMenuEntry();
+
     watchAuthState(async (user) => {
         currentUser = user;
         renderUserBar();
@@ -718,3 +725,12 @@ async function init() {
 }
 
 init();
+
+// PWA：註冊 Service Worker（放在網站根目錄的 sw.js），負責圖片音樂快取加速。
+// 等頁面載入完才註冊，避免跟首頁需要的資源搶網路。路徑用相對路徑，
+// 正式網址根目錄或測試用 repo 的子路徑都能正確找到。
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker 註冊失敗', err));
+    });
+}

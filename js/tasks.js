@@ -137,47 +137,126 @@ function logTaskEvent(uid, taskId, level, message, extra) {
         });
 }
 
-// 定期清掉使用者手動關閉分頁（沒送 exit 訊息）的殘留記錄
+// 定期清掉已經不存在的任務視窗記錄（保險用；任務視窗關閉時本來就會一併清掉）
 setInterval(() => {
     for (const [taskId, entry] of openTaskWindows) {
         if (entry.win.closed) openTaskWindows.delete(taskId);
     }
 }, 5000);
 
-// 開啟任務：先扣款（若有），成功才真正開新視窗
+/* =====================================================================
+   任務視窗：任務改成在平台畫面上蓋一層全螢幕視窗、嵌在裡面打開，不再開新分頁。
+   原因：平台做成 PWA（加到主畫面）後，從 App 裡開新分頁在 iPhone 會跳去 Safari、
+   在 Android 會開成有網址列的小瀏覽器視窗，都會露出網址，而且任務跟平台的連線會斷掉，
+   金幣/徽章/分數送不回來。嵌在平台裡打開則一般瀏覽器跟 App 模式都能正常運作，
+   也不再有「新分頁被瀏覽器擋下」的問題。
+   任務端送訊息的方式不用改：任務偵測到自己被嵌在框架裡，本來就會把訊息送給上一層
+   （window.parent），也就是這裡的平台。
+   ===================================================================== */
+let activeTaskOverlay = null;      // { taskId, el, iframe }
+let taskOverlayClosedListener = null;
+
+export function setTaskOverlayClosedListener(fn) { taskOverlayClosedListener = fn; }
+
+function injectTaskOverlayStyles() {
+    if (document.getElementById('task-overlay-style')) return;
+    const style = document.createElement('style');
+    style.id = 'task-overlay-style';
+    style.textContent = `
+    html.task-overlay-open, html.task-overlay-open body { overflow: hidden; }
+    .task-overlay { position: fixed; inset: 0; z-index: 150; background: #000;
+        display: flex; flex-direction: column; }
+    .task-overlay-bar { flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
+        padding: calc(6px + env(safe-area-inset-top)) 10px 6px; background: #0c1230;
+        border-bottom: 1px solid rgba(255,255,255,0.12); }
+    .task-overlay-back { flex: 0 0 auto; border: none; border-radius: 16px; padding: 6px 12px;
+        background: rgba(255,255,255,0.14); color: #fff; font-size: 13px; font-weight: 700;
+        cursor: pointer; font-family: inherit; }
+    .task-overlay-title { flex: 1 1 auto; min-width: 0; color: rgba(255,255,255,0.85); font-size: 13px;
+        font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;
+        padding-right: 60px; }
+    .task-overlay-body { position: relative; flex: 1 1 auto; min-height: 0; }
+    .task-overlay-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+    .task-overlay-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        color: rgba(255,255,255,0.7); font-size: 14px; pointer-events: none; }
+    `;
+    document.head.appendChild(style);
+}
+
+function createTaskOverlay(task) {
+    injectTaskOverlayStyles();
+    const el = document.createElement('div');
+    el.className = 'task-overlay';
+    el.innerHTML = `
+        <div class="task-overlay-bar">
+            <button type="button" class="task-overlay-back">← 返回平台</button>
+            <div class="task-overlay-title"></div>
+        </div>
+        <div class="task-overlay-body">
+            <div class="task-overlay-loading">任務載入中…</div>
+            <iframe class="task-overlay-frame" allow="autoplay; fullscreen; screen-wake-lock"></iframe>
+        </div>`;
+    el.querySelector('.task-overlay-title').textContent = task.name || '';
+    const iframe = el.querySelector('.task-overlay-frame');
+    iframe.title = task.name || '任務';
+    iframe.addEventListener('load', () => {
+        const loading = el.querySelector('.task-overlay-loading');
+        if (loading && iframe.getAttribute('src')) loading.remove();
+    });
+    // 平台自己的返回按鈕：不需要任務配合，任何任務（包含不跟平台溝通的）都能用它離開
+    el.querySelector('.task-overlay-back').addEventListener('click', () => {
+        if (window.confirm('確定要離開任務、返回平台嗎？\n目前這一局的進度不會被保留。')) {
+            closeTaskOverlay(task.id);
+        }
+    });
+    document.body.appendChild(el);
+    document.documentElement.classList.add('task-overlay-open');
+    return { el, iframe };
+}
+
+// 關閉任務視窗：任務送 exit 訊息、或玩家按平台的「返回平台」都會走到這裡
+export function closeTaskOverlay(taskId) {
+    if (!activeTaskOverlay) return;
+    if (taskId && activeTaskOverlay.taskId !== taskId) return;
+    const closedId = activeTaskOverlay.taskId;
+    openTaskWindows.delete(closedId);
+    activeTaskOverlay.el.remove();
+    activeTaskOverlay = null;
+    document.documentElement.classList.remove('task-overlay-open');
+    if (taskOverlayClosedListener) {
+        try { taskOverlayClosedListener(closedId); } catch (e) { console.error(e); }
+    }
+}
+
+// 開啟任務：先蓋上任務視窗（顯示載入中），扣款成功才真正載入任務網址
 export async function openTask(task, currentUser, onCoinsChanged) {
     if (!currentUser) {
         alert('請先登記通行證');
         return { ok: false };
     }
+    if (activeTaskOverlay) return { ok: false }; // 已經有任務開著（理論上任務視窗會蓋住大廳，點不到）
 
-    // 先在使用者點擊的同一個呼叫堆疊裡開一個空白分頁，保住瀏覽器判斷「這是使用者主動觸發」的
-    // 資格——iOS Safari 對這件事特別嚴格，只要中間隔了一個 await 才呼叫 window.open，幾乎必定
-    // 被彈出視窗攔截器擋下（先前的版本就是這樣寫壞的，註解寫著要小心但實作沒照做）。
-    // 確認扣款/查成績都沒問題後，再把這個已經開好的分頁導向到真正的任務網址。
-    const win = window.open('', '_blank');
-    if (!win) {
-        alert('視窗被瀏覽器擋下了，請允許本網站開啟新分頁');
-        return { ok: false };
-    }
+    const { el, iframe } = createTaskOverlay(task);
+    activeTaskOverlay = { taskId: task.id, el, iframe };
 
-    // 扣款的同時平行查詢玩家在這個任務的個人最佳成績（架構調整討論記錄第四輪、方案A）：
-    // 扣款本來就要 await，順便平行查成績幾乎不增加等待時間，查詢結果有 sessionStorage 快取。
+    // 扣款的同時平行查詢玩家在這個任務的個人最佳成績：扣款本來就要 await，
+    // 順便平行查成績幾乎不增加等待時間，查詢結果有 sessionStorage 快取。
     const [costResult, myScore] = await Promise.all([
         deductTaskCost(currentUser.uid, task),
         fetchMyScore(task.id, currentUser.uid)
     ]);
     if (!costResult.ok) {
-        win.close(); // 扣款失敗，把剛剛開好但還沒用到的空白分頁關掉，不留著一片空白的分頁
+        closeTaskOverlay(task.id); // 扣款失敗，收掉還沒載入任務的視窗
         alert(costResult.reason);
         return { ok: false };
     }
     if (costResult.newCoins !== undefined) onCoinsChanged(costResult.newCoins, costResult.guard);
 
-    win.location = task.link;
-
+    // iframe.contentWindow 在同一個 iframe 裡換頁時仍是同一個物件，
+    // 任務頁面載入後送來的訊息，event.source 會等於這裡記下的 win。
     const origin = new URL(task.link, location.href).origin;
-    openTaskWindows.set(task.id, { win, origin, myScore });
+    openTaskWindows.set(task.id, { win: iframe.contentWindow, origin, myScore });
+    iframe.src = task.link;
     return { ok: true };
 }
 
@@ -302,6 +381,7 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
 
             case 'exit':
                 openTaskWindows.delete(msg.taskId);
+                closeTaskOverlay(msg.taskId); // 任務自己的「關閉／返回」：收掉平台上的任務視窗
                 break;
         }
     });

@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>在地文化知識型互動平台</title>
+<!-- PWA：應用程式說明檔、主畫面圖示、App 模式設定 -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0c1230">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="在地文化平台">
 <script>
 // 偵測 LINE 內建瀏覽器，用 LINE 官方認得的 openExternalBrowser=1 參數自動跳轉到系統瀏覽器開啟。
 // 一定要放在所有其他資源（字型、CSS、Firebase）載入之前，越早跳轉越好，避免使用者在 LINE 內建
@@ -141,6 +149,7 @@
         </div>
 
         <div id="user-menu" class="user-menu hidden">
+            <button id="menu-install-btn" onclick="openInstallGuide()">安裝到主畫面</button>
             <button onclick="openChangePasswordModal()">修改密碼</button>
             <button onclick="handleLogout()">登出</button>
         </div>

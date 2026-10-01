@@ -34,7 +34,14 @@ const PLATFORM = {
     // 真正被平台用 window.open() 開出來的，它的 .opener 才指得回平台。這裡只是
     // 用來判斷「連線鏈路上有沒有一個 opener 存在」，不代表送訊息時可以直接
     // postMessage 到這個對象上（見下面 sendToPlatform 的說明）。
-    connected: (typeof window !== 'undefined' && !!(window.top || window).opener),
+    // 兩種情況算「有連上平台」：
+    //  1. 被嵌在平台的任務視窗裡（被嵌在框架中，但不是自己的桌機外框 desktop.html；
+    //     桌機外框載入時網址會帶 ?embedded=1，平台的任務視窗不會帶）
+    //  2. 舊流程：由平台以新分頁開啟（自己的分頁或桌機外框那一層有 opener）
+    connected: (typeof window !== 'undefined') && (
+        (window.self !== window.top && new URLSearchParams(location.search).get('embedded') !== '1')
+        || !!(window.top || window).opener
+    ),
     ready: false,           // 是否已收到 player_info
     nickname: null,
     badgeIds: [],           // 平台回傳的「玩家擁有的全部徽章」（不分任務）
@@ -168,6 +175,8 @@ function exitToPlatform() {
     // 桌機外框模式下要關的是 window.top（desktop.html 那個真正的視窗），
     // 不是這個 iframe 自己——iframe 沒有「關閉自己」這回事，window.close()
     // 對 iframe 呼叫不會有任何效果。
+    // 在平台的任務視窗裡：平台收到 exit 會自己收掉任務視窗，不能去關上層視窗（那是平台本身）
+    if (window.self !== window.top && new URLSearchParams(location.search).get('embedded') !== '1') return;
     if (PLATFORM.connected) setTimeout(function () { (window.top || window).close(); }, 150);
 }
 

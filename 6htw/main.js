@@ -206,7 +206,10 @@ function preloadImages(prefix, count) {
 
 // ── 桌機展示模式偵測（desktop.html 用 iframe 包住 index.html?embedded=1）──
 // 只有在 iframe 裡執行才視為桌機展示模式；手機直接開永遠是 false，不受影響。
-const isDesktopMode = (window.self !== window.top);
+// 桌機展示模式＝被自己的桌機外框 desktop.html 載入（網址帶 ?embedded=1）。
+// 不能只看「是不是被嵌在框架裡」：遊戲也會被嵌在平台的任務視窗裡打開，
+// 那時是在手機上，不是桌機，不能套用桌機專用的介面。
+const isDesktopMode = new URLSearchParams(location.search).get('embedded') === '1';
 
 // 手牌左右按鈕：桌機展示模式專用（手機用觸控滑動，不需要這個）。
 // 一次捲動約 2 張卡的寬度（卡片74px + 間距6px ≈ 80px/張）。

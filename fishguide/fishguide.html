@@ -1029,6 +1029,8 @@ function sendExitToPlatform() {
 function handleExit() {
     if (bgm) bgm.pause();
     sendExitToPlatform();
+    // 在平台的任務視窗裡（被嵌在框架中、但不是自己的桌機外框 ?embedded=1）：平台收到 exit 會自己收掉任務視窗，這裡不能去關上層視窗（那是平台本身）
+    if (window.self !== window.top && new URLSearchParams(location.search).get('embedded') !== '1') return;
     setTimeout(function () { (window.top || window).close(); }, 150);
 }
 </script>
