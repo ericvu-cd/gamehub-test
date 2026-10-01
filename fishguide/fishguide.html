@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<script>
+    /* 桌機/寬螢幕自動導向「手機外框」展示版（fishguide-desktop.html），
+       手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        var inIframe = (window.self !== window.top);
+        if (window.innerWidth > 700 && !inIframe && !params.has('embedded')) {
+            window.location.replace('fishguide-desktop.html');
+        }
+    })();
+</script>
+<title>友魚小學堂</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --green: #58cc02;   --green-d: #58a700;  --green-bg: #d7ffb8;
+        --blue: #1cb0f6;    --blue-d: #1899d6;   --blue-bg: #ddf4ff;  --blue-line: #84d8ff;
+        --red: #ff4b4b;     --red-d: #ea2b2b;    --red-bg: #ffdfe0;
+        --yellow: #ffc800;  --yellow-d: #e5b400; --yellow-bg: #fff4cc; --yellow-ink: #8a6500;
+        --orange: #ff9600;
+        --line: #e5e5e5;    --line-d: #afafaf;
+        --ink: #3c3c3c;     --ink-dim: #6b6b6b;
+        --bg: #ffffff;      --bg-soft: #f7f7f7;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+        margin: 0; height: 100%;
+        background: var(--bg); color: var(--ink);
+        font-family: "Nunito", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+        font-weight: 700; font-size: 16px;
+        overflow: hidden; overscroll-behavior: none;
+    }
+    button { font-family: inherit; -webkit-user-select: none; user-select: none; }
+    :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+    #portrait-warning {
+        display: none; position: fixed; inset: 0; z-index: 999;
+        background: var(--blue); color: #fff;
+        align-items: center; justify-content: center; text-align: center; padding: 20px;
+        font-size: 1.1rem; font-weight: 800; line-height: 1.8;
+    }
+    @media screen and (orientation: landscape) { #portrait-warning { display: flex; } }
+
+    #app { height: 100%; position: relative; }
+    @supports (height: 100dvh) { #app { height: 100dvh; } }
+    .screen { position: absolute; inset: 0; display: none; flex-direction: column; background: var(--bg); }
+    .screen.active { display: flex; }
+    .scroll { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+
+    /* ── 共用元件 ── */
+    .topbar {
+        flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
+        padding: calc(10px + env(safe-area-inset-top)) 12px 8px 8px;
+    }
+    .icon-btn {
+        flex: 0 0 auto; width: 48px; height: 48px; border: 0; border-radius: 14px; cursor: pointer;
+        background: none; color: var(--line-d); display: grid; place-items: center;
+    }
+    .icon-btn:active { background: var(--bg-soft); }
+    .icon-btn svg { width: 24px; height: 24px; }
+
+    .btn {
+        --face: var(--green); --edge: var(--green-d); --text: #fff;
+        display: block; width: 100%; min-height: 54px; border: 0; cursor: pointer;
+        padding: 14px 20px; border-radius: 16px;
+        background: var(--face); color: var(--text);
+        font-size: 1.05rem; font-weight: 900; letter-spacing: 0.06em;
+        box-shadow: 0 4px 0 var(--edge);
+        transition: transform .08s, box-shadow .08s;
+    }
+    .btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0 0 var(--edge); }
+    .btn.red   { --face: var(--red);  --edge: var(--red-d); }
+    .btn.ghost { --face: #fff; --edge: var(--line); --text: var(--blue); border: 2px solid var(--line); }
+    .btn.gray  { --face: var(--line); --edge: var(--line-d); --text: var(--ink-dim); }
+    .btn:disabled { --face: var(--line); --edge: var(--line); --text: var(--line-d); cursor: default; box-shadow: none; }
+
+    .card { background: #fff; border: 2px solid var(--line); border-bottom-width: 4px; border-radius: 18px; }
+
+    .progress { flex: 1 1 auto; height: 16px; border-radius: 8px; background: var(--line); overflow: hidden; }
+    .progress > i {
+        display: block; height: 100%; width: 0; border-radius: 8px; background: var(--green);
+        position: relative; transition: width .45s cubic-bezier(.3,.9,.3,1);
+    }
+    .progress > i::after { content: ""; position: absolute; left: 8px; right: 8px; top: 4px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.35); }
+
+    .bubble {
+        position: relative; background: #fff; border: 2px solid var(--line); border-radius: 16px;
+        padding: 12px 14px; font-size: 1rem; line-height: 1.6; color: var(--ink);
+    }
+    .bubble::before, .bubble::after { content: ""; position: absolute; left: -9px; top: 22px; width: 14px; height: 14px; background: #fff; border: 2px solid var(--line); border-right: 0; border-top: 0; transform: rotate(45deg); }
+    .bubble::after { border: 0; left: -5px; top: 24px; width: 12px; height: 12px; }
+
+    .badge { display: inline-block; font-size: .85rem; font-weight: 900; padding: 5px 14px; border-radius: 999px; color: #fff; white-space: nowrap; letter-spacing: .04em; }
+    .badge.green  { background: var(--green); }
+    .badge.yellow { background: var(--yellow); color: #5a4300; }
+    .badge.red    { background: var(--red); }
+
+    .mascot { display: block; flex: 0 0 auto; }
+
+    /* ── 首頁：海面 hero + 兩顆大按鈕 + 這個月盛產 ── */
+    #screen-home { overflow-y: auto; background: #fff; }
+    .sea {
+        position: relative; flex: 0 0 auto; overflow: hidden; color: #fff;
+        padding: calc(10px + env(safe-area-inset-top)) 20px 0;
+        background: linear-gradient(180deg, #0d6aa8 0%, #1899d6 45%, #6fd6ff 100%);
+    }
+    .sea .exit { position: absolute; top: calc(8px + env(safe-area-inset-top)); right: 8px; color: rgba(255,255,255,.75); z-index: 2; }
+    .sea .exit:active { background: rgba(255,255,255,.15); }
+    .brand { position: relative; z-index: 1; margin: 34px 0 0; font-size: 2.7rem; font-weight: 900; letter-spacing: .04em; line-height: 1.1; text-shadow: 0 4px 0 #084c7c; }
+    .tagline { position: relative; z-index: 1; margin-top: 6px; font-size: .95rem; font-weight: 800; opacity: .95; }
+    .sea-mascot { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; margin: 26px 0 0; padding-bottom: 38px; }
+    .sea-mascot .mascot { width: 88px; }
+    .sea-mascot .bubble { flex: 1; font-size: .85rem; line-height: 1.55; padding: 9px 12px; color: var(--ink); border-color: #fff; }
+    .sea-mascot .bubble::before { border-color: #fff; }
+    .sea .wave { position: absolute; left: 0; bottom: -1px; width: 100%; height: 34px; display: block; }
+    .sea .bub { position: absolute; bottom: -20px; border-radius: 50%; border: 2px solid rgba(255,255,255,.55); background: rgba(255,255,255,.14); animation: rise 9s linear infinite; }
+    @keyframes rise { to { transform: translateY(-330px); opacity: 0; } }
+
+    .home-foot { margin-top: auto; padding: 8px 20px calc(18px + env(safe-area-inset-bottom)); text-align: center; font-size: .78rem; font-weight: 700; color: var(--ink-dim); }
+    .home-main { padding: 6px 20px calc(24px + env(safe-area-inset-bottom)); }
+    .tiles { display: flex; gap: 12px; }
+    .tile-btn {
+        --face: var(--blue); --edge: var(--blue-d);
+        flex: 1; min-height: 150px; padding: 16px; border: 0; border-radius: 22px; cursor: pointer; text-align: left; color: #fff;
+        background: var(--face); box-shadow: 0 5px 0 var(--edge); font: inherit;
+        display: flex; flex-direction: column; justify-content: space-between;
+        transition: transform .08s, box-shadow .08s;
+    }
+    .tile-btn.play { --face: var(--green); --edge: var(--green-d); }
+    .tile-btn:active:not(:disabled) { transform: translateY(5px); box-shadow: 0 0 0 var(--edge); }
+    .tile-btn:disabled { opacity: .55; cursor: default; }
+    .tile-btn .t-ico { width: 46px; height: 46px; border-radius: 14px; background: rgba(255,255,255,.28); display: grid; place-items: center; font-size: 1.7rem; }
+    .tile-btn .t-name { font-size: 1.3rem; font-weight: 900; letter-spacing: .04em; }
+    .tile-btn .t-desc { font-size: .82rem; font-weight: 800; opacity: .95; margin-top: 2px; }
+
+    .home-sec { margin-top: 30px; }
+    .home-sec h3 { margin: 0 2px 10px; font-size: 1.1rem; font-weight: 900; }
+    .home-sec h3 small { font-size: .8rem; color: var(--ink-dim); font-weight: 800; margin-left: 6px; }
+    .season-scroller { display: flex; gap: 10px; overflow-x: auto; margin: 0 -20px; padding: 2px 20px 8px; scrollbar-width: none; }
+    .season-scroller::-webkit-scrollbar { display: none; }
+    .sf { flex: 0 0 auto; width: 92px; padding: 10px 6px 10px; text-align: center; cursor: pointer; font: inherit; color: inherit; transition: transform .08s, border-bottom-width .08s; }
+    .sf:active { transform: translateY(2px); border-bottom-width: 2px; }
+    .sf svg { width: 60px; height: auto; display: block; margin: 2px auto 6px; }
+    .sf .n { font-size: .95rem; font-weight: 900; }
+
+
+    /* ── 圖鑑（直式手機：一欄、大字、拇指區按鈕） ── */
+    .browse-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 16px 24px; }
+    .music-btn { margin-right: -4px; color: var(--line-d); }
+    .music-btn.on { color: var(--blue); }
+    .music-btn .ic-off { display: block; }
+    .music-btn .ic-on { display: none; }
+    .music-btn.on .ic-off { display: none; }
+    .music-btn.on .ic-on { display: block; }
+    .chips { display: flex; gap: 6px; padding: 0 0 10px; overflow-x: auto; scrollbar-width: none; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip { flex: 0 0 auto; min-height: 32px; padding: 4px 12px; border-radius: 999px; cursor: pointer; border: 2px solid var(--line); border-bottom-width: 3px; background: #fff; font-size: .8rem; font-weight: 800; color: var(--ink-dim); }
+    .chip[aria-pressed="true"] { border-color: var(--blue-line); background: var(--blue-bg); color: var(--blue); }
+    .chip:active { transform: translateY(1px); border-bottom-width: 2px; }
+
+    .fish-card.enter-next { animation: slideNext .28s ease-out; }
+    .fish-card.enter-prev { animation: slidePrev .28s ease-out; }
+    @keyframes slideNext { from { opacity: 0; transform: translateX(28px); } }
+    @keyframes slidePrev { from { opacity: 0; transform: translateX(-28px); } }
+
+    /* 照片區：先顯示插圖佔位，照片載入完成後淡入；全部失敗則顯示提示與重試 */
+    .hero { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 24px; overflow: hidden; display: grid; place-items: center; background: var(--blue-bg); }
+    .hero.green  { background: var(--green-bg); }
+    .hero.yellow { background: var(--yellow-bg); }
+    .hero.red    { background: var(--red-bg); }
+    .hero.compact { aspect-ratio: 16 / 7; border-radius: 18px; }
+    .hero .ph { width: 52%; height: auto; opacity: .5; }
+    .hero.compact .ph { width: auto; height: 74%; }
+    .hero.compact.nophoto .ph { height: 50%; margin-top: -16px; }
+    .hero.compact .ph-note { top: auto; bottom: 8px; }
+    .hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .35s; }
+    .hero-img.in { opacity: 1; }
+    .hero .ph-note { position: absolute; left: 0; right: 0; top: 12px; display: none; justify-content: center; }
+    .hero.nophoto .ph { opacity: .9; }
+    .hero.has-img .ph { display: none; }
+    .hero.nophoto .ph-note { display: flex; }
+    .hero-retry { min-height: 40px; padding: 8px 16px; border-radius: 999px; border: 2px solid rgba(0,0,0,.08); background: rgba(255,255,255,.9); color: var(--ink-dim); font-size: .85rem; font-weight: 800; cursor: pointer; }
+    .hero-pill { position: absolute; left: 10px; bottom: 10px; padding: 2px 10px; font-size: .72rem; border: 2px solid #fff; box-shadow: 0 1px 5px rgba(0,0,0,.25); }
+
+    .fish-title { margin: 18px 2px 4px; }
+    .fish-name { font-size: 2rem; font-weight: 900; line-height: 1.2; }
+    .fish-summary { font-size: 1.05rem; line-height: 1.75; margin: 12px 2px 0; }
+
+    .sec { margin-top: 22px; }
+    .sec > h3 { margin: 0 2px 10px; font-size: 1.15rem; font-weight: 900; }
+    .sec > .sub { margin: -4px 2px 10px; font-size: .88rem; color: var(--ink-dim); line-height: 1.5; }
+
+    .season-status { margin: 0 2px 10px; font-size: 1rem; font-weight: 800; }
+    .months { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
+    .m { position: relative; height: 40px; border-radius: 9px; display: grid; place-items: center; background: var(--line); color: var(--ink-dim); font-size: .8rem; font-weight: 900; }
+    .m.on { background: var(--blue); color: #fff; }
+    .m.now { outline: 3px solid var(--orange); outline-offset: 1px; }
+    .months-note { margin: 8px 2px 0; font-size: .82rem; color: var(--ink-dim); line-height: 1.5; }
+
+    .info-list { padding: 2px 16px; }
+    .info-row { display: flex; gap: 14px; padding: 12px 0; }
+        .info-row .v { font-size: 1.15rem; font-weight: 900; margin: 1px 0 3px; }
+    .info-row .note { font-size: .92rem; line-height: 1.6; color: var(--ink-dim); }
+
+    .method-list { display: flex; flex-direction: column; gap: 10px; }
+    .method { padding: 12px 14px; }
+    .method .mh { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .method .mn { font-size: 1.1rem; font-weight: 900; }
+    .impact { font-size: .78rem; font-weight: 900; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+    .impact.good  { background: var(--green-bg); color: var(--green-d); }
+    .impact.watch { background: var(--yellow-bg); color: var(--yellow-ink); }
+    .impact.heavy { background: var(--red-bg); color: var(--red-d); }
+    .impact.ban   { background: var(--red); color: #fff; }
+    .impact.farm  { background: var(--blue-bg); color: var(--blue-d); }
+    .method .md { margin-top: 6px; font-size: .92rem; line-height: 1.65; color: var(--ink-dim); }
+
+    .alts { display: flex; flex-direction: column; gap: 10px; }
+    .alt { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 10px 14px; text-align: left; cursor: pointer; font: inherit; color: inherit; transition: transform .08s, border-bottom-width .08s; }
+    .alt:active { transform: translateY(2px); border-bottom-width: 2px; }
+    .alt .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--green); flex: 0 0 auto; }
+    .alt .an { font-size: 1.1rem; font-weight: 900; }
+    .alt .ad { font-size: .85rem; color: var(--ink-dim); }
+    .alt .ab { flex: 1; min-width: 0; }
+    .alt svg { margin-left: auto; width: 20px; height: 20px; color: var(--line-d); flex: 0 0 auto; }
+
+    .browse-nav { flex: 0 0 auto; display: flex; gap: 12px; padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); border-top: 2px solid var(--line); background: #fff; }
+    .browse-nav .btn { flex: 1; }
+    .browse-nav .btn.gray { flex: 0 0 34%; }
+
+    /* ── 問答 ── */
+    .combo { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; min-width: 48px; justify-content: flex-end; font-size: 1.05rem; font-weight: 900; color: var(--line-d); }
+    .combo.hot { color: var(--orange); }
+    .combo.pop { animation: pop .35s ease-out; }
+    @keyframes pop { 40% { transform: scale(1.35); } }
+    .quiz-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 4px 18px 16px; display: flex; flex-direction: column; }
+    .quiz-ask { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .quiz-ask .mascot { width: 84px; }
+    .quiz-ask .bubble { flex: 1; }
+    .quiz-ask .bubble strong { font-size: 1.3rem; font-weight: 900; display: block; margin-bottom: 2px; }
+    #quiz-fish { margin: 6px 0 16px; }
+    .choices { display: flex; flex-direction: column; gap: 12px; }
+    .choice { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 60px; text-align: left; cursor: pointer; padding: 12px 16px; border-radius: 16px; background: #fff; color: var(--ink); border: 2px solid var(--line); border-bottom-width: 4px; font-size: 1.1rem; font-weight: 800; transition: transform .08s, border-bottom-width .08s; }
+    .choice:active:not(:disabled) { transform: translateY(2px); border-bottom-width: 2px; }
+    .choice .num { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; border: 2px solid var(--line); font-size: .85rem; font-weight: 900; color: var(--ink-dim); }
+    .choice.selected { border-color: var(--blue-line); background: var(--blue-bg); color: var(--blue); }
+    .choice.selected .num { border-color: var(--blue-line); color: var(--blue); }
+    .choice.correct { border-color: var(--green); background: var(--green-bg); color: var(--green-d); }
+    .choice.correct .num { border-color: var(--green); color: var(--green-d); }
+    .choice.wrong { border-color: var(--red); background: var(--red-bg); color: var(--red-d); }
+    .choice.wrong .num { border-color: var(--red); color: var(--red-d); }
+    .choice:disabled { cursor: default; }
+    .choice.shake { animation: shake .35s; }
+    @keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+    .qfooter { flex: 0 0 auto; padding: 14px 18px calc(16px + env(safe-area-inset-bottom)); border-top: 2px solid var(--line); background: #fff; transition: background .2s, border-color .2s; }
+    .qfooter.correct { background: var(--green-bg); border-color: transparent; }
+    .qfooter.wrong   { background: var(--red-bg);   border-color: transparent; }
+    .feedback { display: none; margin-bottom: 14px; }
+    .qfooter.correct .feedback, .qfooter.wrong .feedback { display: flex; gap: 12px; align-items: flex-start; animation: rise .28s ease-out; }
+    @keyframes rise { from { opacity: 0; transform: translateY(16px); } }
+    .feedback .mark { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; background: #fff; display: grid; place-items: center; }
+    .feedback .mark svg { width: 22px; height: 22px; }
+    .feedback .fb { flex: 1; min-width: 0; }
+    .feedback .vrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .feedback .verdict { font-size: 1.2rem; font-weight: 900; }
+    .feedback .explain { font-size: .92rem; line-height: 1.6; margin-top: 2px; font-weight: 700; max-height: 15vh; overflow-y: auto; }
+    .more-btn { flex: 0 0 auto; min-height: 36px; padding: 6px 12px; border-radius: 999px; border: 2px solid currentColor; background: rgba(255,255,255,.7); font-size: .82rem; font-weight: 900; cursor: pointer; color: inherit; }
+    .qfooter.correct .verdict, .qfooter.correct .explain, .qfooter.correct .more-btn { color: var(--green-d); }
+    .qfooter.wrong .verdict, .qfooter.wrong .explain, .qfooter.wrong .more-btn { color: var(--red-d); }
+
+    /* ── 完整資料（從問答點開） ── */
+    #sheet { position: absolute; inset: 0; z-index: 20; display: none; flex-direction: column; background: #fff; }
+    #sheet.open { display: flex; animation: sheetUp .28s ease-out; }
+    @keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } }
+    #sheet .st { flex: 1; font-size: 1.1rem; font-weight: 900; }
+    #sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 4px 16px calc(24px + env(safe-area-inset-bottom)); }
+
+    /* ── 結果 ── */
+    #screen-result { align-items: center; padding: calc(32px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom)); overflow: hidden; }
+    #screen-result .mascot { width: 170px; margin-top: auto; animation: land .7s cubic-bezier(.3,1.5,.5,1); }
+    @keyframes land { from { transform: translateY(-40px) scale(.8); opacity: 0; } }
+    .result-title { font-size: 1.7rem; font-weight: 900; color: var(--yellow-d); margin: 18px 0 6px; text-align: center; }
+    .result-label { font-size: 1rem; color: var(--ink-dim); text-align: center; line-height: 1.6; max-width: 300px; }
+    .result-stats { display: flex; gap: 10px; width: 100%; max-width: 380px; margin: 26px 0 0; }
+    .rstat { --c: var(--yellow); flex: 1; border: 2px solid var(--c); border-radius: 16px; overflow: hidden; }
+    .rstat.g { --c: var(--green); } .rstat.o { --c: var(--orange); }
+    .rstat .h { background: var(--c); color: #fff; text-align: center; font-size: .75rem; font-weight: 900; padding: 5px 0; letter-spacing: .06em; }
+    .rstat .b { text-align: center; padding: 14px 4px; font-size: 1.4rem; font-weight: 900; color: var(--c); background: #fff; }
+    .rstat:not(.g):not(.o) .b { color: var(--yellow-d); }
+    .result-actions { margin-top: auto; padding-top: 24px; width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 12px; }
+    #confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    #confetti i { position: absolute; top: -16px; width: 10px; height: 14px; border-radius: 3px; animation: fall linear forwards; }
+    @keyframes fall { to { transform: translateY(950px) rotate(720deg); } }
+
+    /* 矮螢幕（小尺寸手機）壓縮間距 */
+    @media (max-height: 700px) {
+        .brand { font-size: 2.2rem; margin-top: 14px; }
+        .sea-mascot .mascot { width: 70px; }
+        .quiz-ask .mascot { width: 64px; }
+        #screen-result .mascot { width: 120px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div id="portrait-warning">請將手機轉為直式<br>才能正常使用這個頁面</div>
+
+<div id="app">
+
+    <!-- 首頁 -->
+    <section class="screen active" id="screen-home">
+        <div class="sea">
+            <button class="icon-btn exit" onclick="handleExit()" aria-label="離開">
+                <svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/></svg>
+            </button>
+            <i class="bub" style="left:8%;width:14px;height:14px;animation-delay:0s"></i>
+            <i class="bub" style="left:26%;width:9px;height:9px;animation-delay:3s;animation-duration:11s"></i>
+            <i class="bub" style="left:58%;width:18px;height:18px;animation-delay:1.5s"></i>
+            <i class="bub" style="left:74%;width:10px;height:10px;animation-delay:5s;animation-duration:10s"></i>
+            <i class="bub" style="left:90%;width:14px;height:14px;animation-delay:7s"></i>
+            <div class="brand">友魚小學堂</div>
+            <div class="tagline">認識台灣海鮮，吃得更永續</div>
+            <div class="sea-mascot">
+                <div id="home-mascot"></div>
+                <div class="bubble">嗨，我是小鰭！開玩遊戲前，先來認識台灣的海鮮吧。</div>
+            </div>
+            <svg class="wave" viewBox="0 0 390 34" preserveAspectRatio="none" aria-hidden="true"><path d="M0 18 Q49 0 98 18 T195 18 T293 18 T390 18 V34 H0Z" fill="#fff"/></svg>
+        </div>
+
+        <div class="home-main">
+            <div class="tiles">
+                <button class="tile-btn study" id="mode-browse" onclick="goBrowse()" disabled>
+                    <span class="t-ico">📖</span>
+                    <span><div class="t-name">圖鑑瀏覽</div><div class="t-desc">產季、漁法一次看</div></span>
+                </button>
+                <button class="tile-btn play" id="mode-quiz" onclick="goQuiz()" disabled>
+                    <span class="t-ico">🎯</span>
+                    <span><div class="t-name">簡單問答</div><div class="t-desc">隨機 10 題來挑戰</div></span>
+                </button>
+            </div>
+
+            <div class="home-sec" id="home-season" hidden>
+                <h3><span id="home-season-title"></span><small>點一下看明細</small></h3>
+                <div class="season-scroller" id="home-season-list"></div>
+            </div>
+        </div>
+        <div class="home-foot">© 2026 友魚小學堂 苗栗縣在地文化推廣協會</div>
+    </section>
+
+    <!-- 圖鑑 -->
+    <section class="screen" id="screen-browse">
+        <div class="topbar">
+            <button class="icon-btn" onclick="goHome()" aria-label="回首頁">
+                <svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/></svg>
+            </button>
+            <div class="progress"><i id="browse-progress"></i></div>
+            <div id="browse-counter" style="font-size:.95rem;font-weight:900;color:var(--ink-dim);min-width:44px;text-align:right;"></div>
+            <button class="icon-btn music-btn on" id="music-btn" onclick="toggleMusic()" aria-pressed="true" aria-label="背景音樂：開">
+                <svg class="ic-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+                <svg class="ic-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+            </button>
+        </div>
+        <div class="browse-body scroll" id="browse-body">
+            <div class="chips" id="browse-chips">
+                <button class="chip" data-f="all" aria-pressed="true">全部</button>
+                <button class="chip" data-f="green" aria-pressed="false">🟢 綠燈</button>
+                <button class="chip" data-f="yellow" aria-pressed="false">🟡 黃燈</button>
+                <button class="chip" data-f="red" aria-pressed="false">🔴 紅燈</button>
+            </div>
+            <div class="fish-card" id="fish-card"></div>
+        </div>
+        <div class="browse-nav">
+            <button class="btn gray" id="browse-prev" onclick="browseStep(-1)">上一隻</button>
+            <button class="btn" id="browse-next" onclick="browseStep(1)">下一隻</button>
+        </div>
+    </section>
+
+    <!-- 問答 -->
+    <section class="screen" id="screen-quiz">
+        <div class="topbar">
+            <button class="icon-btn" onclick="goHome()" aria-label="結束問答">
+                <svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/></svg>
+            </button>
+            <div class="progress"><i id="quiz-progress"></i></div>
+            <div class="combo" id="quiz-combo">🔥 <span id="quiz-combo-n">0</span></div>
+        </div>
+        <div class="quiz-body scroll">
+            <div id="quiz-fish"></div>
+            <div class="quiz-ask">
+                <div id="quiz-mascot"></div>
+                <div class="bubble"><strong id="quiz-fish-name"></strong><span id="quiz-question-text"></span></div>
+            </div>
+            <div class="choices" id="quiz-choices"></div>
+        </div>
+        <div class="qfooter" id="quiz-footer">
+            <div class="feedback" id="quiz-feedback" role="status" aria-live="polite">
+                <div class="mark" id="quiz-mark"></div>
+                <div class="fb">
+                    <div class="vrow"><div class="verdict" id="quiz-verdict"></div><button class="more-btn" id="quiz-more">看完整資料</button></div>
+                    <div class="explain" id="quiz-explain"></div>
+                </div>
+            </div>
+            <button class="btn" id="quiz-action" disabled>檢查答案</button>
+        </div>
+    </section>
+
+    <!-- 結果 -->
+    <section class="screen" id="screen-result">
+        <div id="confetti"></div>
+        <div id="result-mascot"></div>
+        <div class="result-title" id="result-title"></div>
+        <div class="result-label" id="result-label"></div>
+        <div class="result-stats">
+            <div class="rstat"><div class="h">得分</div><div class="b" id="rs-score"></div></div>
+            <div class="rstat g"><div class="h">正確率</div><div class="b" id="rs-acc"></div></div>
+            <div class="rstat o"><div class="h">最長連對</div><div class="b" id="rs-streak"></div></div>
+        </div>
+        <div class="result-actions">
+            <button class="btn" onclick="goQuiz()">再測一次</button>
+            <button class="btn ghost" onclick="goHome()">回主選單</button>
+        </div>
+    </section>
+
+    <!-- 完整資料（問答中點開） -->
+    <section id="sheet" aria-label="魚種完整資料">
+        <div class="topbar">
+            <button class="icon-btn" onclick="closeSheet()" aria-label="關閉">
+                <svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/></svg>
+            </button>
+            <div class="st" id="sheet-title"></div>
+        </div>
+        <div id="sheet-body" class="scroll"></div>
+    </section>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   友魚小學堂 — 獨立任務，不跟平台金幣/徽章/排行榜系統掛勾。
+   跟平台的通訊降到最低限度：只送 exit，不送 ready/complete/score。
+   ═══════════════════════════════════════════════════════════════════ */
+
+const ZONE_LABEL = { coastal: '近海', pelagic: '遠洋', aquaculture: '養殖' };
+const ZONE_NOTE  = {
+    coastal: '離岸不遠的海域，多由沿岸和近海的漁船捕撈。',
+    pelagic: '遠離陸地的大洋，要靠遠洋漁船出海較長時間才能捕到。',
+    aquaculture: '在池塘或箱網裡人工養大，不是從海裡捕來的。'
+};
+const BEHAVIOR_NOTE = {
+    '洄游性': '會隨季節和水溫在海裡長距離移動，不同海域都可能捕到。',
+    '定棲性': '長時間待在同一片海域，一個地方捕太多，當地的族群就容易變少。'
+};
+const LIGHT_LABEL = { green: '🟢 建議', yellow: '🟡 想清楚', red: '🔴 避免' };
+const LIGHT_SHORT = { green: '綠燈・建議', yellow: '黃燈・想清楚', red: '紅燈・避免' };
+const LIGHT_FISH_COLOR = { green: '#58cc02', yellow: '#ffc800', red: '#ff4b4b' };
+const LIGHT_DOT = { green: 'var(--green)', yellow: 'var(--yellow)', red: 'var(--red)' };
+
+/* 漁法說明：impact 是「一般而言」對海洋的友善程度，實際依作業規模與方式而異 */
+const METHOD_INFO = {
+    '一支釣': { impact: 'good',  d: '一人一竿一鉤，釣到一尾算一尾，幾乎只會釣到想要的魚，對海洋的干擾小。' },
+    '手釣':   { impact: 'good',  d: '用手拉著釣線釣魚，規模小、選擇性高，魚體受傷也少。' },
+    '釣具':   { impact: 'good',  d: '用釣竿或釣線一尾一尾釣起，選擇性高。' },
+    '籠具':   { impact: 'good',  d: '在海底放置誘餌籠，魚蝦蟹自己游進去，不要的可以放回海裡。' },
+    '定置網': { impact: 'watch', d: '固定在沿岸魚群必經路線上的大型陷阱網，魚游進去就出不來，收網時可以挑選並放走不要的。' },
+    '圍網':   { impact: 'watch', d: '漁船繞著魚群把網圍起再收攏，常用來捕群游的魚，一次能捕到很多。' },
+    '棒受網': { impact: 'good',  d: '夜間用燈光引來魚群，再用大網從水中撈起。' },
+    '延繩釣': { impact: 'watch', d: '一條很長的主繩掛上許多釣鉤，放在海中等魚上鉤，可能誤釣到海龜、海鳥或鯊魚。' },
+    '底刺網': { impact: 'watch', d: '把刺網放在海底，卡住貼近海床的魚類，容易誤捕其他底棲生物。' },
+    '流刺網': { impact: 'heavy', d: '網子垂直懸在水中隨海流漂，魚游過會被網眼卡住，容易誤捕其他生物；遺失的漁網還會變成「鬼網」繼續捕魚。' },
+    '拖網':   { impact: 'heavy', d: '漁船拖著大網前進，把沿途的魚一起撈起，容易混獲其他魚種。' },
+    '底拖網': { impact: 'heavy', d: '拖網貼著海底拖行，可能刮傷海底棲地，也容易撈到不要的生物。' },
+    '養殖':   { impact: 'farm',  d: '在池塘或箱網人工飼養，不直接捕野生成魚，但飼料常含野生小魚做的魚粉，鰻苗也取自野外。' },
+    '禁止捕撈': { impact: 'ban', d: '依規定不得捕撈，請不要購買或食用。' }
+};
+const IMPACT_LABEL = { good: '友善', watch: '需留意', heavy: '不友善', ban: '禁止', farm: '人工養殖' };
+
+const SEASON_MONTHS = { '春': [3,4,5], '夏': [6,7,8], '秋': [9,10,11], '冬': [12,1,2] };
+const SIZE_REFS = [
+    { cm: 7,   name: '一根手指', adj: '長' }, { cm: 15,  name: '一支手機', adj: '長' },
+    { cm: 30,  name: '一把直尺', adj: '長' }, { cm: 85,  name: '一支棒球棒', adj: '長' },
+    { cm: 170, name: '一個成人的身高', adj: '長' }, { cm: 450, name: '一輛小客車', adj: '長' }
+];
+const QUIZ_LENGTH = 10;
+
+let fishDB = [];
+let browseList = [], browseFilter = 'all', browseIdx = 0;
+let quizQuestions = [], quizIdx = 0, quizScore = 0, quizStreak = 0, quizMaxStreak = 0;
+let quizSelected = null, quizAnswered = false;
+let sheetFish = null;
+
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+const byId = id => fishDB.find(f => f.id === id);
+
+/* ── 插圖 ── */
+function mascot(mood, cls) {
+    const mouth = mood === 'sad'
+        ? '<path d="M97 68 Q103 62 109 68" stroke="#1f2a30" stroke-width="3.5" stroke-linecap="round" fill="none"/>'
+        : '<path d="M97 60 Q103 70 109 60" stroke="#1f2a30" stroke-width="3.5" stroke-linecap="round" fill="none"/>';
+    const eye = mood === 'happy'
+        ? '<path d="M84 46 Q92 36 100 46" stroke="#1f2a30" stroke-width="4" stroke-linecap="round" fill="none"/>'
+        : '<circle cx="92" cy="44" r="12" fill="#fff"/><circle cx="94" cy="45" r="6.5" fill="#1f2a30"/><circle cx="96.5" cy="42.5" r="2.3" fill="#fff"/>';
+    return `<svg class="mascot ${cls || ''}" viewBox="0 0 124 100" aria-hidden="true">
+        <path d="M30 52 L8 30 L8 74 Z" fill="#1899d6" stroke="#1899d6" stroke-width="9" stroke-linejoin="round"/>
+        <path d="M50 24 Q68 4 88 22 Z" fill="#1899d6" stroke="#1899d6" stroke-width="7" stroke-linejoin="round"/>
+        <ellipse cx="68" cy="54" rx="46" ry="34" fill="#1cb0f6"/>
+        <ellipse cx="68" cy="70" rx="32" ry="14" fill="#84d8ff"/>
+        <ellipse cx="62" cy="60" rx="13" ry="8" fill="#1899d6" transform="rotate(-18 62 60)"/>
+        ${eye}
+        <circle cx="106" cy="55" r="5" fill="#ff9aa2" opacity=".75"/>
+        ${mouth}
+    </svg>`;
+}
+function fishSilhouette(color, cls) {
+    return `<svg class="${cls || ''}" viewBox="0 0 160 100" aria-hidden="true">
+        <path d="M36 50 L10 26 L10 74 Z" fill="${color}" stroke="${color}" stroke-width="9" stroke-linejoin="round"/>
+        <ellipse cx="90" cy="50" rx="56" ry="36" fill="${color}"/>
+        <ellipse cx="90" cy="66" rx="38" ry="14" fill="#fff" opacity=".4"/>
+        <circle cx="120" cy="42" r="9" fill="#fff"/><circle cx="122" cy="43" r="4.5" fill="#1f2a30"/>
+    </svg>`;
+}
+
+/* ── 照片載入 ──
+   依序嘗試 魚名 / 編號 × png、jpg、jpeg、webp；找到就快取。
+   找不到時保留插圖，並提供「重新載入照片」按鈕（網路不穩時可再試一次）。 */
+const imgCache = new Map();
+function candidateURLs(f) {
+    const out = [];
+    for (const base of [f.name, f.id])
+        for (const ext of ['png', 'jpg', 'jpeg', 'webp'])
+            out.push('fishdb/' + encodeURIComponent(base) + '.' + ext);
+    return out;
+}
+function tryLoad(url) {
+    return new Promise(resolve => {
+        const im = new Image();
+        let done = false;
+        const fin = ok => { if (done) return; done = true; clearTimeout(t); resolve(ok ? url : null); };
+        const t = setTimeout(() => fin(false), 12000);
+        im.onload = () => fin(im.naturalWidth > 0);
+        im.onerror = () => fin(false);
+        im.src = url;
+    });
+}
+function resolveImage(f, force) {
+    if (force) imgCache.delete(f.id);
+    if (!imgCache.has(f.id)) {
+        imgCache.set(f.id, (async () => {
+            for (const u of candidateURLs(f)) { const ok = await tryLoad(u); if (ok) return ok; }
+            return null;
+        })());
+    }
+    return imgCache.get(f.id);
+}
+function heroHTML(f, opts) {
+    opts = opts || {};
+    const color = opts.neutral ? '#1cb0f6' : LIGHT_FISH_COLOR[f.light];
+    const cls = 'hero ' + (opts.neutral ? '' : f.light) + (opts.compact ? ' compact' : '');
+    const pill = opts.neutral ? '' : `<span class="badge ${f.light} hero-pill">${LIGHT_SHORT[f.light]}</span>`;
+    return `<div class="${cls}" data-fish="${f.id}">
+        ${fishSilhouette(color, 'ph')}
+        ${pill}
+        <div class="ph-note"><button class="hero-retry" type="button">目前沒有照片，點一下重新載入</button></div>
+    </div>`;
+}
+function attachHero(el, f, force) {
+    el.classList.remove('nophoto', 'has-img');
+    el.querySelectorAll('.hero-img').forEach(i => i.remove());
+    resolveImage(f, force).then(url => {
+        if (!el.isConnected) return;
+        if (!url) { el.classList.add('nophoto'); return; }
+        const img = new Image();
+        img.className = 'hero-img';
+        img.alt = f.name;
+        img.decoding = 'async';
+        img.src = url;
+        el.insertBefore(img, el.firstChild);
+        el.classList.add('has-img');
+        requestAnimationFrame(() => img.classList.add('in'));
+    });
+}
+function initHeroes(root) {
+    root.querySelectorAll('.hero[data-fish]').forEach(el => { const f = byId(el.dataset.fish); if (f) attachHero(el, f); });
+}
+document.addEventListener('click', e => {
+    const retry = e.target.closest('.hero-retry');
+    if (retry) {
+        const el = retry.closest('.hero'); const f = byId(el.dataset.fish);
+        if (f) attachHero(el, f, true);
+        return;
+    }
+    const alt = e.target.closest('.alt');
+    if (alt) {
+        if (document.getElementById('sheet').classList.contains('open')) openSheet(alt.dataset.id);
+        else jumpToFish(alt.dataset.id);
+    }
+});
+
+/* ── 背景音樂（只在圖鑑瀏覽時播放） ──
+   音檔 Surface_Tensions.m4a 放在跟本頁同一個資料夾。
+   用瀏覽器的使用者點擊來啟動（手機才不會被擋），進出用淡入淡出，
+   接近結尾先淡出、重播時再淡入，循環時不會有硬切的聲音。 */
+const BGM_FILE = 'Surface_Tensions.m4a';
+const BGM_VOL = 0.35;
+let bgm = null, bgmWanted = false, bgmGain = 0, bgmTimer = null;
+let musicOn = true;
+try { musicOn = localStorage.getItem('fishguide_music') !== '0'; } catch (e) {}
+
+function ensureBgm() {
+    if (!bgm) {
+        bgm = new Audio(BGM_FILE);
+        bgm.preload = 'auto';
+        bgm.volume = 0;
+        bgm.addEventListener('ended', () => {
+            if (bgmWanted && musicOn) { bgm.currentTime = 0; bgm.play().catch(() => {}); }
+        });
+    }
+    return bgm;
+}
+function bgmTick() {
+    const a = bgm; if (!a) return;
+    bgmGain = bgmWanted ? Math.min(1, bgmGain + 0.06) : Math.max(0, bgmGain - 0.1);
+    let edge = 1;
+    if (a.duration && isFinite(a.duration)) {
+        const left = a.duration - a.currentTime;
+        if (left < 0.6) edge = Math.max(0, left / 0.6);
+    }
+    a.volume = Math.max(0, Math.min(1, BGM_VOL * bgmGain * edge));
+    if (!bgmWanted && bgmGain === 0) { a.pause(); clearInterval(bgmTimer); bgmTimer = null; }
+}
+function bgmStart() {
+    if (!musicOn) return;
+    bgmWanted = true;
+    const a = ensureBgm();
+    const pr = a.play();
+    if (pr && pr.catch) pr.catch(() => {});      // 被瀏覽器擋下或找不到音檔時安靜略過
+    if (!bgmTimer) bgmTimer = setInterval(bgmTick, 50);
+}
+function bgmStop() {
+    bgmWanted = false;
+    if (bgm && !bgm.paused && !bgmTimer) bgmTimer = setInterval(bgmTick, 50);
+}
+function updateMusicBtn() {
+    const b = document.getElementById('music-btn');
+    b.classList.toggle('on', musicOn);
+    b.setAttribute('aria-pressed', musicOn ? 'true' : 'false');
+    b.setAttribute('aria-label', '背景音樂：' + (musicOn ? '開' : '關'));
+}
+function toggleMusic() {
+    musicOn = !musicOn;
+    try { localStorage.setItem('fishguide_music', musicOn ? '1' : '0'); } catch (e) {}
+    updateMusicBtn();
+    if (musicOn) { if (document.getElementById('screen-browse').classList.contains('active')) bgmStart(); }
+    else bgmStop();
+}
+updateMusicBtn();
+// 切到別的分頁或螢幕關閉時暫停，回來再接著播
+document.addEventListener('visibilitychange', () => {
+    if (!bgm) return;
+    if (document.hidden) bgm.pause();
+    else if (bgmWanted && musicOn) bgm.play().catch(() => {});
+});
+
+/* ── 載入資料 ── */
+document.getElementById('home-mascot').innerHTML = mascot('normal');
+fetch('./fishDB.json')
+    .then(r => r.json())
+    .then(data => {
+        fishDB = data;
+        document.getElementById('mode-browse').disabled = false;
+        document.getElementById('mode-quiz').disabled = false;
+        renderHomeSeason();
+    })
+    .catch(err => {
+        document.querySelector('.tiles').innerHTML =
+            '<div class="card" style="padding:16px;color:var(--red-d);">資料載入失敗：' + escapeHtml(err.message) + '<br>請重新開啟頁面。</div>';
+    });
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (id === 'screen-browse') bgmStart(); else bgmStop();   // 只有瀏覽模式有背景音樂
+}
+function goHome() { closeSheet(); showScreen('screen-home'); }
+
+/* 首頁「這個月盛產」：優先挑有明確產季的綠燈魚，不夠再補全年都有的 */
+function renderHomeSeason() {
+    const month = new Date().getMonth() + 1;
+    const inSeason = fishDB.filter(f => f.light === 'green' && seasonSet(f.season).has(month));
+    const specific = inSeason.filter(f => f.season !== '全年');
+    const list = (specific.length >= 6 ? pickN(specific, 8) : specific.concat(pickN(inSeason.filter(f => f.season === '全年'), 8 - specific.length)));
+    if (!list.length) return;
+    document.getElementById('home-season-title').textContent = month + ' 月盛產的綠燈魚';
+    document.getElementById('home-season-list').innerHTML = list.map(f =>
+        `<button class="card sf" data-id="${f.id}">${fishSilhouette(LIGHT_FISH_COLOR[f.light])}<div class="n">${escapeHtml(f.name)}</div></button>`
+    ).join('');
+    document.getElementById('home-season').hidden = false;
+}
+document.getElementById('home-season-list').addEventListener('click', e => {
+    const b = e.target.closest('.sf'); if (!b) return;
+    showScreen('screen-browse');
+    jumpToFish(b.dataset.id);
+});
+
+/* ── 魚種明細（圖鑑與問答共用） ── */
+function seasonSet(season) {
+    if (season === '全年') return new Set([1,2,3,4,5,6,7,8,9,10,11,12]);
+    const s = new Set();
+    for (const ch of season) (SEASON_MONTHS[ch] || []).forEach(m => s.add(m));
+    return s;
+}
+function sizeNote(cm) {
+    let best = SIZE_REFS[0], d = Infinity;
+    for (const r of SIZE_REFS) { const dd = Math.abs(Math.log(cm / r.cm)); if (dd < d) { d = dd; best = r; } }
+    const ratio = cm / best.cm, n = best.name, a = best.adj, shorter = '短';
+    if (ratio < 0.5)  return `不到${n}的一半${a}`;
+    if (ratio < 0.85) return `比${n}${shorter}一些`;
+    if (ratio <= 1.15) return `和${n}差不多${a}`;
+    if (ratio < 1.6)  return `比${n}${a}一些`;
+    return `約是${n}的 ${ratio.toFixed(1)} 倍${a}`;
+}
+function seasonBlock(f) {
+    const set = seasonSet(f.season);
+    const now = new Date().getMonth() + 1;
+    const inSeason = set.has(now);
+    let status;
+    if (set.size === 12) status = '🎉 全年都是盛產期。';
+    else if (inSeason) status = '🎉 這個月正是盛產期。';
+    else {
+        let next = null;
+        for (let i = 1; i <= 12; i++) { const m = ((now - 1 + i) % 12) + 1; if (set.has(m)) { next = m; break; } }
+        status = `這個月不是盛產期，下一次是 ${next} 月。`;
+    }
+    let cells = '';
+    for (let m = 1; m <= 12; m++) cells += `<div class="m${set.has(m) ? ' on' : ''}${m === now ? ' now' : ''}">${m}</div>`;
+    return { inSeason, html: `
+        <div class="season-status">${status}</div>
+        <div class="months" role="img" aria-label="${escapeHtml(f.season)}盛產">${cells}</div>
+        <div class="months-note">藍色是盛產月份，橘框是這個月。春 3–5 月、夏 6–8 月、秋 9–11 月、冬 12–2 月，實際依年份和海況會有出入。</div>` };
+}
+function infoCard(title, v, note) {
+    return `<div class="sec"><h3>${title}</h3><div class="card info-list"><div class="info-row"><div><div class="v">${v}</div>${note ? `<div class="note">${note}</div>` : ''}</div></div></div></div>`;
+}
+/* 推薦替代魚：只從綠燈魚挑，比「季節（月份有重疊）、習性、分布」三項，
+   符合越多越前面；同分數的人太多、名額放不下時，才在那一群裡隨機挑。 */
+function pickAlternatives(f) {
+    const mine = seasonSet(f.season);
+    const cands = fishDB.filter(x => x.light === 'green' && x.id !== f.id).map(x => {
+        const xs = seasonSet(x.season);
+        const m = { season: [...mine].some(v => xs.has(v)), behavior: x.behavior === f.behavior, zone: x.zone === f.zone };
+        return { fish: x, m, score: (m.season ? 1 : 0) + (m.behavior ? 1 : 0) + (m.zone ? 1 : 0) };
+    });
+    const out = [];
+    for (let sc = 3; sc >= 1 && out.length < 4; sc--) {
+        const group = cands.filter(c => c.score === sc);
+        const need = 4 - out.length;
+        out.push(...(group.length <= need ? group : pickN(group, need)));
+    }
+    return out;
+}
+function fishDetailHTML(f) {
+    const season = seasonBlock(f);
+
+    const methods = f.methods.map(m => {
+        const info = METHOD_INFO[m] || { impact: 'watch', d: '' };
+        return `<div class="card method">
+            <div class="mh"><span class="mn">${escapeHtml(m)}</span><span class="impact ${info.impact}">${IMPACT_LABEL[info.impact]}</span></div>
+            ${info.d ? `<div class="md">${escapeHtml(info.d)}</div>` : ''}
+        </div>`;
+    }).join('');
+
+    let alts = '';
+    if (f.light !== 'green') {
+        const picks = pickAlternatives(f);
+        if (picks.length) {
+            alts = `<div class="sec"><h3>可以改吃這些</h3><div class="sub">依季節、習性、分布挑選，符合越多越前面。</div><div class="alts">` +
+                picks.map(({ fish: a }) => `<button class="card alt" data-id="${a.id}"><span class="dot"></span><span class="ab"><div class="an">${escapeHtml(a.name)}</div><div class="ad">產季 ${escapeHtml(a.season)}・${escapeHtml(a.behavior)}・${ZONE_LABEL[a.zone] || escapeHtml(a.zone)}</div></span><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></button>`).join('') +
+                '</div></div>';
+        }
+    }
+
+    return `
+        ${heroHTML(f)}
+        <div class="fish-title">
+            <div class="fish-name">${escapeHtml(f.name)}</div>
+        </div>
+        <p class="fish-summary">${escapeHtml(f.description)}</p>
+
+        <div class="sec"><h3>什麼時候盛產</h3>${season.html}</div>
+
+        ${infoCard('體長', sizeNote(f.size), '')}
+        ${infoCard('習性', escapeHtml(f.behavior), escapeHtml(BEHAVIOR_NOTE[f.behavior] || ''))}
+        ${infoCard('分布', ZONE_LABEL[f.zone] || escapeHtml(f.zone), escapeHtml(ZONE_NOTE[f.zone] || ''))}
+
+        <div class="sec"><h3>怎麼捕來的</h3>
+            <div class="sub">「友善」是指一般情形下對海洋和其他生物的影響小，實際會依作業規模與方式不同。</div>
+            <div class="method-list">${methods}</div>
+        </div>
+        ${alts}`;
+}
+
+/* ── 圖鑑瀏覽 ── */
+function goBrowse() { setFilter('all'); showScreen('screen-browse'); }
+function setFilter(f) {
+    browseFilter = f;
+    browseList = f === 'all' ? fishDB.slice() : fishDB.filter(x => x.light === f);
+    browseIdx = 0;
+    document.querySelectorAll('#browse-chips .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === f ? 'true' : 'false'));
+    renderFishCard();
+    document.getElementById('browse-body').scrollTop = 0;
+}
+document.getElementById('browse-chips').addEventListener('click', e => {
+    const c = e.target.closest('.chip'); if (c) setFilter(c.dataset.f);
+});
+function jumpToFish(id) {
+    setFilter('all');
+    const i = browseList.findIndex(x => x.id === id);
+    if (i >= 0) { browseIdx = i; renderFishCard(1); }
+    document.getElementById('browse-body').scrollTop = 0;
+}
+function renderFishCard(dir) {
+    const f = browseList[browseIdx];
+    if (!f) return;
+    const el = document.getElementById('fish-card');
+    el.className = 'fish-card' + (dir ? (dir > 0 ? ' enter-next' : ' enter-prev') : '');
+    el.innerHTML = fishDetailHTML(f);
+    initHeroes(el);
+    document.getElementById('browse-counter').textContent = (browseIdx + 1) + '/' + browseList.length;
+    document.getElementById('browse-progress').style.width = ((browseIdx + 1) / browseList.length * 100) + '%';
+    document.getElementById('browse-prev').disabled = (browseIdx === 0);
+    document.getElementById('browse-next').disabled = (browseIdx === browseList.length - 1);
+    // 預先載入前後兩隻的照片，切換時不用等
+    [browseList[browseIdx + 1], browseList[browseIdx - 1]].forEach(n => n && resolveImage(n));
+}
+function browseStep(delta) {
+    const n = browseIdx + delta;
+    if (n < 0 || n >= browseList.length) return;
+    browseIdx = n;
+    renderFishCard(delta);
+    document.getElementById('browse-body').scrollTop = 0;
+}
+// 左右滑動換魚
+(function () {
+    const body = document.getElementById('browse-body');
+    let x0 = null, y0 = null;
+    body.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+    body.addEventListener('touchend', e => {
+        if (x0 === null) return;
+        const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+        x0 = null;
+        if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6) browseStep(dx < 0 ? 1 : -1);
+    }, { passive: true });
+})();
+
+/* ── 完整資料面板（問答中使用） ── */
+function openSheet(id) {
+    const f = byId(id); if (!f) return;
+    sheetFish = f;
+    const body = document.getElementById('sheet-body');
+    body.innerHTML = fishDetailHTML(f);
+    initHeroes(body);
+    body.scrollTop = 0;
+    document.getElementById('sheet-title').textContent = f.name;
+    document.getElementById('sheet').classList.add('open');
+}
+function closeSheet() { document.getElementById('sheet').classList.remove('open'); }
+document.getElementById('quiz-more').addEventListener('click', () => {
+    const q = quizQuestions[quizIdx]; if (q) openSheet(q.fish.id);
+});
+
+/* ── 簡單問答 ── */
+function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+}
+function pickN(arr, n) { return shuffle(arr).slice(0, n); }
+
+function buildQuizQuestions() {
+    const picked = pickN(fishDB, Math.min(QUIZ_LENGTH, fishDB.length));
+    const seasons = [...new Set(fishDB.map(f => f.season))];
+    return picked.map(f => {
+        const type = ['light', 'zone', 'behavior', 'season'][Math.floor(Math.random() * 4)];
+        if (type === 'light') {
+            return { fish: f, questionText: '是哪個燈號？', correct: LIGHT_LABEL[f.light],
+                choices: [LIGHT_LABEL.green, LIGHT_LABEL.yellow, LIGHT_LABEL.red],
+                explain: `${f.name}屬於${LIGHT_LABEL[f.light]}。${f.description}` };
+        }
+        if (type === 'zone') {
+            const correct = ZONE_LABEL[f.zone] || f.zone;
+            const others = Object.values(ZONE_LABEL).filter(v => v !== correct);
+            return { fish: f, questionText: '主要分布在哪裡？', correct,
+                choices: shuffle([correct, ...pickN(others, 2)]),
+                explain: `${f.name}主要分布在「${correct}」。${ZONE_NOTE[f.zone] || ''}${f.description}` };
+        }
+        if (type === 'season') {
+            const correct = f.season;
+            return { fish: f, questionText: '什麼時候是產季？', correct,
+                choices: shuffle([correct, ...pickN(seasons.filter(s => s !== correct), 3)]),
+                explain: `${f.name}的產季是「${correct}」。${f.description}` };
+        }
+        const correct = f.behavior;
+        const other = (correct === '洄游性') ? '定棲性' : '洄游性';
+        return { fish: f, questionText: '是洄游性還是定棲性？', correct,
+            choices: shuffle([correct, other]),
+            explain: `${f.name}是「${correct}」。${BEHAVIOR_NOTE[correct] || ''}` };
+    });
+}
+function goQuiz() {
+    closeSheet();
+    quizQuestions = buildQuizQuestions();
+    quizIdx = 0; quizScore = 0; quizStreak = 0; quizMaxStreak = 0;
+    updateCombo(false);
+    document.getElementById('quiz-progress').style.width = '0%';
+    showScreen('screen-quiz');
+    renderQuizQuestion();
+}
+function updateCombo(pop) {
+    const el = document.getElementById('quiz-combo');
+    document.getElementById('quiz-combo-n').textContent = quizStreak;
+    el.classList.toggle('hot', quizStreak >= 2);
+    el.classList.remove('pop');
+    if (pop) { void el.offsetWidth; el.classList.add('pop'); }
+}
+function renderQuizQuestion() {
+    const q = quizQuestions[quizIdx];
+    quizSelected = null; quizAnswered = false;
+    document.getElementById('quiz-mascot').innerHTML = mascot('normal');
+    document.getElementById('quiz-fish-name').textContent = q.fish.name;
+    document.getElementById('quiz-question-text').textContent = q.questionText;
+    const heroBox = document.getElementById('quiz-fish');
+    heroBox.innerHTML = heroHTML(q.fish, { neutral: true, compact: true });   // 問答不用燈號色，避免洩漏答案
+    initHeroes(heroBox);
+    if (quizQuestions[quizIdx + 1]) resolveImage(quizQuestions[quizIdx + 1].fish);
+    document.getElementById('quiz-choices').innerHTML = q.choices.map((c, i) =>
+        `<button class="choice" data-choice="${escapeHtml(c)}"><span class="num">${i + 1}</span><span>${escapeHtml(c)}</span></button>`
+    ).join('');
+    document.getElementById('quiz-footer').className = 'qfooter';
+    const act = document.getElementById('quiz-action');
+    act.className = 'btn'; act.textContent = '檢查答案'; act.disabled = true;
+}
+document.getElementById('quiz-choices').addEventListener('click', e => {
+    const btn = e.target.closest('.choice');
+    if (!btn || quizAnswered) return;
+    document.querySelectorAll('#quiz-choices .choice').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    quizSelected = btn;
+    document.getElementById('quiz-action').disabled = false;
+});
+document.getElementById('quiz-action').addEventListener('click', () => { if (!quizAnswered) checkAnswer(); else nextQuiz(); });
+
+const ICON_OK = '<svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5" stroke="#58a700" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+const ICON_NO = '<svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="#ea2b2b" stroke-width="4" stroke-linecap="round" fill="none"/></svg>';
+
+function checkAnswer() {
+    if (!quizSelected) return;
+    const q = quizQuestions[quizIdx];
+    quizAnswered = true;
+    const isCorrect = quizSelected.dataset.choice === q.correct;
+    document.querySelectorAll('#quiz-choices .choice').forEach(b => {
+        b.disabled = true; b.classList.remove('selected');
+        if (b.dataset.choice === q.correct) b.classList.add('correct');
+    });
+    if (isCorrect) { quizScore++; quizStreak++; quizMaxStreak = Math.max(quizMaxStreak, quizStreak); }
+    else { quizSelected.classList.add('wrong', 'shake'); quizStreak = 0; }
+    updateCombo(isCorrect);
+    document.getElementById('quiz-mascot').innerHTML = mascot(isCorrect ? 'happy' : 'sad');
+    document.getElementById('quiz-progress').style.width = ((quizIdx + 1) / quizQuestions.length * 100) + '%';
+    document.getElementById('quiz-footer').className = 'qfooter ' + (isCorrect ? 'correct' : 'wrong');
+    document.getElementById('quiz-mark').innerHTML = isCorrect ? ICON_OK : ICON_NO;
+    document.getElementById('quiz-verdict').textContent = isCorrect ? '答對了！' : '答錯了';
+    document.getElementById('quiz-explain').textContent = q.explain;
+    const act = document.getElementById('quiz-action');
+    act.className = 'btn' + (isCorrect ? '' : ' red');
+    act.textContent = quizIdx < quizQuestions.length - 1 ? '繼續' : '看結果';
+    act.disabled = false;
+}
+function nextQuiz() {
+    quizIdx++;
+    if (quizIdx >= quizQuestions.length) showQuizResult();
+    else { renderQuizQuestion(); document.querySelector('.quiz-body').scrollTop = 0; }
+}
+function showQuizResult() {
+    const total = quizQuestions.length, ratio = quizScore / total;
+    showScreen('screen-result');
+    document.getElementById('result-mascot').innerHTML = mascot(ratio >= 0.7 ? 'happy' : 'normal');
+    document.getElementById('result-title').textContent = quizScore === total ? '滿分！' : '練習完成！';
+    let label = '再多認識幾種魚，下次會更好！';
+    if (quizScore === total) label = '你是海鮮永續小達人！';
+    else if (ratio >= 0.7) label = '很不錯！你對海鮮永續很有概念。';
+    document.getElementById('result-label').textContent = label;
+    document.getElementById('rs-score').textContent = quizScore + '/' + total;
+    document.getElementById('rs-acc').textContent = Math.round(ratio * 100) + '%';
+    document.getElementById('rs-streak').textContent = quizMaxStreak;
+    if (ratio >= 0.7) confetti();
+}
+function confetti() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const box = document.getElementById('confetti');
+    const colors = ['#58cc02', '#1cb0f6', '#ffc800', '#ff4b4b', '#ff9600'];
+    box.innerHTML = '';
+    for (let i = 0; i < 40; i++) {
+        const p = document.createElement('i');
+        p.style.left = Math.random() * 100 + '%';
+        p.style.background = colors[i % colors.length];
+        p.style.animationDuration = (2 + Math.random() * 1.8) + 's';
+        p.style.animationDelay = (Math.random() * 0.6) + 's';
+        box.appendChild(p);
+    }
+    setTimeout(() => { box.innerHTML = ''; }, 4500);
+}
+
+/* ── 跟平台的通訊：只送 exit，不送 ready/complete/score ──
+   iframe 情境下（桌機展示模式）要送給 window.parent 讓外層轉發，
+   不能直接摸 window.opener。 */
+function sendExitToPlatform() {
+    const target = (window.self !== window.top) ? window.parent : window.opener;
+    if (!target) return;
+    target.postMessage({ source: 'culture-task', version: 1, taskId: 'fishguide', type: 'exit' }, '*');
+}
+function handleExit() {
+    if (bgm) bgm.pause();
+    sendExitToPlatform();
+    setTimeout(function () { (window.top || window).close(); }, 150);
+}
+</script>
+</body>
+</html>

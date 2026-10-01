@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script>
+        /* 桌機/寬螢幕自動導向「手機外框」展示版（fishmarket-desktop.html），
+           手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var inIframe = (window.self !== window.top);
+            if (window.innerWidth > 700 && !inIframe && !params.has('embedded')) {
+                window.location.replace('fishmarket-desktop.html');
+            }
+        })();
+    </script>
+    <title>永續魚市拍賣：苗栗龍鳳漁港</title>
+	<link rel="icon" type="image/png" href="image/fmicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* 主題色票：樂高積木拍賣場 —— 經典樂高藍、標售紅、金幣黃、領先綠 */
+        :root {
+            --bg-color: #8FC1F2; --primary-color: #0055BF; --accent-color: #E3000B; --accent-color-dark: #A3000A;
+            --gold-color: #FFD500; --gold-color-dark: #C79F00; --green-color: #00852B; --green-color-dark: #045E1E;
+            --text-color: #1F2A38; --panel-bg: #DCEBFA; --panel-white: #FFFFFF; --brick-border: #0055BF;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Noto Sans TC", "Helvetica Neue", Arial, sans-serif; -webkit-touch-callout: none; }
+        html, body { height: 100%; }
+        /* 統一按鍵按壓回饋：去除系統長按選取/高亮，並保證 iOS Safari 上 :active 能確實觸發
+           （iOS 需要頁面上存在 touchstart 監聽器，:active 偽類才會生效，見下方 JS） */
+        button {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        button:active { filter: brightness(0.9); }
+        .portrait-warning{
+            display:none;position:fixed;inset:0;z-index:9999;
+            background:rgba(20,20,20,.94);color:#fff;
+            flex-direction:column;align-items:center;justify-content:center;
+            text-align:center;padding:24px;
+        }
+        .portrait-warning-icon{font-size:48px;margin-bottom:16px;}
+        @media screen and (orientation:landscape){
+            .portrait-warning{display:flex;}
+        }
+        body {
+            background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; overflow: hidden;
+            background-image: radial-gradient(circle at center, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.55) 32%, transparent 33%);
+            background-size: 26px 26px;
+        }
+
+        .brick-panel { background: var(--panel-white); border: 3px solid var(--brick-border); border-radius: 16px; box-shadow: 0 4px 0 rgba(0,40,90,0.25), 0 6px 10px rgba(0,40,90,0.15); position: relative; }
+        .brick-panel.tint { background: var(--panel-bg); }
+        .brick-panel::after { content: ""; position: absolute; top: -7px; left: 16px; width: 44px; height: 8px; background-image: radial-gradient(circle, var(--brick-border) 0 4px, transparent 4.5px); background-size: 14px 8px; background-repeat: repeat-x; opacity: 0.55; pointer-events: none; }
+
+        .lego-baseplate { background-color: var(--bg-color); background-image: radial-gradient(circle, rgba(255,255,255,0.55) 0 5px, transparent 5.5px); background-size: 22px 22px; }
+
+        #lego-stud-strip { flex-shrink: 0; height: 14px; background-color: var(--primary-color); background-image: radial-gradient(circle, rgba(255,255,255,0.4) 0 3px, transparent 3.5px); background-size: 20px 14px; background-position: 10px 7px; background-repeat: repeat-x; border-bottom: 2px solid #003A82; }
+
+        #top-bar { background-color: var(--primary-color); color: white; padding: 12px 15px; z-index: 20; box-shadow: 0 3px 0 rgba(0,20,50,0.35), 0 4px 8px rgba(0,0,0,0.2); flex-shrink: 0; border-bottom: 3px solid #003A82; }
+        #top-bar-row1 { display: flex; justify-content: space-between; font-weight: bold; font-size: 1rem; }
+        #top-bar-row2 { display: flex; justify-content: space-between; font-size: 0.82rem; margin-top: 4px; color: #D6ECFA; }
+        .idle-nickname { font-size: clamp(1rem, 2.8vh, 1.25rem); font-weight: bold; color: #012F72; margin-bottom: 6px; }
+
+        #main-content { flex: 1; width: 100%; min-height: 0; background-color: var(--bg-color); background-image: radial-gradient(circle, rgba(255,255,255,0.5) 0 4px, transparent 4.5px); background-size: 20px 20px; display: flex; flex-direction: column; overflow: hidden; }
+
+        h2 { font-size: 1.2rem; margin-bottom: 15px; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; }
+        .list-item { background: #FAF7EF; padding: 10px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid var(--primary-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1);}
+
+        #board-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; font-size: 0.8rem; color: #31556F; gap: 8px; background: #DCEEF9; border-bottom: 1px solid #A9D3EE; }
+
+        #board-strip { flex-shrink: 0; display: grid; grid-template-rows: repeat(2, 1fr); grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; padding: 8px 10px; overflow: hidden; height: clamp(160px, 30vh, 260px); background-color: #AED4EB; background-image: radial-gradient(circle, rgba(255,255,255,0.45) 0 4px, transparent 4.5px); background-size: 20px 20px; border-bottom: 2px solid #8FC1F2; }
+        /* ===== 看板小卡：塑膠周轉魚箱造型 ===== */
+        .strip-card { min-width: 0; min-height: 0; position: relative; display: flex; flex-direction: column; border-radius: 10px; padding: 4px 4px 3px; gap: 3px; transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+            background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.16) 0 2px, transparent 2px 6px), linear-gradient(160deg, #4AA3E8 0%, #1F73B8 55%, #145A94 100%);
+            box-shadow: 0 3px 0 #0B4166, 0 4px 6px rgba(0,30,60,0.3), inset 0 1px 0 rgba(255,255,255,0.3); }
+
+        .strip-rivet { position: absolute; width: 5px; height: 5px; border-radius: 50%; z-index: 3; background: radial-gradient(circle at 35% 30%, #EAF6FF 0%, #1F73B8 55%, #0B4166 100%); box-shadow: 0 1px 1px rgba(0,0,0,0.3); }
+        .strip-rivet.tl { top: 3px; left: 3px; } .strip-rivet.tr { top: 3px; right: 3px; }
+        .strip-rivet.bl { bottom: 3px; left: 3px; } .strip-rivet.br { bottom: 3px; right: 3px; }
+        .strip-handle { position: absolute; top: 38%; width: 6px; height: 14px; z-index: 3; background: #0B3E6B; border-radius: 4px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.55); }
+        .strip-handle.left { left: -2px; } .strip-handle.right { right: -2px; }
+
+        .strip-cavity { position: relative; flex: 1; min-height: 0; border-radius: 7px; overflow: hidden; display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(ellipse at 18% 94%, rgba(255,255,255,0.9) 0 8px, transparent 9px), radial-gradient(ellipse at 52% 98%, rgba(255,255,255,0.88) 0 9px, transparent 10px), radial-gradient(ellipse at 84% 92%, rgba(255,255,255,0.9) 0 7px, transparent 8px), linear-gradient(180deg, #EAF6FE 0%, #CDE8FA 65%, #B7DEF3 100%);
+            box-shadow: inset 0 2px 4px rgba(0,30,60,0.3), inset 0 -1px 2px rgba(255,255,255,0.7); }
+        .strip-cavity img { width: 70%; height: 70%; object-fit: contain; position: relative; z-index: 1; }
+        .strip-cavity .fallback-fish { font-size: 1.5rem; position: relative; z-index: 1; }
+
+        .strip-badge { position: absolute; top: 3px; right: 3px; z-index: 3; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; box-shadow: 0 1px 2px rgba(0,0,0,0.3); border: 1.5px solid rgba(255,255,255,0.9); background: #8FA6B5; }
+
+        .strip-stamp { position: absolute; left: 50%; top: 40%; z-index: 3; transform: translate(-50%, -50%) rotate(-14deg); padding: 1px 5px; border: 2px solid currentColor; border-radius: 4px; font-weight: 900; font-size: 0.56rem; letter-spacing: 0.5px; white-space: nowrap; }
+
+        .strip-name-overlay { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 8px 3px 2px; text-align: center;
+            background: linear-gradient(180deg, rgba(1,47,114,0) 0%, rgba(1,47,114,0.72) 55%, rgba(1,47,114,0.88) 100%); }
+        .strip-name-overlay .name { font-weight: 900; font-size: clamp(0.7rem, 2.1vh, 0.92rem); color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .strip-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: 5px; row-gap: 1px; background: #FFFFFF; border-radius: 6px; padding: 1.5px 4px; box-shadow: 0 1px 1px rgba(0,40,90,0.12); }
+        .strip-meta span { font-size: clamp(0.5rem, 1.35vh, 0.58rem); font-weight: 700; color: #163E5B; white-space: nowrap; max-width: 100%; }
+
+        .strip-card.active { z-index: 3; animation: liveGlow 1.1s ease-in-out infinite; }
+        .strip-card.active .strip-badge { background: var(--accent-color); animation: badgePulse 1s ease-in-out infinite; }
+        @keyframes badgePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        @keyframes liveGlow { 0%,100% { box-shadow: 0 3px 0 var(--accent-color-dark), 0 4px 10px rgba(214,67,46,0.4);} 50% { box-shadow: 0 3px 0 var(--accent-color-dark), 0 4px 18px rgba(214,67,46,0.75);} }
+
+        .strip-card.sold-player { box-shadow: 0 3px 0 var(--gold-color-dark), 0 4px 12px rgba(232,163,61,0.55); transform: scale(1.02); }
+        .strip-card.sold-player .strip-stamp { color: var(--gold-color-dark); background: rgba(255,255,255,0.65); }
+
+        .strip-card.sold-other, .strip-card.unsold { filter: saturate(0.55) brightness(0.94); }
+        .strip-card.sold-other .strip-cavity img, .strip-card.unsold .strip-cavity img { filter: grayscale(85%) opacity(0.85); }
+        .strip-card.sold-other .strip-stamp { color: #4E564A; background: rgba(255,255,255,0.65); }
+        .strip-card.unsold .strip-stamp { color: #4E564A; border-style: dashed; background: rgba(255,255,255,0.6); }
+
+        .btn-bid { background-color: var(--accent-color); flex: 1; padding: 14px 12px 12px; font-size: 1rem; font-weight: bold; border: 2px solid var(--accent-color-dark); border-radius: 10px; cursor: pointer; color: white; transition: transform 0.08s ease, box-shadow 0.08s ease; box-shadow: 0 4px 0 var(--accent-color-dark); position: relative; }
+        .btn-bid::before { content: ""; position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 34px; height: 6px; background-image: radial-gradient(circle, rgba(255,255,255,0.55) 0 3px, transparent 3.5px); background-size: 12px 6px; background-repeat: repeat-x; pointer-events: none; }
+        .btn-bid:disabled { background-color: #C9C6BC; border-color: #A6A39A; box-shadow: 0 4px 0 #A6A39A; cursor: not-allowed; }
+        .btn-bid:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0 0 var(--accent-color-dark); }
+
+        /* ===== 拍賣區(常駐固定區塊,不再整頁切換) ===== */
+        #auction-arena { flex: 1; min-height: 0; display: flex; flex-direction: column; background-color: var(--bg-color); background-image: radial-gradient(circle, rgba(255,255,255,0.5) 0 4px, transparent 4.5px); background-size: 20px 20px; color: #1F2A38; padding: 12px 14px; position: relative; overflow: hidden; border-top: 1px solid #AED4EB; }
+
+        #arena-idle { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+        #arena-idle-content { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; max-width: 380px; padding: 0 12px; }
+        .idle-emoji { font-size: clamp(2rem, 6vh, 3rem); }
+        .idle-title { font-size: clamp(1.1rem, 3.2vh, 1.4rem); font-weight: bold; color: #012F72; }
+        .idle-sub { font-size: clamp(0.85rem, 2.4vh, 1.02rem); color: #1B3B52; line-height: 1.5; background: rgba(255,255,255,0.62); padding: 8px 14px; border-radius: 12px; }
+        .idle-btn { margin-top: 6px; padding: 14px 26px; }
+        .idle-btn-row { display: flex; gap: 8px; width: 100%; margin-top: 6px; }
+
+        #arena-live { flex: 1; min-height: 0; display: none; flex-direction: column; overflow: hidden; }
+
+        /* 兩欄式主要區域：左欄(魚貨/價格/即時資訊) : 右欄(6買家宮格/出價) = 2 : 3 */
+        .arena-columns { flex: 1; min-height: 0; display: grid; grid-template-columns: 2fr 3fr; gap: 8px; overflow: hidden; }
+
+        .arena-col-left { min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 1px; overflow: hidden; }
+        .arena-col-right { min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+
+        .arena-timer-wrap { position: relative; width: clamp(36px, 7vh, 50px); height: clamp(36px, 7vh, 50px); flex-shrink: 0; margin: 0 auto; }
+        #arena-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .ring-track { fill: none; stroke: rgba(1,47,114,0.16); stroke-width: 8; }
+        .ring-progress { fill: none; stroke: #4FD1A8; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 326.7; stroke-dashoffset: 0; transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease; }
+        .ring-progress.urgent { stroke: #FF5844; animation: ringUrgent var(--blink-dur, 0.6s) ease-in-out infinite; }
+        @keyframes ringUrgent { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes timerUrgent { 0%,100% { color: #E3000B; text-shadow: 0 0 12px rgba(227,0,11,0.8); transform: scale(1); } 50% { color: #ff6b6b; text-shadow: 0 0 20px rgba(255,107,107,0.8); transform: scale(1.1); } }
+        .arena-timer-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #arena-time { font-size: clamp(0.8rem, 2.4vh, 1.05rem); font-weight: bold; font-family: monospace; transition: color 0.2s ease, transform 0.2s ease; }
+        #arena-time.urgent { animation: timerUrgent var(--blink-dur, 0.5s) ease-in-out infinite; }
+
+        .arena-fish-info { flex: 1; min-height: 0; max-height: 20vh; width: 100%; text-align: center; background: rgba(255,255,255,0.6); border-radius: 10px; padding: 0px 0px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0px; overflow: hidden; }
+        .arena-fish-icon-big { flex: 1; min-height: 0; min-width: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .arena-fish-icon-big img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+        .arena-fish-name { font-size: clamp(1.05rem, 3.4vh, 1.4rem); font-weight: bold; color: #012F72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; flex-shrink: 0; }
+        .arena-fish-name.name-len-4 { font-size: clamp(0.82rem, 2.6vh, 1.08rem); }
+        .arena-fish-name.name-len-5plus { font-size: clamp(0.7rem, 2.2vh, 0.92rem); }
+
+        .arena-price-block { flex-shrink: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--panel-bg); border: 2px solid var(--gold-color-dark); border-radius: 10px; padding: 4px 8px; }
+        .arena-price-label { font-size: 0.66rem; color: #315F7B; }
+        .arena-price-row { font-size: clamp(1.1rem, 3.6vh, 1.5rem); font-weight: bold; color: #B87900; font-family: monospace; transition: transform 0.15s ease; }
+        .arena-price-row.pulse-player { animation: pricePulseGreen 0.35s ease; }
+        .arena-price-row.pulse-ai { animation: pricePulseOrange 0.35s ease; }
+        @keyframes pricePulseGreen { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #4FD1A8; } 100% { transform: scale(1); color: #F2B84D; } }
+        @keyframes pricePulseOrange { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #ff9d5c; } 100% { transform: scale(1); color: #F2B84D; } }
+        .arena-price-unit { font-size: 0.58em; margin-left: 3px; color: #52758D; }
+
+        .arena-ai-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); gap: clamp(9px,2vh,14px); align-content: stretch; padding: 8px; }
+
+        /* 右欄下方：我的現金 + 出價操作（與左欄「即時資訊」對調位置） */
+        .arena-bid-panel { flex-shrink: 0; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+        .arena-budget-line { font-size: 0.8rem; font-weight: bold; color: var(--primary-color); }
+        .arena-budget-line span { color: var(--gold-color-dark); font-family: monospace; }
+        .ai-chip { position: relative; border-radius: 10px; overflow: visible; border: 2px solid transparent; min-height: 0; background: linear-gradient(160deg, #E8F1F8 0%, #CFE2EF 100%); transition: transform 0.2s ease, border-color 0.2s ease; }
+        .ai-chip-clip { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; }
+        .ai-chip-avatar { position: absolute; left: 0; top: 0; height: 100%; width: auto; max-width: 100%; object-fit: contain; object-position: left center; }
+        .ai-chip-avatar-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+        .ai-chip .ai-name { position: absolute; top: 2px; right: 3px; z-index: 2; background: rgba(4,20,42,0.68); color: #fff; font-weight: 900; font-size: clamp(0.56rem, 1.5vh, 0.7rem); padding: 1px 5px; border-radius: 6px; max-width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ai-chip .ai-status { position: absolute; bottom: 2px; right: 3px; z-index: 2; background: rgba(4,20,42,0.55); color: #EAF3FB; font-size: clamp(0.5rem, 1.3vh, 0.6rem); padding: 1px 5px; border-radius: 6px; max-width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .ai-bubble { position: absolute; top: -10px; left: 4px; z-index: 5; background: #fff; color: #C1541A; font-weight: 900; font-size: clamp(0.5rem, 1.3vh, 0.64rem); padding: 2px 6px; border-radius: 10px; border: 1.5px solid #ff9d5c; box-shadow: 0 2px 4px rgba(0,0,0,0.3); white-space: nowrap; animation: bubblePop 0.2s ease; }
+        .ai-bubble::after { content: ''; position: absolute; left: 9px; bottom: -5px; border-width: 5px 4px 0 4px; border-style: solid; border-color: #fff transparent transparent transparent; }
+        .ai-bubble::before { content: ''; position: absolute; left: 8.5px; bottom: -7px; border-width: 6px 4.5px 0 4.5px; border-style: solid; border-color: #ff9d5c transparent transparent transparent; }
+        @keyframes bubblePop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .ai-chip.out { filter: grayscale(80%) brightness(0.75); }
+        .ai-chip.out .ai-name { text-decoration: line-through; }
+        .ai-chip.bid { border-color: #ff9d5c; transform: scale(1.03); z-index: 2; box-shadow: 0 3px 10px rgba(255,157,92,0.5); }
+        .ai-chip.bid .ai-status { background: rgba(255,141,58,0.92); color: #3A1400; font-weight: bold; }
+        .ai-chip.leader { border-color: #B9791F; transform: scale(1.05); z-index: 2; box-shadow: 0 3px 12px rgba(185,121,31,0.65); }
+        .ai-chip.leader .ai-name, .ai-chip.leader .ai-status { background: rgba(242,193,78,0.95); color: #4A2E00; }
+        .ai-chip.leader .ai-status { font-weight: 900; }
+
+        .arena-action-btns { display: flex; gap: 8px; flex-shrink: 0; padding-top: 6px; }
+        .arena-action-btns .btn-bid { padding: 12px 6px; font-size: 0.9rem; }
+        .btn-giveup { background-color: #7C93A0; border-color: #4F6672; box-shadow: 0 4px 0 #4F6672; }
+        .btn-giveup:disabled { background-color: #C9C6BC; border-color: #A6A39A; box-shadow: 0 4px 0 #A6A39A; }
+
+        #arena-sold-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(1.6rem, 6vh, 2.6rem); font-weight: 900; letter-spacing: 2px; background: rgba(1,47,114,0); color: transparent; pointer-events: none; transition: background 0.25s ease, color 0.25s ease; }
+        #arena-sold-overlay .stamp { display: inline-block; padding: 10px 26px; border: 3px solid currentColor; outline: 1.5px solid currentColor; outline-offset: 5px; border-radius: 8px; transform: rotate(-6deg); }
+        #arena-sold-overlay .sold-sub { font-size: 0.5em; font-weight: 700; margin-top: 6px; letter-spacing: 0; }
+        @keyframes soldFlash { 0%,100% { background: rgba(1,47,114,0); } 20% { background: rgba(242,193,78,0.35); } 40% { background: rgba(1,47,114,0.72); } }
+        @keyframes stampBounce { 0%,100% { transform: rotate(-6deg) scale(1); } 50% { transform: rotate(-6deg) scale(1.15); } }
+        #arena-sold-overlay.show { background: rgba(1,47,114,0.72); animation: soldFlash 0.8s ease-out; }
+        #arena-sold-overlay.show.win { color: #F2C14E; }
+        #arena-sold-overlay.show.win .stamp { animation: stampBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        #arena-sold-overlay.show.other { color: #B9C9C4; }
+        #arena-sold-overlay.show.unsold { color: #7A8F89; }
+
+        #history-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; transition: transform 0.08s ease, background 0.08s ease; }
+        #history-fab:active { transform: scale(0.90); background: rgba(255,255,255,0.32); }
+        #exit-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; transition: transform 0.08s ease, background 0.08s ease; }
+        #exit-fab:active { transform: scale(0.90); background: rgba(255,255,255,0.32); }
+        #sound-toggle { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 10px; font-size: 0.85rem; font-weight: bold; cursor: pointer; flex-shrink: 0; line-height: 1.4; transition: transform 0.08s ease, background 0.08s ease; }
+        #sound-toggle:active { transform: scale(0.90); background: rgba(255,255,255,0.32); }
+        #sound-toggle.muted { opacity: 0.55; }
+
+        #drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 39; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+        #drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+        #history-drawer { position: fixed; left: 0; right: 0; bottom: 0; max-height: 78vh; background: var(--panel-bg); z-index: 40; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 16px rgba(0,0,0,0.25); transform: translateY(100%); transition: transform 0.25s ease; display: flex; flex-direction: column; }
+        #history-drawer.open { transform: translateY(0); }
+        #drawer-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #EDE7DA; flex-shrink: 0; }
+        #drawer-header h2 { margin: 0; border: none; padding: 0; }
+        #drawer-close { background: #EDE7DA; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1rem; cursor: pointer; color: #3F4E4B; transition: transform 0.08s ease, background 0.08s ease; }
+        #drawer-close:active { transform: scale(0.88); background: #DCD3BE; }
+        #drawer-body { overflow-y: auto; padding: 12px 16px 24px; }
+
+        /* ── 開局說明頁：改用整頁看板圖 fmbg1，按鈕疊在圖片「遊戲開始」原始位置上（單頁塞滿手機直式畫面，不捲動）── */
+        #intro-screen { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 2vh 3vw; background: radial-gradient(ellipse at 50% 15%, #123B44 0%, #06232B 65%, #02141A 100%); overflow: hidden; }
+        #intro-card { position: relative; max-width: 440px; width: 100%; max-height: 96vh; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,0.45); line-height: 0; }
+        #intro-card img { display: block; width: 100%; height: auto; }
+
+        /* 透明按鈕：疊在底圖「開始拍賣」按鈕的實際座標上（以圖片寬高比例定位，圖片比例改變時仍能對齊） */
+        #intro-start-btn { position: absolute; left: 22.5%; top: 88.5%; width: 52.6%; height: 8.3%; margin: 0; padding: 0; background: rgba(255,255,255,0); border: none; cursor: pointer; -webkit-tap-highlight-color: rgba(255,255,255,0.25); transition: transform 0.08s ease, background 0.08s ease; }
+        #intro-start-btn:active { background: rgba(255,255,255,0.18); transform: scale(0.96); }
+
+        /* ── 說明介紹頁：疊在開場圖右上角的圓形按鈕，點開後是可捲動的整頁說明 ── */
+        #ingame-help-btn {
+            width: 22px; height: 22px; border-radius: 50%; border: none; cursor: pointer;
+            background: rgba(255,255,255,0.35); color: #012F72; font-size: 13px; font-weight: bold;
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-left: 6px; vertical-align: middle; flex-shrink: 0;
+        }
+        /* 切到背景時暫停：回到前景後顯示這個提示，玩家點了才真的恢復計時，
+           避免玩家沒注意到，回來瞬間就被扣秒數/被 AI 搶標。 */
+        #pause-overlay {
+            position: fixed; inset: 0; z-index: 400; display: none;
+            align-items: center; justify-content: center;
+            background: rgba(4,14,20,0.75);
+            font-family: "Noto Sans TC", sans-serif;
+        }
+        #pause-overlay.show { display: flex; }
+        #pause-overlay .pause-card {
+            background: #FBF8F0; border-radius: 16px; padding: 26px 30px;
+            text-align: center; box-shadow: 0 12px 34px rgba(0,0,0,0.4);
+        }
+        #pause-overlay h3 { margin: 0 0 16px; font-size: 1.1rem; color: #012F72; }
+        #pause-overlay button {
+            padding: 12px 30px; border: none; border-radius: 10px;
+            background: #3C8577; color: #fff; font-weight: bold; font-size: 0.95rem; cursor: pointer;
+        }
+        #help-overlay {
+            position: fixed; inset: 0; z-index: 200; display: none;
+            background: rgba(4,14,20,0.7);
+            align-items: center; justify-content: center; padding: 20px;
+            font-family: "Noto Sans TC", sans-serif; color: #1F2A38;
+        }
+        #help-overlay.show { display: flex; }
+        #help-inner {
+            width: 100%; max-width: 380px; max-height: 80vh; overflow-y: auto;
+            background: #FBF8F0; padding: 18px 18px 22px; box-sizing: border-box;
+            border-radius: 16px; box-shadow: 0 12px 34px rgba(0,0,0,0.4);
+        }
+        #help-inner h2 { font-size: 1.15rem; margin: 0 0 4px; color: #012F72; }
+        #help-inner h3 { font-size: 0.98rem; margin: 18px 0 8px; color: #012F72; display: flex; align-items: center; gap: 6px; }
+        #help-inner p, #help-inner li { font-size: 0.85rem; line-height: 1.7; }
+        #help-inner ol, #help-inner ul { margin: 0; padding-left: 1.4em; }
+        #help-inner .help-note { background: rgba(1,47,114,0.06); border-radius: 8px; padding: 8px 10px; font-size: 0.8rem; color: #444; margin-top: 6px; }
+        #help-inner .help-chip-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0; }
+        #help-inner .help-chip { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #E5DFD3; border-radius: 999px; padding: 5px 12px 5px 8px; font-size: 0.8rem; }
+        #help-inner .help-chip .chip-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+        #help-inner .help-chip .chip-icon-img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        #help-inner .help-close-row { margin-top: 22px; }
+        #help-inner .help-close-row button { width: 100%; padding: 12px; border: none; border-radius: 10px; background: #3C8577; color: #fff; font-weight: bold; font-size: 0.95rem; cursor: pointer; }
+        #help-inner .help-copyright { margin-top: 16px; text-align: center; font-size: 0.72rem; color: #999; }
+        #help-inner .help-version { text-align: center; font-size: 0.72rem; color: #999; margin: -4px 0 4px; }
+
+        /* ── 整局最終結算：改用整頁滿版顯示，內容過長可捲動，不受拍賣區小面板限制 ── */
+        #final-result-screen { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; padding: 3vh 4vw; background: radial-gradient(ellipse at 50% 15%, #123B44 0%, #06232B 65%, #02141A 100%); }
+        #final-result-screen.show { display: flex; }
+        #final-result-card { width: 100%; max-width: 440px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,0.45); }
+        #final-result-body {
+            flex: 1 1 auto; min-height: 0; /* 沒有這兩行，內容一長就會把卡片撐爆，
+                超出 max-height 的部分（包括最下面的「關閉」按鈕）會被外層 overflow:hidden
+                直接裁掉、完全看不到，不是玩家找不到，是畫面上根本沒顯示出來。
+                加上這兩行後，這塊區域會固定佔滿卡片扣掉按鈕列之後的剩餘高度，
+                內容太長就在這塊區域「內部」捲動，按鈕列永遠留在卡片最下面看得到。 */
+            overflow-y: auto; padding: 22px 20px; text-align: center; color: #1F2A38;
+        }
+        #final-result-body .idle-emoji { font-size: clamp(2rem, 6vh, 3rem); }
+        #final-result-body .idle-title { font-size: clamp(1.15rem, 3.2vh, 1.45rem); font-weight: bold; color: #012F72; margin: 4px 0 10px; }
+        #final-result-body .final-round-list { text-align: left; margin-bottom: 12px; font-size: 0.9rem; }
+        #final-result-body .final-round-list div { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px dashed rgba(31,42,56,0.18); }
+        #final-result-body .final-summary { font-size: 0.95rem; line-height: 1.9; margin-top: 6px; }
+        #final-result-body .final-grade { font-size: 1.15rem; margin-top: 8px; }
+        #final-result-body .final-report-notice { margin-top: 12px; padding: 10px 14px; background: #FFF6DD; border: 2px solid var(--gold-color-dark); border-radius: 10px; font-size: 0.92rem; font-weight: bold; color: #4A2E00; line-height: 1.7; }
+
+        #badge-popup {
+            position: fixed; inset: 0; z-index: 200;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0,10,20,0.4);
+            pointer-events: none;
+        }
+        #badge-popup.show { display: flex; }
+        #badge-popup-img {
+            width: 55vw; max-width: 260px; border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+            animation: badgePopIn 0.6s cubic-bezier(.34,1.56,.64,1) both;
+        }
+        #badge-popup-img.fade-out {
+            animation: badgeFadeOut 1.5s ease forwards;
+        }
+        @keyframes badgePopIn {
+            0% { transform: scale(0) rotate(-12deg); opacity: 0; }
+            60% { transform: scale(1.15) rotate(4deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes badgeFadeOut {
+            0% { opacity: 1; transform: scale(1) translateY(0); }
+            100% { opacity: 0; transform: scale(0.85) translateY(-24px); }
+        }
+        #final-result-btn-row { flex-shrink: 0; display: flex; gap: 10px; padding: 14px 20px 20px; border-top: 1px solid #EDE7DA; }
+        #final-result-btn-row .btn-bid { flex: 1; }
+    </style>
+</head>
+<body>
+<audio id="bgm" loop preload="auto">
+  <source src="audio/fmbgm.m4a" type="audio/mp4">
+</audio>
+
+    <div id="portrait-warning" class="portrait-warning">
+        <div class="portrait-warning-icon">📱↻</div>
+        <h2>請將手機轉為直式</h2>
+        <p>本頁面專為直式螢幕設計，以提供最佳體驗。</p>
+    </div>
+
+    <div id="intro-screen">
+        <div id="intro-card">
+            <img src="image/fmbg.png" alt="永續魚市拍賣場：漁港開賣！永續海洋決勝負">
+            <button id="intro-start-btn" onclick="startGame()" aria-label="開始拍賣"></button>
+        </div>
+    </div>
+
+    <div id="help-overlay">
+        <div id="help-inner">
+            <h2>📖 永續魚市拍賣：苗栗龍鳳漁港</h2>
+            <div class="help-version">版本 260915</div>
+
+            <h3>🎮 遊戲介紹</h3>
+            <p>你來到苗栗竹南龍鳳漁港，要跟另外 6 位買家一起競標剛進港的漁獲，用有限的現金標到魚貨，最終依照你的採購內容決定是不是一個懂得永續海鮮觀念的守護者。</p>
+
+            <h3>📋 玩法流程</h3>
+            <ol>
+                <li>每箱魚貨開賣</li>
+                <li>倒數時間內跟其他買家一起喊價</li>
+                <li>得標的魚貨進你的攤位庫存；沒人出價就流標、直接跳下一箱</li>
+                <li>全部箱次結標後，才會看到完整的採購成績分析</li>
+            </ol>
+
+            <h3>🔎 圖示說明</h3>
+            <p>比賽進行中看得到的：</p>
+            <div class="help-chip-row">
+                <span class="help-chip"><span class="chip-icon">🌸</span>目前季節</span>
+                <span class="help-chip"><span class="chip-icon">💰</span>目前現金</span>
+                <span class="help-chip"><span class="chip-icon">🔨</span>拍賣中／SOLD 落槌</span>
+            </div>
+            <div class="help-chip-row">
+                <span class="help-chip"><img class="chip-icon-img" src="image/餐廳老闆.png" alt="" onerror="this.outerHTML='👨‍🍳'">餐廳老闆</span>
+                <span class="help-chip"><img class="chip-icon-img" src="image/快炒店.png" alt="" onerror="this.outerHTML='🍲'">快炒店</span>
+                <span class="help-chip"><img class="chip-icon-img" src="image/量販採購.png" alt="" onerror="this.outerHTML='🏭'">量販採購</span>
+                <span class="help-chip"><img class="chip-icon-img" src="image/批發商.png" alt="" onerror="this.outerHTML='🚚'">批發商</span>
+                <span class="help-chip"><img class="chip-icon-img" src="image/魚販阿姨.png" alt="" onerror="this.outerHTML='🛒'">魚販阿姨</span>
+                <span class="help-chip"><img class="chip-icon-img" src="image/魚販阿伯.png" alt="" onerror="this.outerHTML='🛒'">魚販阿伯</span>
+            </div>
+            <p>結算時才會看到（競標當下不會提示）：</p>
+            <div class="help-chip-row">
+                <span class="help-chip"><span class="chip-icon">🟢</span>建議</span>
+                <span class="help-chip"><span class="chip-icon">🟡</span>想清楚</span>
+                <span class="help-chip"><span class="chip-icon">🔴</span>避免</span>
+                <span class="help-chip"><span class="chip-icon">✅</span>非保育類物種</span>
+                <span class="help-chip"><span class="chip-icon">🚨</span>保育類／過度捕撈警示</span>
+            </div>
+            <div class="help-note">遊戲刻意不在出價當下告訴你魚是不是保育類，要靠玩家自己的知識判斷。</div>
+
+            <h3>🏆 計分與獎勵</h3>
+            <p>依每箱魚種的永續等級加減分；買到保育類/瀕危魚種會被重扣分，甚至直接被判定 F 級「海洋破壞者」。總分達 550 以上才是 S 級「海洋保衛者」。</p>
+            <ul>
+                <li>首次拿到 S 級：發「永續推廣者」徽章 +20 金幣</li>
+                <li>之後每次刷新個人最高分：+1 金幣</li>
+            </ul>
+
+            <div class="help-close-row">
+                <button onclick="document.getElementById('help-overlay').classList.remove('show')">關閉說明</button>
+            </div>
+            <div class="help-copyright">© 2026 永續魚市拍賣 苗栗縣在地文化推廣協會</div>
+        </div>
+    </div>
+
+    <div id="final-result-screen">
+        <div id="final-result-card" class="brick-panel">
+            <div id="final-result-body"></div>
+            <div id="final-result-btn-row">
+                <button class="btn-bid" style="background:#3C8577;" onclick="resetAndPlayAgain()">再玩一次</button>
+                <button class="btn-bid" style="background:#3C8577;" onclick="closeAndReturnToPlatform()">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="badge-popup">
+        <img src="image/fmbd1.jpg" alt="永續推廣者徽章" id="badge-popup-img">
+    </div>
+
+    <div id="pause-overlay">
+        <div class="pause-card">
+            <h3>⏸ 遊戲已暫停</h3>
+            <button onclick="resumeFromPause()">▶ 繼續遊戲</button>
+        </div>
+    </div>
+
+    <header id="top-bar">
+        <div id="top-bar-row1">
+            <div style="display:flex; align-items:center;">
+                <div id="ui-day-season">🌸春季</div>
+                <button id="ingame-help-btn" onclick="document.getElementById('help-overlay').classList.add('show')" aria-label="遊戲說明">?</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div id="ui-budget">💰 現金: 1500元</div>
+                <button id="exit-fab" onclick="exitAndReturnToPlatform()" aria-label="返回平台" style="filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">⛔ 返回</button>
+            </div>
+        </div>
+        <div id="top-bar-row2">
+            <div id="ui-inventory-summary">本季尚未購入</div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <button id="sound-toggle" onclick="toggleSound()" aria-label="切換音效">🔊</button>
+                <button id="history-fab" onclick="openHistoryDrawer()">📊 紀錄</button>
+            </div>
+        </div>
+    </header>
+
+    <div id="lego-stud-strip" aria-hidden="true"></div>
+
+    <div id="main-content">
+
+        <div id="board-header">
+            <span>🐟 本季魚貨看板（共 <span id="today-box-count">0</span> 箱）</span>
+        </div>
+
+        <div id="board-strip"></div>
+
+        <div id="auction-arena">
+            <div id="arena-idle">
+                <div id="arena-idle-content"></div>
+            </div>
+
+            <div id="arena-live">
+
+                <div class="arena-columns">
+                    <!-- 左欄（2）：魚貨資訊、目前價格、倒數計時 -->
+                    <div class="arena-col-left brick-panel">
+                        <div class="arena-fish-info">
+                            <div class="arena-fish-icon-big" id="arena-fish-icon"></div>
+                            <div class="arena-fish-name" id="arena-fish-name-text">魚名</div>
+                        </div>
+
+                        <div class="arena-price-block">
+                            <div class="arena-price-label">目前價格</div>
+                            <div class="arena-price-row">
+                                <span id="arena-price">0</span><span class="arena-price-unit">元</span>
+                            </div>
+                        </div>
+
+                        <div class="arena-timer-wrap">
+                            <svg id="arena-ring" viewBox="0 0 120 120">
+                                <circle class="ring-track" cx="60" cy="60" r="52"></circle>
+                                <circle id="ring-progress" class="ring-progress" cx="60" cy="60" r="52"></circle>
+                            </svg>
+                            <div class="arena-timer-label">
+                                <div id="arena-time">3.0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右欄（3）：6位買家宮格、我的現金/出價操作 -->
+                    <div class="arena-col-right">
+                        <div class="arena-ai-row brick-panel" id="arena-ai-row"></div>
+
+                        <div class="arena-bid-panel brick-panel">
+                            <div class="arena-action-btns">
+                                <button class="btn-bid" id="arena-btn-5" onclick="playerBid(auctionState.bidStep)">競標 +5</button>
+                                <button class="btn-bid" id="arena-btn-10" onclick="playerBid(auctionState.bidStep * 2)">競標 +10</button>
+                                <button class="btn-bid btn-giveup" id="arena-btn-fast" onclick="fastForwardAuction()">放棄</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="arena-sold-overlay"></div>
+        </div>
+
+    </div>
+
+    <div id="drawer-backdrop" onclick="closeHistoryDrawer()"></div>
+    <div id="history-drawer">
+        <div id="drawer-header">
+            <h2>歷史紀錄</h2>
+            <button id="drawer-close" onclick="closeHistoryDrawer()">✕</button>
+        </div>
+        <div id="drawer-body">
+            <div id="record-list"><div class="list-item">尚無紀錄。結算後會顯示於此。</div></div>
+        </div>
+    </div>
+
+    <script>
+        const SEASONS = ['🌸 春季', '☀️ 夏季', '🍂 秋季', '❄️ 冬季'];
+        const SEASON_WELCOME_LINES = [
+            '一起用心挑選當季好魚吧！',
+            '夏天的魚貨最新鮮，眼光放亮點！',
+            '秋天盛產的魚種不少，仔細比較再出手！',
+            '寒流來的季節，好魚不等人，把握機會！'
+        ];
+        const TOTAL_ROUNDS = 4;
+
+        // ---------- 平台通訊相關 ----------
+        const TASK_ID = 'fishmarket';
+        const BADGE_ID = 'fishmarket_sustainability'; // 徽章「永續推廣者」，達到 S 級（海洋保衛者）才發放
+        let platformNickname = null;      // 收到 player_info 後才會有值
+        let platformBadges = [];          // 玩家目前已擁有的徽章清單（收到 player_info 時帶入）
+        let myBestScore = null;           // 這個任務的個人最佳成績 { scoreLabel, scoreValue } | null
+
+        // 魚種資料庫（參考「海紋守護團」db.js 內容改寫，並依本遊戲拍賣機制
+        // 補上 matureSize／basePrice，判斷 method 友善或破壞性、挑選代表漁法）
+        const FISH_DB = [
+            // ── 綠燈（建議）──────────────────────────────────────────
+            { id: 'f1', name: '白帶魚', matureSize: 70, bestSeasons: [0, 1, 2, 3], ecoLevel: '建議', basePrice: 15, conservation: 'normal', method: 'friendly', methodName: '一支釣', habitat: 'coastal',
+              info: '身型細長如銀色絲帶，游動時像鰻魚蛇行，休息時常頭上尾下直立。肉質細嫩，是極受歡迎的家常煎魚。' },
+            { id: 'f2', name: '竹筴魚', matureSize: 20, bestSeasons: [0, 1, 2, 3], ecoLevel: '建議', basePrice: 10, conservation: 'normal', method: 'friendly', methodName: '一支釣', habitat: 'coastal',
+              info: '體側有明顯的堅硬稜鱗，是日本料理常見的食材，適合鹽烤或製成一夜干，族群量大且成長快速。' },
+            { id: 'f3', name: '台灣鯖魚', matureSize: 25, bestSeasons: [2, 3], ecoLevel: '建議', basePrice: 12, conservation: 'normal', method: 'friendly', methodName: '定置網', habitat: 'coastal',
+              info: '背部有如波浪般的青色花紋，富含Omega-3，是營養價值極高的優質藍皮魚，多以定置網捕撈，對環境擾動較低。' },
+            { id: 'f4', name: '虱目魚', matureSize: 30, bestSeasons: [1, 2], ecoLevel: '建議', basePrice: 14, conservation: 'normal', method: 'friendly', methodName: '箱網養殖', habitat: 'aquaculture',
+              info: '台灣養殖業的靈魂，肉質細嫩、營養豐富，雖然魚刺較多但極受歡迎，俗稱牛奶魚，人工養殖可降低對野生族群的壓力。' },
+            { id: 'f5', name: '養殖烏魚', matureSize: 40, bestSeasons: [3], ecoLevel: '建議', basePrice: 20, conservation: 'normal', method: 'friendly', methodName: '箱網養殖', habitat: 'aquaculture',
+              info: '烏魚子的原料來源，台灣南部為主要養殖重鎮。冬至前後出產，透過人工養殖能有效降低對野生烏魚族群的捕撈壓力。' },
+            { id: 'f6', name: '養殖鱸魚', matureSize: 35, bestSeasons: [0, 1, 2, 3], ecoLevel: '建議', basePrice: 16, conservation: 'normal', method: 'friendly', methodName: '箱網養殖', habitat: 'aquaculture',
+              info: '台灣沿海箱網與魚塭普遍養殖，肉質細嫩、刺少，是家庭料理與餐廳最受歡迎的白肉魚，全年皆可穩定生產。' },
+            { id: 'f7', name: '小卷', matureSize: 15, bestSeasons: [1], ecoLevel: '建議', basePrice: 18, conservation: 'normal', method: 'friendly', methodName: '一支釣', habitat: 'coastal',
+              info: '台灣東北角名產，屬一年生頭足類，生長快速，是適合優先選擇的綠燈海鮮。' },
+            { id: 'f8', name: '鰆魚', matureSize: 60, bestSeasons: [3, 0], ecoLevel: '建議', basePrice: 35, conservation: 'normal', method: 'friendly', methodName: '一支釣', habitat: 'coastal',
+              info: '體型修長游速極快，肉質細嫩潔白幾乎無刺，是苗栗海線的靈魂滋味，常做成鰆魚米粉或清蒸享用。' },
+            { id: 'f9', name: '剝皮魚', matureSize: 20, bestSeasons: [1], ecoLevel: '建議', basePrice: 16, conservation: 'normal', method: 'friendly', methodName: '定置網', habitat: 'coastal',
+              info: '皮膚堅韌如皮革，食用前須剝除。肉質潔白、細緻且幾乎沒有細刺，非常適合小孩食用。' },
+            { id: 'f10', name: '紅魽', matureSize: 80, bestSeasons: [3, 0], ecoLevel: '建議', basePrice: 28, conservation: 'normal', method: 'friendly', methodName: '一支釣', habitat: 'coastal',
+              info: '游速快、力量強大的近海魚種，是釣魚愛好者喜愛的目標魚。肉質細緻，常作為生魚片食材，選擇友善漁法可降低對海洋環境的影響。' },
+            { id: 'f11', name: '臭肚魚', matureSize: 25, bestSeasons: [0, 1, 2, 3], ecoLevel: '建議', basePrice: 10, conservation: 'normal', method: 'friendly', methodName: '一支釣', habitat: 'coastal',
+              info: '因腸道內海藻發酵而有特殊氣味，鰭棘具有毒性需小心處理。主要生活在近海，是台灣沿岸常見的魚種，肉質紮實且風味特殊。' },
+            { id: 'f12', name: '皮刀', matureSize: 30, bestSeasons: [0, 1], ecoLevel: '建議', basePrice: 11, conservation: 'normal', method: 'friendly', methodName: '定置網', habitat: 'coastal',
+              info: '身體極為扁平，外形像一把菜刀，因此得名。銀亮的魚體能反射陽光，常見於近海，是定置網漁業常見的魚種。' },
+            { id: 'f13', name: '吳郭魚', matureSize: 30, bestSeasons: [1, 2], ecoLevel: '建議', basePrice: 10, conservation: 'normal', method: 'friendly', methodName: '魚塭養殖', habitat: 'aquaculture',
+              info: '適應力強的台灣代表性養殖魚種，肉質紮實、價格親民，是台灣家庭餐桌上常見的魚。以人工養殖供應，可減少對野生魚類資源的捕撈壓力。' },
+            // ── 黃燈（想清楚）────────────────────────────────────────
+            { id: 'f14', name: '白鯧', matureSize: 25, bestSeasons: [3, 0], ecoLevel: '想清楚', basePrice: 40, conservation: 'normal', method: 'destructive', methodName: '流刺網', habitat: 'coastal',
+              info: '過年必備的吉祥魚種，魚體扁平圓潤，肉質肥美細緻且少刺，多以拖網或流刺網捕撈，容易誤捕其他物種。' },
+            { id: 'f15', name: '花枝', matureSize: 20, bestSeasons: [0, 1], ecoLevel: '想清楚', basePrice: 15, conservation: 'normal', method: 'friendly', methodName: '一支釣', habitat: 'coastal',
+              info: '正式名稱為烏賊，體內有一塊厚厚的石灰質內殼，肉質厚實且清脆，常用於各式炒食，捕撈量需留意族群變化。' },
+            { id: 'f16', name: '午仔魚', matureSize: 25, bestSeasons: [2, 3], ecoLevel: '想清楚', basePrice: 45, conservation: 'normal', method: 'friendly', methodName: '定置網', habitat: 'coastal',
+              info: '民間俗諺「一午二紅沙」把牠排第一，油脂豐厚、入口即化，肉質極為細嫩。' },
+            { id: 'f17', name: '黃鰭鯛', matureSize: 25, bestSeasons: [3], ecoLevel: '想清楚', basePrice: 22, conservation: 'normal', method: 'friendly', methodName: '一支釣', habitat: 'coastal',
+              info: '腹鰭與臀鰭呈現明顯鮮黃色，肉質細嫩且帶有獨特香氣，是沿岸磯釣最熱門的目標，體型過小易影響族群補充。' },
+            { id: 'f18', name: '赤鯮', matureSize: 22, bestSeasons: [3, 0], ecoLevel: '想清楚', basePrice: 30, conservation: 'normal', method: 'friendly', methodName: '一支釣', habitat: 'coastal',
+              info: '身披鮮紅橘色鱗片、腹部銀白，是台灣礁區最美麗的鯛科魚之一，肉質細緻，但族群恢復速度緩慢，需留意捕撈量。' },
+            { id: 'f19', name: '三點蟹', matureSize: 12, bestSeasons: [2, 3], ecoLevel: '想清楚', basePrice: 28, conservation: 'normal', method: 'friendly', methodName: '籠具', habitat: 'coastal',
+              info: '北海岸「萬里蟹」三寶之一，殼面有三個暗紫紅斑點。多用蟹籠捕撈，過小的蟹和抱卵母蟹依規定不能捕。' },
+            { id: 'f20', name: '鬼頭刀', matureSize: 60, bestSeasons: [0, 2], ecoLevel: '想清楚', basePrice: 25, conservation: 'normal', method: 'friendly', methodName: '一支釣', habitat: 'coastal',
+              info: '頭部高聳如刀，捕獲後體色由藍綠驟變金黃，肉質厚實如魚排。台東新港產量最多，未滿50公分禁捕。' },
+            { id: 'f21', name: '紅目鰱', matureSize: 25, bestSeasons: [1], ecoLevel: '想清楚', basePrice: 18, conservation: 'normal', method: 'friendly', methodName: '一支釣', habitat: 'coastal',
+              info: '眼睛大而通紅，具有粗硬的鱗片，魚皮可連鱗片整片剝除。肉質鮮甜，是台灣沿岸常見的食用魚，但仍應注意捕撈方式與資源利用。' },  
+            // ── 紅燈（避免）──────────────────────────────────────────
+            { id: 'f22', name: '野生石斑', matureSize: 50, bestSeasons: [1, 2], ecoLevel: '避免', basePrice: 45, conservation: 'normal', method: 'destructive', methodName: '底拖網', habitat: 'coastal',
+              info: '棲息在岩礁縫隙中，生長緩慢，肉質鮮甜彈牙，常以底拖網大量捕撈，容易破壞海床棲地並誤捕其他底棲物種。' },
+            { id: 'f23', name: '黑鮪魚', matureSize: 200, bestSeasons: [0, 1], ecoLevel: '避免', basePrice: 90, conservation: 'endangered', legalStatus: 'overfished', method: 'destructive', methodName: '延繩釣', habitat: 'pelagic',
+              info: '海洋界的法拉利，游速極快，國際自然保育聯盟列為「近危」物種、資源已過度捕撈。台灣東港黑鮪魚季屬合法配額漁業，但延繩釣混獲海龜、鯊魚等其他物種的風險高。' },
+            { id: 'f24', name: '鯨鯊', matureSize: 2000, bestSeasons: [0, 1, 2, 3], ecoLevel: '避免', basePrice: 60, conservation: 'endangered', legalStatus: 'protected', method: 'destructive', methodName: '禁止捕撈', habitat: 'pelagic',
+              info: '現存最大的魚類，體長可達約20公尺，濾食浮游生物。台灣2008年起禁捕，2020年列瀕臨絕種保育類。' },
+            { id: 'f25', name: '白海豚', matureSize: 200, bestSeasons: [0, 1, 2, 3], ecoLevel: '避免', basePrice: 55, conservation: 'endangered', legalStatus: 'protected', method: 'destructive', methodName: '禁止捕撈', habitat: 'coastal',
+              info: '台灣西部沿海特有的中華白海豚，俗稱「媽祖魚」，族群僅約48隻，棲地受工業開發威脅，急需守護。' }
+        ];
+
+        const ECO_ICON = { '建議': '🟢', '想清楚': '🟡', '避免': '🔴' };
+        const OBSERVE_SECONDS = 3.0;
+        const BIDDING_SECONDS = 8.0;
+
+        // AI對手：budgetRatio 用來換算「這回合這位對手總共有多少錢可花」（相對於當回合魚貨總市值）
+        const AI_PLAYERS = [
+            { id: 'ai1', name: '👨‍🍳 餐廳老闆', type: 'restaurant', budgetRatio: 0.35, priceMultiplier: 4 },
+            { id: 'ai2', name: '🍲 快炒店', type: 'stirfry', budgetRatio: 0.3, priceMultiplier: 3 },
+            { id: 'ai3', name: '🏭 量販採購', type: 'wholesale', budgetRatio: 0.4, priceMultiplier: 3 },
+            { id: 'ai4', name: '🚚 批發商', type: 'distributor', budgetRatio: 0.5, priceMultiplier: 3 },
+            { id: 'ai5', name: '🛒 魚販阿姨', type: 'auntie', budgetRatio: 0.25, priceMultiplier: 2 },
+            { id: 'ai6', name: '🛒 魚販阿伯', type: 'uncle', budgetRatio: 0.25, priceMultiplier: 2 }
+        ];
+
+        function fishIcon(fish) {
+            return `fishdb/${fish.name}.png`;
+        }
+
+        function splitAiName(name) {
+            const parts = name.split(' ');
+            return { emoji: parts[0], label: parts.slice(1).join(' ') };
+        }
+
+        // ===== 音效系統（Web Audio API 即時合成，無需外部音檔） =====
+        const SFX = (() => {
+            let ctx = null;
+            let muted = false;
+
+            try {
+                const saved = localStorage.getItem('fishmarket-muted');
+                if (saved === '1') muted = true;
+            } catch (e) { /* localStorage 不可用時忽略 */ }
+
+            function getCtx() {
+                if (!ctx) {
+                    try { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+                    catch (e) { ctx = null; }
+                }
+                if (ctx && ctx.state === 'suspended') ctx.resume();
+                return ctx;
+            }
+
+            function tone(freq, start, dur, type, peakGain, freqEnd) {
+                const c = getCtx();
+                if (!c || muted) return;
+                const t0 = c.currentTime + start;
+                const osc = c.createOscillator();
+                const gain = c.createGain();
+                osc.type = type || 'sine';
+                osc.frequency.setValueAtTime(freq, t0);
+                if (freqEnd) osc.frequency.exponentialRampToValueAtTime(Math.max(30, freqEnd), t0 + dur);
+                gain.gain.setValueAtTime(0.0001, t0);
+                gain.gain.exponentialRampToValueAtTime(peakGain || 0.15, t0 + Math.min(0.02, dur / 3));
+                gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+                osc.connect(gain);
+                gain.connect(c.destination);
+                osc.start(t0);
+                osc.stop(t0 + dur + 0.02);
+            }
+
+            function noiseBurst(start, dur, peakGain, filterFreq) {
+                const c = getCtx();
+                if (!c || muted) return;
+                const t0 = c.currentTime + start;
+                const bufferSize = Math.max(1, Math.floor(c.sampleRate * dur));
+                const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+                const src = c.createBufferSource();
+                src.buffer = buffer;
+                const filter = c.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = filterFreq || 1200;
+                const gain = c.createGain();
+                gain.gain.setValueAtTime(0.0001, t0);
+                gain.gain.exponentialRampToValueAtTime(peakGain || 0.15, t0 + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+                src.connect(filter);
+                filter.connect(gain);
+                gain.connect(c.destination);
+                src.start(t0);
+                src.stop(t0 + dur + 0.02);
+            }
+
+            // 疊和弦：讓單音變成有厚度的和聲，用於強化過關/回合結算等重要時刻
+            function chord(freqs, start, dur, type, peakGain) {
+                freqs.forEach(f => tone(f, start, dur, type, peakGain));
+            }
+
+            // 敲擊感：低頻短促 thump + 濾波噪音，模擬拍賣槌敲在木板上的重量感與木質噪點
+            function thump(start, peakGain, filterFreq) {
+                tone(150, start, 0.055, 'square', peakGain * 0.9, 70);
+                noiseBurst(start, 0.09, peakGain, filterFreq || 500);
+            }
+
+            let aiVoiceCache = {};
+            function aiVoicePitch(aiId) {
+                if (aiVoiceCache[aiId] != null) return aiVoiceCache[aiId];
+                let h = 0;
+                for (let i = 0; i < String(aiId).length; i++) h = (h * 31 + String(aiId).charCodeAt(i)) >>> 0;
+                const steps = [0, 2, 4, 5, 7]; // 五聲音階內的音程差，避免出現不和諧音
+                const semitone = steps[h % steps.length];
+                const freq = 261.63 * Math.pow(2, (semitone - 2) / 12) * 1.15;
+                aiVoiceCache[aiId] = freq;
+                return freq;
+            }
+
+            return {
+                unlock() { getCtx(); },
+                click() { tone(720, 0, 0.06, 'triangle', 0.10); },
+                bidPlayer() { tone(523.25, 0, 0.09, 'triangle', 0.20); tone(659.25, 0.07, 0.14, 'triangle', 0.22); },
+                // AI出價：依每個AI的id給固定音高（五聲音階內），讓玩家光聽聲音也能分辨是哪一位在加價
+                bidAI(aiId) {
+                    const f = aiId != null ? aiVoicePitch(aiId) : 329.63;
+                    tone(f, 0, 0.1, 'sine', 0.14);
+                    tone(f * 0.5, 0, 0.09, 'sine', 0.05);
+                },
+                tick() { tone(880, 0, 0.07, 'square', 0.14); },
+                // 最後3秒倒數計秒音效：3→2→1音高遞增、音量遞增，最後一聲加疊一個高音短響強調急迫感
+                countdownBeep(sec) {
+                    const step = Math.max(0, 3 - Math.max(1, Math.min(3, sec))); // 3→0, 2→1, 1→2
+                    const freq = 720 + step * 170;
+                    const gain = 0.16 + step * 0.05;
+                    tone(freq, 0, 0.1, 'square', gain);
+                    if (sec <= 1) tone(freq * 1.5, 0.06, 0.09, 'square', gain * 0.9);
+                },
+                boxStart() { tone(440, 0, 0.1, 'sine', 0.14); tone(659.25, 0.1, 0.16, 'sine', 0.16); },
+                // 拍賣槌定案：先落槌敲擊聲，再接對應的輸贏音效——呼應畫面上的🔨 SOLD印章
+                gavelBang() { thump(0, 0.26, 450); thump(0.1, 0.16, 380); },
+                // 得標：槌聲之後的勝利和弦更豐厚（三度+五度疊加），再補一段清脆的收銀機「入帳」聲
+                win() {
+                    this.gavelBang();
+                    const t0 = 0.16;
+                    [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+                        chord([f, f * 1.5], t0 + i * 0.11, 0.22, 'triangle', i === 3 ? 0.24 : 0.16);
+                    });
+                    const cashT = t0 + 0.46;
+                    tone(1567.98, cashT, 0.05, 'square', 0.12);
+                    [1318.5, 1760, 2093].forEach((f, i) => tone(f, cashT + 0.05 + i * 0.06, 0.09, 'triangle', 0.13));
+                },
+                // 別人得標：槌聲之後接一段下沉的失落音，比原本更明顯區分「這箱沒了」的情緒
+                lose() {
+                    this.gavelBang();
+                    const t0 = 0.16;
+                    tone(392.00, t0, 0.14, 'sawtooth', 0.14);
+                    tone(293.66, t0 + 0.11, 0.16, 'sawtooth', 0.13);
+                    tone(220.00, t0 + 0.24, 0.24, 'sawtooth', 0.11, 160);
+                },
+                // 流標：不落槌（沒人得標），改用一段更明顯的空虛下滑音
+                unsold() { tone(300, 0, 0.22, 'sine', 0.12, 160); tone(220, 0.1, 0.28, 'sine', 0.08, 120); },
+                giveUp() { noiseBurst(0, 0.16, 0.12, 900); tone(220, 0, 0.14, 'sawtooth', 0.09); },
+                // 現金不足：短促的低頻拒絕聲，取代原本按下加價鍵卻完全無聲響的空白感
+                denied() { tone(160, 0, 0.1, 'sawtooth', 0.14, 90); tone(140, 0.12, 0.14, 'sawtooth', 0.12, 80); },
+                roundEnd() {
+                    [659.25, 523.25, 659.25, 880.00].forEach((f, i) => chord([f, f * 0.5], i * 0.13, 0.2, 'triangle', i === 3 ? 0.22 : 0.16));
+                },
+                toggleMuted() {
+                    muted = !muted;
+                    try { localStorage.setItem('fishmarket-muted', muted ? '1' : '0'); } catch (e) { /* 忽略 */ }
+                    if (!muted) { getCtx(); tone(660, 0, 0.08, 'triangle', 0.15); }
+                    return muted;
+                },
+                isMuted() { return muted; }
+            };
+        })();
+
+        const bgm = document.getElementById('bgm');
+        bgm.volume = 0.22; // 「輕量」的bgm，音量壓低一點，不搶過拍賣音效跟畫面文字
+
+        function toggleSound() {
+            const isMuted = SFX.toggleMuted();
+            const btn = document.getElementById('sound-toggle');
+            btn.innerText = isMuted ? '🔇' : '🔊';
+            btn.classList.toggle('muted', isMuted);
+            bgm.muted = isMuted;
+        }
+
+        (function initSoundToggleIcon() {
+            const btn = document.getElementById('sound-toggle');
+            if (btn && SFX.isMuted()) { btn.innerText = '🔇'; btn.classList.add('muted'); }
+            bgm.muted = SFX.isMuted(); // 頁面載入時就同步好，不用等玩家點一次靜音鍵才對齊
+        })();
+
+        sendToPlatform('ready', {}); // 越早送出，player_info 越有機會在玩家按下「開始拍賣」前就準備好
+
+        // 通用按鈕點擊音效（拍賣出價／放棄按鈕另有專屬音效，此處排除以免重複）
+        // 同時加上輕微震動回饋
+        // iOS Safari 需要頁面上存在至少一個 touchstart 監聽器，CSS 的 :active 偽類才會確實觸發（否則按下去畫面完全沒反應）
+        function hapticTap(pattern) {
+            try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* 裝置不支援時忽略 */ }
+        }
+        document.body.addEventListener('touchstart', function () {}, { passive: true });
+
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            if (btn.id === 'arena-btn-5' || btn.id === 'arena-btn-10' || btn.id === 'arena-btn-fast' || btn.id === 'sound-toggle') return;
+            SFX.click();
+            hapticTap(8);
+        }, true);
+
+        const gameState = { round: 1, seasonIndex: 0, budget: 0, todayBoxes: [], playerInventory: [], history: [], lastTopUp: 0, aiBudgets: {} };
+
+        const auctionState = {
+            queue: [], currentIndex: 0, currentBox: null, currentPrice: 0,
+            timeLeft: OBSERVE_SECONDS, phase: 'observe', bidStep: 5, aiBidCount: 0, maxBidRounds: 10,
+            highestBidderId: null, highestBidderName: '無', lastBidBy: null, giveUp: false,
+            aiStatus: [], mainTimer: null, aiTimer: null, nextBoxTimer: null, bidLog: []
+        };
+
+        function pushBidLog(name, price) {
+            auctionState.bidLog.unshift(`${name} 出價 ${price} 元`);
+            auctionState.bidLog = auctionState.bidLog.slice(0, 3);
+        }
+
+        /* ---------- 平台通訊（對應「任務頁面通訊介面規格.md」） ---------- */
+        // 送訊息給平台。targetOrigin 用 '*'：不預先假設平台網址，這則訊息也不含敏感資料，可接受。
+        //
+        // ⚠️ 桌機/寬螢幕模式下，這個頁面是被 fishmarket-desktop.html 用 <iframe> 包起來
+        // 執行的，iframe 裡的 window.opener 永遠是 null。就算改成摸 window.top.opener
+        // 直接送，也會因為 postMessage 的 event.source 永遠是「實際執行這行程式碼的視窗」
+        // （也就是 iframe 自己），跟平台記錄的視窗物件對不上而被忽略（6htw 實測踩過這個坑）。
+        // 正確做法：iframe 只送給自己的上一層（window.parent），由 fishmarket-desktop.html
+        // 自己執行 postMessage 轉發給平台；沒有套桌機外框時 window.parent 就是 window 自己，
+        // 效果等同直接送給 window.opener。
+        function sendToPlatform(type, payload) {
+            const target = (window.self !== window.top) ? window.parent : window.opener;
+            if (!target) return;
+            target.postMessage({
+                source: 'culture-task',
+                version: 1,
+                taskId: TASK_ID,
+                type: type,
+                payload: payload || {}
+            }, '*');
+        }
+
+        // 送 exit 訊息 + 關閉分頁的共用做法：postMessage 是非同步的（訊息排進佇列，
+        // 不是呼叫當下就送達），如果送完立刻同步呼叫 close()，桌機外框模式下這則
+        // exit 訊息還要多轉一手（iframe → window.parent → 轉發給平台），視窗有可能
+        // 在轉發完成前就被關掉，導致平台收到訊息時記錄已經被判定失效、或訊息根本
+        // 沒轉發成功就消失了（stoneweir 實測遇過「exit 訊息但查無記錄」的警告）。
+        // 延遲一小段時間再關閉，確保訊息有時間走完整趟轉發。
+        function exitAndClosePlatform() {
+            sendToPlatform('exit', {});
+            setTimeout(function () { (window.top || window).close(); }, 150);
+        }
+
+        // ── 攔截瀏覽器「上一頁」（含手機滑動返回手勢）：不要讓它直接把分頁導覽走 ──
+        // 原理：先塞一筆假的瀏覽紀錄，使用者按上一頁時只會觸發 popstate（不會真的離開），
+        // 這時候把假紀錄補回去、跳確認視窗；確定要走才真的送 exit + 關閉分頁。
+        if (window.history && window.history.pushState) {
+            history.pushState(null, '', location.href);
+            window.addEventListener('popstate', function () {
+                history.pushState(null, '', location.href);
+                if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+                exitAndClosePlatform();
+            });
+        }
+
+        // ── 防止長按跳出系統右鍵/選單 ──
+        document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+        // 收平台送來的訊息：ready 之後回傳的 player_info，帶玩家暱稱、已擁有徽章、這個任務的個人最佳成績
+        window.addEventListener('message', function (event) {
+            const msg = event.data;
+            if (!msg || msg.source !== 'culture-platform') return;
+
+            if (msg.type === 'player_info') {
+                platformNickname = (msg.payload && msg.payload.nickname) || null;
+                platformBadges = (msg.payload && msg.payload.badges) || [];
+                myBestScore = (msg.payload && msg.payload.myScore) || null;
+            }
+        });
+
+        // 徽章蹦出特效：出現(0.6秒彈跳) → 停留5秒 → 淡出(1.5秒)後整個隱藏
+        function playBadgeUnlockEffect() {
+            const overlay = document.getElementById('badge-popup');
+            const img = document.getElementById('badge-popup-img');
+            img.classList.remove('fade-out');
+            overlay.classList.add('show');
+            void img.offsetWidth; // 強制重排，確保動畫每次都會重新播放
+
+            setTimeout(() => { img.classList.add('fade-out'); }, 5000);
+            setTimeout(() => {
+                overlay.classList.remove('show');
+                img.classList.remove('fade-out');
+            }, 5000 + 1500);
+        }
+
+        function setStageLabel(text) {
+            const el = document.getElementById('ui-stage-label');
+            if (el) el.innerText = text;
+        }
+
+        function openHistoryDrawer() {
+            document.getElementById('history-drawer').classList.add('open');
+            document.getElementById('drawer-backdrop').classList.add('open');
+        }
+        function closeHistoryDrawer() {
+            document.getElementById('history-drawer').classList.remove('open');
+            document.getElementById('drawer-backdrop').classList.remove('open');
+        }
+
+        function renderBoard() {
+            const strip = document.getElementById('board-strip');
+            strip.innerHTML = gameState.todayBoxes.map(box => stripCardHTML(box)).join('');
+        }
+
+        function stripCardHTML(box) {
+            const method = box.fish.methodName;
+            let badgeHTML = '';
+            let stampHTML = '';
+            if (box.status === 'pending') { badgeHTML = `<div class="strip-badge">⏳</div>`; }
+            else if (box.status === 'active') { badgeHTML = `<div class="strip-badge">🔔</div>`; }
+            else if (box.status === 'sold-player') { stampHTML = `<div class="strip-stamp">⭐ 你標到</div>`; }
+            else if (box.status === 'sold-other') { stampHTML = `<div class="strip-stamp">已售出</div>`; }
+            else if (box.status === 'unsold') { stampHTML = `<div class="strip-stamp">流標</div>`; }
+
+            return `<div class="strip-card ${box.status}">
+                <span class="strip-rivet tl"></span><span class="strip-rivet tr"></span>
+                <span class="strip-rivet bl"></span><span class="strip-rivet br"></span>
+                <span class="strip-handle left"></span><span class="strip-handle right"></span>
+                <div class="strip-cavity">
+                    ${badgeHTML}
+                    <img src="${fishIcon(box.fish)}" alt="${box.fish.name}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'fallback-fish',textContent:'🐟'}))">
+                    ${stampHTML}
+                    <div class="strip-name-overlay"><div class="name">${box.fish.name}</div></div>
+                </div>
+                <div class="strip-meta"><span>📏${box.size}cm・${box.qty}尾</span><span>🎣${method}</span></div>
+            </div>`;
+        }
+
+        function generateTodayBoxes() {
+            gameState.todayBoxes = [];
+            let boxCount = Math.floor(Math.random() * 3) + 4;
+            let totalValue = 0;
+            let hasEndangered = false;
+            for (let i = 0; i < boxCount; i++) {
+                let randomFish;
+                let guard = 0;
+                do {
+                    randomFish = FISH_DB[Math.floor(Math.random() * FISH_DB.length)];
+                    guard++;
+                } while (randomFish.conservation === 'endangered' && hasEndangered && guard < 50);
+                if (randomFish.conservation === 'endangered') hasEndangered = true;
+
+                let size = randomFish.matureSize + (Math.floor(Math.random() * 20) - 10);
+                let qty = Math.floor(Math.random() * 15) + 5;
+                size = Math.max(5, size);
+                gameState.todayBoxes.push({ fish: randomFish, size: size, qty: qty, status: 'pending', soldPrice: null, soldBy: null });
+                totalValue += randomFish.basePrice * qty;
+            }
+            return totalValue;
+        }
+
+        function calcExpectedGameValue() {
+            // 用魚貨資料庫的平均價格、以及生成規則的平均箱數/尾數，估算「整局4回合」的預期魚貨總市值
+            // （不依賴實際隨機出的箱子內容，確保每局起始資金水準一致、不會因第1回合手氣差而變超低）
+            const avgBasePrice = FISH_DB.reduce((sum, f) => sum + f.basePrice, 0) / FISH_DB.length;
+            const avgQtyPerBox = (5 + 19) / 2;      // generateTodayBoxes 的 qty 範圍：5~19
+            const avgBoxesPerRound = (4 + 6) / 2;   // generateTodayBoxes 的箱數範圍：4~6
+            return avgBasePrice * avgQtyPerBox * avgBoxesPerRound * TOTAL_ROUNDS;
+        }
+
+        function calcInitialBudget() {
+            // 玩家整局只發一次的起始資金：抓「4回合預期總市值」的 60%，上限 3500 元
+            const expectedTotalValue = calcExpectedGameValue();
+            let amount = expectedTotalValue * 0.6;
+            amount = Math.round(amount / 50) * 50;
+            amount = Math.min(amount, 3500);
+            return amount;
+        }
+
+        function calcAIBudgets(totalValue) {
+            // 每回合開始時，重新依當回合魚貨總市值分配各AI對手的資金上限（不跨回合結轉）
+            const budgets = {};
+            AI_PLAYERS.forEach(ai => {
+                let amount = totalValue * ai.budgetRatio * (0.75 + Math.random() * 0.3);
+                budgets[ai.id] = Math.round(amount / 10) * 10;
+            });
+            return budgets;
+        }
+
+        function initRound() {
+            document.getElementById('ui-day-season').innerText = SEASONS[gameState.seasonIndex];
+            document.getElementById('ui-inventory-summary').innerText = '本季尚未購入';
+            setStageLabel('📋 看板整備中');
+
+            const totalValue = generateTodayBoxes();
+            gameState.aiBudgets = calcAIBudgets(totalValue);
+
+            if (gameState.round === 1) {
+                gameState.budget = calcInitialBudget();
+                gameState.lastTopUp = gameState.budget;
+            } else {
+                gameState.lastTopUp = 0;
+            }
+
+            document.getElementById('ui-budget').innerText = `💰 現金: ${gameState.budget}元`;
+
+            document.getElementById('today-box-count').innerText = gameState.todayBoxes.length;
+
+            renderBoard();
+            const nicknameLine = platformNickname
+                ? `<div class="idle-nickname">👤 ${platformNickname}，${SEASON_WELCOME_LINES[gameState.seasonIndex] || '歡迎回來！'}</div>`
+                : '';
+            showArenaIdle(`
+                ${nicknameLine}
+                <div class="idle-title">${SEASONS[gameState.seasonIndex]}看板已就緒</div>
+                <div class="idle-sub">共 ${gameState.todayBoxes.length} 箱魚貨，看板上方隨時看得到狀態。準備好開始這回合的拍賣了嗎？</div>
+                <button class="btn-bid idle-btn" onclick="startRoundAuction()">開始本季拍賣</button>
+            `);
+        }
+
+        function showArenaIdle(html) {
+            document.getElementById('arena-live').style.display = 'none';
+            document.getElementById('arena-idle-content').innerHTML = html;
+            document.getElementById('arena-idle').style.display = 'flex';
+        }
+
+        function showArenaLive() {
+            document.getElementById('arena-idle').style.display = 'none';
+            document.getElementById('arena-live').style.display = 'flex';
+        }
+
+        function startRoundAuction() {
+            auctionState.queue = [...gameState.todayBoxes].sort(() => Math.random() - 0.5);
+            auctionState.currentIndex = 0;
+            setStageLabel('🔨 拍賣中');
+            showArenaLive();
+            setupNextBox();
+        }
+
+        function setupNextBox() {
+            auctionState.currentBox = auctionState.queue[auctionState.currentIndex];
+            auctionState.currentBox.status = 'active';
+            let box = auctionState.currentBox;
+            let baseBoxValue = box.fish.basePrice * box.qty;
+            auctionState.currentPrice = Math.floor(baseBoxValue * 0.7);
+            auctionState.bidStep = Math.max(5, Math.round(baseBoxValue * 0.08 / 5) * 5);
+            auctionState.aiBidCount = 0;
+            auctionState.maxBidRounds = 10;
+
+            auctionState.phase = 'observe';
+            auctionState.timeLeft = OBSERVE_SECONDS;
+            auctionState.highestBidderId = null;
+            auctionState.highestBidderName = '無';
+            auctionState.giveUp = false;
+            auctionState.bidLog = [];
+            auctionState._lastTickSec = null;
+
+            auctionState.aiStatus = AI_PLAYERS.map(ai => {
+                const remainingBudget = gameState.aiBudgets[ai.id] ?? 0;
+                const desiredMax = calcAIMaxPrice(ai.type, box, baseBoxValue);
+                const cappedMax = Math.min(desiredMax, remainingBudget);
+                return {
+                    ...ai, status: remainingBudget <= 0 ? '資金用盡' : '等待開拍',
+                    out: remainingBudget <= 0, bidCount: 0,
+                    maxPrice: cappedMax
+                };
+            });
+
+            document.getElementById('arena-fish-icon').innerHTML = `<img src="${fishIcon(box.fish)}" alt="${box.fish.name}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'🐟'}))">`;
+            const nameEl = document.getElementById('arena-fish-name-text');
+            nameEl.innerText = box.fish.name;
+            nameEl.classList.remove('name-len-4', 'name-len-5plus');
+            if (box.fish.name.length === 4) nameEl.classList.add('name-len-4');
+            else if (box.fish.name.length >= 5) nameEl.classList.add('name-len-5plus');
+            document.getElementById('arena-sold-overlay').className = '';
+
+            renderBoard();
+            updateAuctionUI();
+            clearInterval(auctionState.mainTimer);
+            clearInterval(auctionState.aiTimer);
+            auctionState.mainTimer = setInterval(countdownTimer, 100);
+            auctionState.aiTimer = setInterval(aiThinkLoop, 800);
+        }
+
+        function calcAIMaxPrice(type, box, baseValue) {
+            // 原本依角色情境（成魚/量大/當季等）判斷的願付金額邏輯，整體再拉高+1.5，
+            // 範圍從 1.3x~2.2x 調整為 2.8x~3.7x，維持角色間的相對差異
+            let desired;
+            switch (type) {
+                case 'restaurant': desired = box.size >= box.fish.matureSize ? baseValue * 3.7 : baseValue * 2.8; break;
+                case 'stirfry': desired = baseValue * 3.3; break;
+                case 'wholesale': desired = box.qty >= 10 ? baseValue * 3.5 : baseValue * 3.0; break;
+                case 'distributor': desired = baseValue * 3.45; break;
+                case 'auntie': desired = baseValue * 3.25; break;
+                case 'uncle': desired = box.fish.bestSeasons.includes(gameState.seasonIndex) ? baseValue * 3.6 : baseValue * 3.1; break;
+                default: desired = baseValue * 3.25;
+            }
+            // 新增：不論情境算出多少，都不能超過「基本箱價 × 角色倍數」這個新上限
+            const ai = AI_PLAYERS.find(a => a.type === type);
+            const priceCap = baseValue * (ai ? ai.priceMultiplier : 5);
+            return Math.min(desired, priceCap);
+        }
+
+        function calcFishScore(box) {
+            const fish = box.fish;
+            const detail = [];
+            let total = 0;
+
+            let ecoScore = fish.ecoLevel === '建議' ? 30 : (fish.ecoLevel === '想清楚' ? 10 : -25);
+            detail.push({ label: `${ECO_ICON[fish.ecoLevel] || ''} 永續等級(${fish.ecoLevel})`, score: ecoScore });
+            total += ecoScore;
+
+            let matureScore = box.size >= fish.matureSize ? 15 : -20;
+            detail.push({ label: box.size >= fish.matureSize ? '🐟 成魚' : '🐟 幼魚', score: matureScore });
+            total += matureScore;
+
+            let seasonScore = fish.bestSeasons.includes(gameState.seasonIndex) ? 25 : 0;
+            detail.push({ label: seasonScore > 0 ? '🍂 當季盛產' : '❌ 非當季', score: seasonScore });
+            total += seasonScore;
+
+            let consScore = fish.conservation === 'endangered' ? -60 : 0;
+            let consLabel = '✅ 非保育類物種';
+            if (fish.conservation === 'endangered') {
+                consLabel = fish.legalStatus === 'protected' ? '🚨 法定保育類，禁止捕撈交易' : '🚨 資源過度捕撈，永續拍賣紅線';
+            }
+            detail.push({ label: consLabel, score: consScore });
+            total += consScore;
+
+            let methodScore = fish.method === 'friendly' ? 15 : -10;
+            detail.push({ label: fish.method === 'friendly' ? '🎣 友善漁法' : '⚠️ 非友善漁法', score: methodScore });
+            total += methodScore;
+
+            let habitatScore = fish.habitat === 'aquaculture' ? 15 : (fish.habitat === 'coastal' ? 5 : -5);
+            let habitatLabel = fish.habitat === 'aquaculture' ? '🌿 人工養殖' : (fish.habitat === 'coastal' ? '🌊 野生近海捕撈' : '🚢 遠洋捕撈（混獲風險高）');
+            detail.push({ label: habitatLabel, score: habitatScore });
+            total += habitatScore;
+
+            return { total, detail };
+        }
+
+        function getGradeComment(totalScore, hasEndangered) {
+            // 門檻已依「四回合加總」重新調整（約為原本單回合門檻的4倍）
+            if (totalScore < 0 || hasEndangered) return { grade: 'F', comment: '海洋破壞者', color: '#A6321F' };
+            if (totalScore >= 550) return { grade: 'S', comment: '海洋保衛者', color: '#E8A33D' };
+            if (totalScore >= 320) return { grade: 'A', comment: '永續推廣者', color: '#3C8577' };
+            if (totalScore >= 120) return { grade: 'B', comment: '普通買家', color: '#0B4F5C' };
+            return { grade: 'C', comment: '只顧賺錢', color: '#C9791E' };
+        }
+
+        function settleRound() {
+            let totalScore = 0;
+            let hasEndangered = false;
+            let spent = 0;
+            const items = gameState.playerInventory.map(inv => {
+                const { total, detail } = calcFishScore(inv.box);
+                totalScore += total;
+                spent += inv.price;
+                if (inv.box.fish.conservation === 'endangered') hasEndangered = true;
+                return {
+                    name: inv.box.fish.name, size: inv.box.size, qty: inv.box.qty, price: inv.price, total, detail,
+                    methodName: inv.box.fish.methodName,
+                    conservation: inv.box.fish.conservation,
+                    legalStatus: inv.box.fish.legalStatus,
+                    habitat: inv.box.fish.habitat,
+                    ecoLevel: inv.box.fish.ecoLevel,
+                    info: inv.box.fish.info
+                };
+            });
+
+            // 每回合只計分，不評等；評等留到四回合結束的最終結算再算
+            const record = {
+                round: gameState.round,
+                season: SEASONS[gameState.seasonIndex],
+                boxCount: items.length,
+                spent, totalScore, hasEndangered,
+                items
+            };
+
+            gameState.history.unshift(record);
+            renderHistory();
+            return record;
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('record-list');
+            if (gameState.history.length === 0) {
+                list.innerHTML = '<div class="list-item">尚無紀錄。結算後會顯示於此。</div>';
+                return;
+            }
+
+            list.innerHTML = gameState.history.map(rec => {
+                const itemsHtml = rec.items.map(it => {
+                    const detailStr = it.detail.map(d => `${d.label} ${d.score >= 0 ? '+' : ''}${d.score}`).join(' ｜ ');
+                    const consLabel = it.conservation === 'endangered'
+                        ? (it.legalStatus === 'protected' ? '🚨 法定保育類，禁止捕撈交易' : '🚨 資源過度捕撈，永續拍賣紅線')
+                        : '✅ 非保育類物種';
+                    const habitatLabel = it.habitat === 'aquaculture' ? '🌿 人工養殖' : (it.habitat === 'coastal' ? '🌊 野生近海捕撈' : '🚢 遠洋捕撈（混獲風險高）');
+                    return `<div style="margin-top:6px; padding:6px; background:#FFFDF8; border-radius:6px; font-size:0.8rem;">
+                        <strong>${it.name}</strong>（${it.size}cm・${it.qty}尾・${it.price}元）→ <strong>${it.total >= 0 ? '+' : ''}${it.total} 分</strong><br>
+                        <span style="color:#6E7C79;">${detailStr}</span><br>
+                        <span style="color:#3F4E4B;">🎣 漁法：${it.methodName}　｜　${consLabel}　｜　${habitatLabel}</span>
+                        <div style="margin-top:4px; padding:6px; background:#F3F0E6; border-radius:4px; color:#33423F; line-height:1.4;">📖 ${it.info}</div>
+                    </div>`;
+                }).join('');
+
+                return `<div class="list-item">
+                    <strong>第${rec.round}回合｜${rec.season}</strong><br>
+                    購入 ${rec.boxCount} 箱，共花費 ${rec.spent} 元<br>
+                    永續積分：<strong>${rec.totalScore >= 0 ? '+' : ''}${rec.totalScore} 分</strong>
+                    ${itemsHtml}
+                </div>`;
+            }).join('');
+        }
+
+        function finishAuctionRound() {
+            const record = settleRound();
+            setStageLabel('📊 本季結算完成');
+            SFX.roundEnd();
+
+            const isLastRound = gameState.round >= TOTAL_ROUNDS;
+            const nextBtnHtml = isLastRound
+                ? `<button class="btn-bid" style="background:#3C8577;" onclick="showFinalResult()">🏁 查看最終結算</button>`
+                : `<button class="btn-bid" style="background:#3C8577;" onclick="nextRound()">前往下一季</button>`;
+
+            showArenaIdle(`
+                <div class="idle-emoji">📊</div>
+                <div class="idle-title">第${record.round}回合（${record.season}）結算</div>
+                <div class="idle-sub">
+                    本季購入 ${record.boxCount} 箱，共花費 ${record.spent} 元<br>
+                    永續積分：<strong style="color:#012F72;">${record.totalScore >= 0 ? '+' : ''}${record.totalScore} 分</strong>
+                </div>
+                <div class="idle-btn-row">
+                    <button class="btn-bid" onclick="openHistoryDrawer()">詳細紀錄</button>
+                    ${nextBtnHtml}
+                </div>
+            `);
+        }
+
+        function nextRound() {
+            gameState.round++;
+            gameState.playerInventory = [];
+            gameState.seasonIndex = gameState.round - 1;
+            initRound();
+        }
+
+        function showFinalResult() {
+            setStageLabel('🏁 整局結算完成');
+
+            let totalScore = 0;
+            let totalSpent = 0;
+            let hasEndangered = false;
+            const roundLines = [...gameState.history]
+                .sort((a, b) => a.round - b.round)
+                .map(rec => {
+                    totalScore += rec.totalScore;
+                    totalSpent += rec.spent;
+                    if (rec.hasEndangered) hasEndangered = true;
+                    return `<div>
+                        <span>第${rec.round}回合・${rec.season}</span>
+                        <span>${rec.totalScore >= 0 ? '+' : ''}${rec.totalScore} 分／花費 ${rec.spent} 元</span>
+                    </div>`;
+                }).join('');
+
+            const gradeInfo = getGradeComment(totalScore, hasEndangered);
+            const reportHtml = reportResultToPlatform(totalScore, gradeInfo, hasEndangered);
+
+            document.getElementById('final-result-body').innerHTML = `
+                <div class="idle-emoji">🏆</div>
+                <div class="idle-title">${platformNickname ? platformNickname + ' 的' : ''}整局最終結算</div>
+                <div class="final-round-list">${roundLines}</div>
+                <div class="final-summary">
+                    總花費：<strong style="color:#012F72;">${totalSpent} 元</strong>　｜　剩餘現金：<strong style="color:#012F72;">${gameState.budget} 元</strong><br>
+                    永續總積分：<strong style="color:#012F72; font-size:1.2em;">${totalScore} 分</strong>
+                </div>
+                <div class="final-grade">最終評級：<strong style="color:${gradeInfo.color};">${gradeInfo.grade}級【${gradeInfo.comment}】</strong></div>
+                ${reportHtml}
+            `;
+            document.getElementById('final-result-screen').classList.add('show');
+        }
+
+        // 整局結束時，把總分跟徽章上傳給平台，並回傳要顯示在結算畫面的提示文字。
+        // 徽章「永續推廣者」的發放門檻是 S 級（海洋保衛者，totalScore>=550 且無保育類），不是原本 A 級的門檻。
+        function reportResultToPlatform(totalScore, gradeInfo, hasEndangered) {
+            const earnsBadge = gradeInfo.grade === 'S';
+            const alreadyHasBadge = platformBadges.includes(BADGE_ID);
+            const hasPreviousRecord = myBestScore !== null;
+            const previousBestValue = hasPreviousRecord ? myBestScore.scoreValue : null;
+            // 沒有舊紀錄（第一次玩）不算「破紀錄」，不給這 1 金幣，只有存在舊紀錄且這次分數更高才算
+            const isNewBest = hasPreviousRecord && totalScore > previousBestValue;
+
+            let coins = 0;
+            if (earnsBadge && !alreadyHasBadge) coins += 20;
+            if (isNewBest) coins += 1;
+
+            // 只有「這次真的有新東西」才送 complete：沒有新徽章、金幣也是 0，
+            // 送出去只是讓後台白處理一則什麼都不用做的訊息（還要多寫 2 筆除錯記錄）。
+            const hasNewBadge = earnsBadge && !alreadyHasBadge;
+            if (coins > 0 || hasNewBadge) {
+                sendToPlatform('complete', {
+                    coins: coins,
+                    badgeIds: earnsBadge ? [BADGE_ID] : []
+                });
+            }
+            // score 同理：第一次玩（沒有舊紀錄）要送、之後只有真的破紀錄才送。
+            // 分數比舊紀錄低或打平時送出去，平台那邊還是得先讀一次現有分數來比較，
+            // 比較完發現「不用寫」也已經先耗掉一次讀取額度，白工。
+            if (!hasPreviousRecord || isNewBest) {
+                sendToPlatform('score', { scoreLabel: `${totalScore} 分`, scoreValue: totalScore });
+            }
+
+            // 更新本地暫存狀態：避免同一次連線內重玩時重複請領「首次徽章」的 20 金幣，
+            // 也讓下一輪結算能正確比較「這次連線內打過的最佳紀錄」
+            if (earnsBadge && !alreadyHasBadge) platformBadges = platformBadges.concat([BADGE_ID]);
+            if (!hasPreviousRecord || totalScore > previousBestValue) {
+                myBestScore = { scoreLabel: `${totalScore} 分`, scoreValue: totalScore };
+            }
+
+            const notices = [];
+            if (earnsBadge && !alreadyHasBadge) {
+                notices.push('🏅 恭喜首次獲得「永續推廣者」徽章！（+20 金幣）');
+                playBadgeUnlockEffect();
+            } else if (earnsBadge) {
+                notices.push('🏅 再次達成「永續推廣者」等級（徽章已持有）');
+            }
+            if (isNewBest) {
+                notices.push(`🎉 打破個人紀錄！原紀錄 ${previousBestValue} 分（+1 金幣）`);
+            } else if (hasPreviousRecord) {
+                notices.push(`歷史最佳：${previousBestValue} 分`);
+            }
+
+            // 還沒拿過徽章、這次也沒達到 S 級：提醒還差多少分，鼓勵下次再挑戰
+            if (!alreadyHasBadge && !earnsBadge) {
+                if (hasEndangered) {
+                    notices.push('💡 這次有標到保育類／瀕危物種，就算分數夠高也拿不到「永續推廣者」徽章，下次記得完全避開！');
+                } else {
+                    const pointsNeeded = 550 - totalScore;
+                    notices.push(`💡 再努力 ${pointsNeeded} 分就能拿到「永續推廣者」徽章（達到 S 級：海洋保衛者）！`);
+                }
+            }
+
+            return notices.length ? `<div class="final-report-notice">${notices.join('<br>')}</div>` : '';
+        }
+
+        // 結算畫面的「關閉」按鈕：送 exit 訊息通知平台、強制關閉分頁返回平台，
+        // 不再是原本「重設遊戲狀態、回到開場畫面重玩」的行為（原本按鈕文字跟實際行為不一致）。
+        function closeAndReturnToPlatform() {
+            exitAndClosePlatform();
+        }
+
+        // 頂部列的「返回」按鈕：遊戲進行中隨時可以按，會中斷這一局，先跳確認框避免誤觸。
+        function exitAndReturnToPlatform() {
+            if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+            exitAndClosePlatform();
+        }
+
+        function updateInventorySummary() {
+            const inv = gameState.playerInventory;
+            const spentTotal = inv.reduce((sum, it) => sum + it.price, 0);
+            document.getElementById('ui-inventory-summary').innerText =
+                inv.length === 0 ? '本季尚未購入' : `本季已購 ${inv.length} 箱・花費 ${spentTotal} 元`;
+        }
+
+        const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
+
+        // 緊張感提早一點點出現（比原本的 3 秒早），且倒數環／文字的閃爍頻率
+        // 不是等比變化，而是隨剩餘時間非線性加速——快到底時頻率陡增，更貼近真實拍賣最後幾秒的心跳感
+        const URGENT_WARN_START = 4.5; // 秒：提早於原本的 3 秒開始出現警示
+        function getUrgentBlinkDuration(timeLeft) {
+            const t = Math.max(0, Math.min(URGENT_WARN_START, timeLeft));
+            const ratio = t / URGENT_WARN_START; // 1 = 剛進入警示區、0 = 時間到
+            const minDur = 0.16, maxDur = 0.85;
+            // 指數次方讓曲線前段變化平緩、接近 0 時陡然加速
+            return minDur + (maxDur - minDur) * Math.pow(ratio, 2.4);
+        }
+        function applyUrgentBlink(el, isUrgent, timeLeft) {
+            el.classList.toggle('urgent', isUrgent);
+            if (isUrgent) {
+                el.style.setProperty('--blink-dur', getUrgentBlinkDuration(timeLeft).toFixed(2) + 's');
+            }
+        }
+
+        function updateRing() {
+            const total = auctionState.phase === 'observe' ? OBSERVE_SECONDS : BIDDING_SECONDS;
+            const ratio = Math.max(0, Math.min(1, auctionState.timeLeft / total));
+            const ring = document.getElementById('ring-progress');
+            ring.style.strokeDasharray = RING_CIRCUMFERENCE;
+            ring.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - ratio);
+            applyUrgentBlink(ring, auctionState.phase === 'bidding' && auctionState.timeLeft <= URGENT_WARN_START, auctionState.timeLeft);
+            if (ratio > 0.5) ring.style.stroke = '#4FD1A8';
+            else if (ratio > 0.2) ring.style.stroke = '#ffb703';
+            else ring.style.stroke = '#FF5844';
+        }
+
+        function updateAuctionUI() {
+            const priceEl = document.getElementById('arena-price');
+            const priceChanged = priceEl.innerText !== String(auctionState.currentPrice);
+            priceEl.innerText = auctionState.currentPrice;
+
+            document.getElementById('arena-time').innerText = auctionState.timeLeft.toFixed(1);
+
+            if (priceChanged && auctionState.lastBidBy) {
+                const priceRow = document.getElementById('arena-price').parentElement;
+                priceRow.classList.remove('pulse-player', 'pulse-ai');
+                void priceRow.offsetWidth;
+                priceRow.classList.add(auctionState.lastBidBy === 'player' ? 'pulse-player' : 'pulse-ai');
+            }
+            auctionState.lastBidBy = null;
+
+            updateRing();
+
+            const btn5 = document.getElementById('arena-btn-5');
+            const btn10 = document.getElementById('arena-btn-10');
+            const btnFast = document.getElementById('arena-btn-fast');
+            const isPlayerLeading = auctionState.highestBidderId === 'player';
+            btn5.innerText = isPlayerLeading ? '領先中' : `競標 +${auctionState.bidStep}`;
+            btn10.innerText = isPlayerLeading ? '領先中' : `競標 +${auctionState.bidStep * 2}`;
+            const disable = auctionState.phase === 'observe' || auctionState.giveUp || isPlayerLeading;
+            btn5.disabled = disable;
+            btn10.disabled = disable;
+            btnFast.disabled = auctionState.giveUp || isPlayerLeading;
+
+            const aiGrid = document.getElementById('arena-ai-row');
+            aiGrid.innerHTML = '';
+            auctionState.aiStatus.forEach(ai => {
+                let cls = 'ai-chip';
+                if (ai.out) cls += ' out';
+                else if (ai.id === auctionState.highestBidderId) cls += ' leader';
+                else if (ai.status.includes('加價')) cls += ' bid';
+
+                const parts = splitAiName(ai.name);
+                const nameDisplay = parts.label;
+                const bidMatch = ai.status.match(/加價\s*\+?(\d+)/);
+                const statusDisplay = bidMatch ? '出價中' : ai.status;
+                const bubbleHTML = bidMatch ? `<div class="ai-bubble">加價+${bidMatch[1]}</div>` : '';
+                aiGrid.innerHTML += `<div class="${cls}"><div class="ai-chip-clip"><img class="ai-chip-avatar" src="image/${nameDisplay}.png" alt="${nameDisplay}" onerror="this.outerHTML='<div class=\\'ai-chip-avatar-fallback\\'>${parts.emoji}</div>'"></div>${bubbleHTML}<span class="ai-name">${nameDisplay}</span><span class="ai-status">${statusDisplay}</span></div>`;
+            });
+        }
+
+        function countdownTimer() {
+            auctionState.timeLeft -= 0.1;
+
+            if (auctionState.timeLeft <= 0) {
+                if (auctionState.phase === 'observe') {
+                    auctionState.phase = 'bidding';
+                    auctionState.timeLeft = BIDDING_SECONDS;
+                    auctionState.aiStatus.forEach(ai => ai.status = '觀望');
+                    auctionState._lastTickSec = null;
+                    updateAuctionUI();
+                    SFX.boxStart();
+                } else {
+                    endCurrentBox();
+                }
+            } else {
+                const timerEl = document.getElementById('arena-time');
+                timerEl.innerText = Math.max(0, auctionState.timeLeft).toFixed(1);
+                updateRing();
+                const isUrgentPhase = auctionState.phase === 'bidding' && auctionState.timeLeft <= URGENT_WARN_START;
+                applyUrgentBlink(timerEl, isUrgentPhase, auctionState.timeLeft);
+
+                // 最後 3 秒的倒數計秒音效：音高與強度隨秒數遞減而升高，愈接近截標愈逼人
+                if (auctionState.phase === 'bidding' && auctionState.timeLeft <= 3) {
+                    const sec = Math.ceil(auctionState.timeLeft);
+                    if (sec !== auctionState._lastTickSec) {
+                        auctionState._lastTickSec = sec;
+                        SFX.countdownBeep(sec);
+                    }
+                }
+            }
+        }
+
+        function aiBiddingStep() {
+            if (auctionState.phase === 'observe') return false;
+            if (auctionState.aiBidCount >= auctionState.maxBidRounds) return false; // AI出價已達上限，不再出價（但拍賣不會因此立即結束）
+
+            let activeAIs = auctionState.aiStatus.filter(ai => !ai.out && ai.id !== auctionState.highestBidderId);
+
+            activeAIs.forEach(ai => {
+                if (auctionState.currentPrice >= ai.maxPrice || (ai.type === 'uncle' && ai.bidCount >= 2)) {
+                    ai.out = true; ai.status = '放棄';
+                }
+            });
+
+            let willingAIs = activeAIs.filter(ai => !ai.out);
+
+            if (willingAIs.length > 0 && Math.random() > 0.4) {
+                let bidder = willingAIs[Math.floor(Math.random() * willingAIs.length)];
+                let bidAmount = bidder.type === 'wholesale' ? auctionState.bidStep : (Math.random() > 0.5 ? auctionState.bidStep : auctionState.bidStep * 2);
+
+                SFX.bidAI(bidder.id);
+                auctionState.currentPrice += bidAmount;
+                auctionState.highestBidderId = bidder.id;
+                auctionState.highestBidderName = bidder.name;
+                auctionState.timeLeft = BIDDING_SECONDS;
+                bidder.bidCount++;
+                bidder.status = `加價 +${bidAmount}`;
+
+                // 出價泡泡最長只顯示 3 秒：畫面重繪只會在「有其他出價事件」時才觸發，
+                // 如果接下來一段時間都沒人再出價，氣泡在沒有這個計時器的情況下會
+                // 一直停在畫面上不會消失。這裡另外排一個 3 秒後的強制重繪，
+                // 到時間就把狀態文字換掉（讓 bidMatch 比對不到，氣泡自然不會再畫出來）。
+                clearTimeout(bidder._bubbleTimer);
+                bidder._bubbleTimer = setTimeout(() => {
+                    // 這 3 秒內如果又出價了，status 早就被換成新的內容，這裡就不要誤蓋掉
+                    if (bidder.status === `加價 +${bidAmount}`) {
+                        bidder.status = (auctionState.highestBidderId === bidder.id) ? '領先中' : '觀望';
+                        updateAuctionUI();
+                    }
+                }, 3000);
+
+                auctionState.aiStatus.forEach(ai => {
+                    if (!ai.out && ai.id !== bidder.id) ai.status = '觀望';
+                });
+
+                auctionState.aiBidCount++;
+                auctionState.lastBidBy = 'ai';
+                pushBidLog(splitAiName(bidder.name).label, auctionState.currentPrice);
+                return true;
+            }
+            return false;
+        }
+
+        function aiThinkLoop() {
+            const bid = aiBiddingStep();
+            if (!bid) return;
+            updateAuctionUI();
+            // AI出價達上限後不再主動出價，但拍賣繼續倒數，直到時間到（或玩家繼續加價後時間會重置）才結束
+        }
+
+        function fastForwardAuction() {
+            if (!auctionState.currentBox || auctionState.currentBox.status !== 'active') return;
+            if (auctionState.giveUp) return;
+            if (auctionState.highestBidderId === 'player') return; // 領先中不能放棄
+
+            SFX.giveUp();
+            hapticTap([12, 30, 12]);
+            clearInterval(auctionState.mainTimer);
+            clearInterval(auctionState.aiTimer);
+            auctionState.giveUp = true;
+            auctionState.phase = 'bidding';
+
+            let guard = 0;
+            while (auctionState.aiBidCount < auctionState.maxBidRounds && guard < 500) {
+                guard++;
+                const activeWillingLeft = auctionState.aiStatus.some(ai => !ai.out && ai.id !== auctionState.highestBidderId && auctionState.currentPrice < ai.maxPrice);
+                const bid = aiBiddingStep();
+                if (!bid && !activeWillingLeft) break;
+            }
+
+            auctionState.timeLeft = 0;
+            updateAuctionUI();
+            endCurrentBox();
+        }
+
+        function playerBid(amount) {
+            if (auctionState.phase === 'observe') return;
+            if (auctionState.highestBidderId === 'player') return; // 已經領先，不需要跟自己加價
+            if (gameState.budget < (auctionState.currentPrice + amount)) {
+                SFX.denied();
+                hapticTap([10, 20, 10]);
+                alert('現金不足！無法加價。');
+                return;
+            }
+
+            SFX.bidPlayer();
+            hapticTap(amount >= auctionState.bidStep * 2 ? 20 : 12); // 出價金額越大，震動越明顯，讓「賭注大小」有身體感
+            auctionState.currentPrice += amount;
+            auctionState.highestBidderId = 'player';
+            auctionState.highestBidderName = '⭐ 你 (領先)';
+            auctionState.timeLeft = BIDDING_SECONDS;
+            auctionState.lastBidBy = 'player';
+            auctionState.aiStatus.forEach(ai => { if (!ai.out) ai.status = '觀望'; });
+            pushBidLog('⭐ 你', auctionState.currentPrice);
+            updateAuctionUI();
+            // 玩家出價不計入10次上限，只有AI出價次數會觸發自動截標
+        }
+
+        function endCurrentBox() {
+            clearInterval(auctionState.mainTimer);
+            clearInterval(auctionState.aiTimer);
+
+            const box = auctionState.currentBox;
+            const overlay = document.getElementById('arena-sold-overlay');
+            let overlayCls, overlayTitle, overlaySub;
+
+            if (auctionState.highestBidderId === 'player') {
+                gameState.budget -= auctionState.currentPrice;
+                gameState.playerInventory.push({ box: box, price: auctionState.currentPrice });
+                box.status = 'sold-player';
+                box.soldPrice = auctionState.currentPrice;
+                overlayCls = 'win'; overlayTitle = '🔨 SOLD！你得標'; overlaySub = `${auctionState.currentPrice} 元`;
+                SFX.win();
+                hapticTap([15, 40, 15, 40, 60]);
+            } else if (auctionState.highestBidderId) {
+                box.status = 'sold-other';
+                box.soldPrice = auctionState.currentPrice;
+                box.soldBy = auctionState.highestBidderName;
+                if (gameState.aiBudgets[auctionState.highestBidderId] !== undefined) {
+                    gameState.aiBudgets[auctionState.highestBidderId] = Math.max(0, gameState.aiBudgets[auctionState.highestBidderId] - auctionState.currentPrice);
+                }
+                overlayCls = 'other'; overlayTitle = 'SOLD'; overlaySub = `由 ${auctionState.highestBidderName} 標得`;
+                SFX.lose();
+            } else {
+                box.status = 'unsold';
+                overlayCls = 'unsold'; overlayTitle = '流標'; overlaySub = '無人出價';
+                SFX.unsold();
+            }
+
+            overlay.innerHTML = `<div><div class="stamp">${overlayTitle}</div><div class="sold-sub">${overlaySub}</div></div>`;
+            overlay.className = `show ${overlayCls}`;
+            setTimeout(() => { overlay.className = ''; }, 900);
+
+            document.getElementById('ui-budget').innerText = `💰 現金: ${gameState.budget}元`;
+            updateInventorySummary();
+            renderBoard();
+
+            auctionState.currentIndex++;
+            setTimeout(() => {
+                if (auctionState.currentIndex < auctionState.queue.length) {
+                    const remaining = auctionState.queue.length - auctionState.currentIndex;
+                    setStageLabel('📋 看板更新中');
+                    showArenaIdle(`
+                        <div class="idle-emoji">🔨</div>
+                        <div class="idle-title">這箱結果已更新到上方看板</div>
+                        <div class="idle-sub">還剩 ${remaining} 箱魚貨，<strong style="color:#012F72;"><span id="next-box-countdown">5</span> 秒</strong>後自動開始下一箱</div>
+                        <button class="btn-bid idle-btn" onclick="continueNextBox()">立即拍賣下一箱</button>
+                    `);
+                    startNextBoxCountdown();
+                } else {
+                    finishAuctionRound();
+                }
+            }, 1100);
+        }
+
+        function startNextBoxCountdown() {
+            let secondsLeft = 5;
+            clearInterval(auctionState.nextBoxTimer);
+            const countdownEl = document.getElementById('next-box-countdown');
+            if (countdownEl) countdownEl.innerText = secondsLeft;
+            auctionState.nextBoxTimer = setInterval(() => {
+                secondsLeft--;
+                const el = document.getElementById('next-box-countdown');
+                if (el) el.innerText = secondsLeft;
+                if (secondsLeft <= 0) {
+                    clearInterval(auctionState.nextBoxTimer);
+                    continueNextBox();
+                }
+            }, 1000);
+        }
+
+        // ── 切到背景時暫停：分頁不可見時（切app、鎖螢幕、切分頁）清掉正在跑的計時器，
+        // 不讓拍賣倒數/AI出價在背景偷跑；回到前景後跳出提示，玩家點了才真的恢復，
+        // 不會一回來就發現時間已經被扣完、或被 AI 搶標。
+        let pausedContext = null; // 'bidding'（正在喊價）｜'nextBox'（換下一箱的5秒倒數）｜null
+        let wasBgmPlaying = false;
+        let showPauseOverlayPending = false;
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (auctionState.mainTimer || auctionState.aiTimer) {
+                    pausedContext = 'bidding';
+                    clearInterval(auctionState.mainTimer);
+                    clearInterval(auctionState.aiTimer);
+                    auctionState.mainTimer = null;
+                    auctionState.aiTimer = null;
+                } else if (auctionState.nextBoxTimer) {
+                    pausedContext = 'nextBox';
+                    clearInterval(auctionState.nextBoxTimer);
+                    auctionState.nextBoxTimer = null;
+                }
+                // 背景音樂從按下「開始拍賣」就會一路播到結束，橫跨拍賣中／看板整備中
+                // 這些不同階段，不能只跟著上面那兩種計時器有沒有在跑來決定要不要暫停——
+                // 「看板已就緒、等你按開始拍賣」這種準備畫面本來就沒有計時器在跑，
+                // 但音樂還是在播，之前只檢查計時器，這個階段切到背景音樂完全沒被暫停到。
+                // 改成只要音樂正在播放，就記一個 wasBgmPlaying，跟計時器分開判斷。
+                if (!bgm.paused) {
+                    wasBgmPlaying = true;
+                    bgm.pause();
+                }
+                // 分頁現在是隱藏的，暫停提示等真的切回來才顯示，不然使用者根本看不到。
+                if (pausedContext) showPauseOverlayPending = true;
+            } else if (showPauseOverlayPending) {
+                showPauseOverlayPending = false;
+                document.getElementById('pause-overlay').classList.add('show');
+            } else if (wasBgmPlaying) {
+                // 剛剛只有音樂在播、沒有拍賣計時器在跑（例如在「看板已就緒」畫面被切走），
+                // 不需要跳出「遊戲已暫停」的提示擋住畫面，直接把音樂接回來就好。
+                wasBgmPlaying = false;
+                bgm.play().catch(()=>{});
+            }
+        });
+
+        window.resumeFromPause = function () {
+            document.getElementById('pause-overlay').classList.remove('show');
+            if (wasBgmPlaying) { wasBgmPlaying = false; bgm.play().catch(()=>{}); }
+            if (pausedContext === 'bidding') {
+                auctionState.mainTimer = setInterval(countdownTimer, 100);
+                auctionState.aiTimer = setInterval(aiThinkLoop, 800);
+            } else if (pausedContext === 'nextBox') {
+                startNextBoxCountdown(); // 5秒倒數重新開始算，不強求精準保留剩餘秒數
+            }
+            pausedContext = null;
+        };
+
+        function continueNextBox() {
+            clearInterval(auctionState.nextBoxTimer);
+            setStageLabel('🔨 拍賣中');
+            showArenaLive();
+            setupNextBox();
+        }
+
+        function startGame() {
+            SFX.unlock();
+            bgm.currentTime = 0;
+            bgm.play().catch(()=>{}); // 用 catch 保險，避免拋出未處理的例外
+            document.getElementById('intro-screen').style.display = 'none';
+            initRound();
+        }
+
+        // 「再玩一次」：只重置遊戲內部狀態、重新開始，不跳回平台，
+        // 所以不會再走到 openTask() 那段扣款流程——這是特意要的效果。
+        // 徽章/金幣/分數照樣走 sendToPlatform('complete'/'score')，平台那邊是逐則訊息
+        // 獨立處理，不會管這是分頁裡的第幾次遊玩，判斷邏輯（已擁有徽章不重複發、
+        // 分數要贏過 Firestore 上真正的最高分）跟重新整理分頁進來玩沒有任何差別。
+        function resetAndPlayAgain() {
+            gameState.round = 1;
+            gameState.seasonIndex = 0;
+            gameState.budget = 0;
+            gameState.todayBoxes = [];
+            gameState.playerInventory = [];
+            gameState.history = [];
+            gameState.lastTopUp = 0;
+            gameState.aiBudgets = {};
+            document.getElementById('final-result-screen').style.display = 'none';
+            bgm.currentTime = 0;
+            bgm.play().catch(()=>{});
+            initRound();
+        }
+    </script>
+</body>
+</html>

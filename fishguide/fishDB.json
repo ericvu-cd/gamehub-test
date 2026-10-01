@@ -1,0 +1,687 @@
+[
+  {
+    "id": "fg1",
+    "name": "吳郭魚",
+    "light": "green",
+    "season": "夏秋",
+    "methods": [
+      "養殖"
+    ],
+    "behavior": "定棲性",
+    "zone": "aquaculture",
+    "size": 30,
+    "description": "適應力極強的台灣代表性養殖魚，肉質紮實且平價，是餐桌上最常見的家常美味。"
+  },
+  {
+    "id": "fg2",
+    "name": "竹筴魚",
+    "light": "green",
+    "season": "全年",
+    "methods": [
+      "一支釣",
+      "定置網",
+      "圍網",
+      "拖網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 20,
+    "description": "體側有明顯的堅硬稜鱗，是日本料理常見的食材，適合鹽烤或製成一夜干。"
+  },
+  {
+    "id": "fg3",
+    "name": "台灣鯖魚",
+    "light": "green",
+    "season": "秋冬",
+    "methods": [
+      "定置網",
+      "圍網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 25,
+    "description": "背部有如波浪般的青色花紋，富含Omega-3，是營養價值極高的優質藍皮魚。"
+  },
+  {
+    "id": "fg4",
+    "name": "飛魚",
+    "light": "green",
+    "season": "春夏",
+    "methods": [
+      "定置網",
+      "流刺網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 30,
+    "description": "胸鰭長如翅膀，能跳出水面滑行數百公尺，是達悟族飛魚季（招魚祭到終食祭）的核心魚類。"
+  },
+  {
+    "id": "fg5",
+    "name": "臭肚魚",
+    "light": "green",
+    "season": "全年",
+    "methods": [
+      "一支釣",
+      "拖網",
+      "流刺網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 25,
+    "description": "因腸道內海藻發酵氣味重而得名，鰭棘有毒需小心，但肉質紮實、風味特殊。"
+  },
+  {
+    "id": "fg6",
+    "name": "紅魽",
+    "light": "green",
+    "season": "冬春",
+    "methods": [
+      "一支釣",
+      "延繩釣",
+      "拖網",
+      "流刺網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 80,
+    "description": "頂級生魚片食材，游速極快且力氣驚人，是釣魚愛好者心目中最具挑戰性的目標。"
+  },
+  {
+    "id": "fg7",
+    "name": "小卷",
+    "light": "green",
+    "season": "夏",
+    "methods": [
+      "一支釣",
+      "拖網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 15,
+    "description": "台灣東北角名產，屬一年生頭足類，生長快速，是適合優先選擇的綠燈海鮮。"
+  },
+  {
+    "id": "fg8",
+    "name": "星雞魚",
+    "light": "green",
+    "season": "夏秋",
+    "methods": [
+      "手釣",
+      "延繩釣",
+      "拖網"
+    ],
+    "behavior": "定棲性",
+    "zone": "coastal",
+    "size": 35,
+    "description": "身上帶有如星點般的黑色斑紋，幼魚時期特徵最明顯，肉質鮮美，適合各種料理方式。"
+  },
+  {
+    "id": "fg9",
+    "name": "巴鰹",
+    "light": "green",
+    "season": "全年",
+    "methods": [
+      "一支釣",
+      "定置網",
+      "圍網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 45,
+    "description": "體側有波浪紋與數個黑點，游動快速，是製作柴魚片或醃製品的主要魚種。"
+  },
+  {
+    "id": "fg10",
+    "name": "虱目魚",
+    "light": "green",
+    "season": "夏秋",
+    "methods": [
+      "養殖"
+    ],
+    "behavior": "洄游性",
+    "zone": "aquaculture",
+    "size": 30,
+    "description": "台灣養殖業的靈魂，肉質細嫩、營養豐富，雖然魚刺較多但極受歡迎，俗稱牛奶魚。"
+  },
+  {
+    "id": "fg11",
+    "name": "白帶魚",
+    "light": "green",
+    "season": "秋冬",
+    "methods": [
+      "一支釣",
+      "定置網",
+      "拖網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 70,
+    "description": "身型細長如銀色絲帶，游動時像鰻魚蛇行，休息時常頭上尾下直立。肉質細嫩，是極受歡迎的家常煎魚。"
+  },
+  {
+    "id": "fg12",
+    "name": "養殖鱸魚",
+    "light": "green",
+    "season": "全年",
+    "methods": [
+      "養殖"
+    ],
+    "behavior": "定棲性",
+    "zone": "aquaculture",
+    "size": 35,
+    "description": "台灣沿海箱網與魚塭普遍養殖，肉質細嫩、刺少，是家庭料理與餐廳最受歡迎的白肉魚。"
+  },
+  {
+    "id": "fg13",
+    "name": "養殖烏魚",
+    "light": "green",
+    "season": "冬",
+    "methods": [
+      "養殖"
+    ],
+    "behavior": "洄游性",
+    "zone": "aquaculture",
+    "size": 40,
+    "description": "烏魚子的原料來源，台灣南部為主要養殖重鎮。冬至前後出產，魚卵飽滿是為上品。"
+  },
+  {
+    "id": "fg14",
+    "name": "皮刀",
+    "light": "green",
+    "season": "春夏",
+    "methods": [
+      "定置網",
+      "圍網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 30,
+    "description": "身體極扁如菜刀，銀亮色澤能反射陽光，在水中常被當作釣大型魚種的絕佳活餌。"
+  },
+  {
+    "id": "fg15",
+    "name": "剝皮魚",
+    "light": "green",
+    "season": "夏",
+    "methods": [
+      "定置網",
+      "拖網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 20,
+    "description": "皮膚堅韌如皮革，食用前須剝除。肉質潔白、細緻且幾乎沒有細刺，非常適合小孩食用。"
+  },
+  {
+    "id": "fg16",
+    "name": "鰆魚",
+    "light": "green",
+    "season": "冬春",
+    "methods": [
+      "一支釣",
+      "延繩釣",
+      "定置網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 60,
+    "description": "龍鳳漁港的主力招牌漁獲，體型修長游速極快。肉質細嫩潔白幾乎無刺，是苗栗海線的靈魂滋味，常做成鰆魚米粉或清蒸享用。"
+  },
+  {
+    "id": "fg17",
+    "name": "鯽仔",
+    "light": "green",
+    "season": "全年",
+    "methods": [
+      "養殖",
+      "定置網",
+      "手釣"
+    ],
+    "behavior": "定棲性",
+    "zone": "aquaculture",
+    "size": 18,
+    "description": "台灣海峽沿岸常見的小型鯛科魚，繁殖力強且生長迅速。梧棲沿海魚塭與近岸礁區均有穩定族群，是物美價廉的家常小魚。"
+  },
+  {
+    "id": "fg18",
+    "name": "紅目鰱",
+    "light": "yellow",
+    "season": "夏",
+    "methods": [
+      "一支釣",
+      "拖網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 25,
+    "description": "眼睛大而通紅，具有粗硬的鱗片。烹飪後可輕易將魚皮連鱗片整片剝除，口感鮮甜。"
+  },
+  {
+    "id": "fg19",
+    "name": "白鯧",
+    "light": "yellow",
+    "season": "春",
+    "methods": [
+      "拖網",
+      "流刺網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 25,
+    "description": "過年必備的吉祥魚種，魚體扁平圓潤，肉質肥美細緻且少刺，是高級食用魚代表。"
+  },
+  {
+    "id": "fg20",
+    "name": "石狗公",
+    "light": "yellow",
+    "season": "夏秋",
+    "methods": [
+      "延繩釣",
+      "拖網"
+    ],
+    "behavior": "定棲性",
+    "zone": "coastal",
+    "size": 25,
+    "description": "岩礁區的偽裝大師，頭部帶有許多棘刺。肉質鮮美有彈性，是燉煮魚湯的首選食材。"
+  },
+  {
+    "id": "fg21",
+    "name": "鰻魚",
+    "light": "yellow",
+    "season": "春秋",
+    "methods": [
+      "養殖"
+    ],
+    "behavior": "洄游性",
+    "zone": "aquaculture",
+    "size": 55,
+    "description": "在遠方深海產卵，鰻苗游回河口成長，成熟後再降海產卵。養殖全靠捕撈野生鰻苗，日本鰻已列瀕危。"
+  },
+  {
+    "id": "fg22",
+    "name": "花枝",
+    "light": "yellow",
+    "season": "冬",
+    "methods": [
+      "一支釣",
+      "延繩釣",
+      "圍網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 20,
+    "description": "正式名稱為烏賊，體內有一塊厚厚的石灰質內殼，肉質厚實且清脆，常用於各式炒食。"
+  },
+  {
+    "id": "fg23",
+    "name": "笛鯛",
+    "light": "yellow",
+    "season": "夏",
+    "methods": [
+      "一支釣",
+      "延繩釣",
+      "流刺網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 40,
+    "description": "常見於珊瑚礁或岩礁區，種類多樣且色彩豐富，是經濟價值極高的底棲性魚種。"
+  },
+  {
+    "id": "fg24",
+    "name": "肉魚",
+    "light": "yellow",
+    "season": "冬春",
+    "methods": [
+      "一支釣",
+      "拖網",
+      "流刺網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 25,
+    "description": "學名刺鯧，身型扁平，魚油脂分豐富且刺少。因價格平實，是台灣家庭中最受歡迎的家常菜。"
+  },
+  {
+    "id": "fg25",
+    "name": "午仔魚",
+    "light": "yellow",
+    "season": "秋冬",
+    "methods": [
+      "釣具",
+      "定置網",
+      "流刺網",
+      "底拖網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 25,
+    "description": "民間俗諺「一午二紅沙」把牠排第一，油脂豐厚、入口即化，肉質極為細嫩。"
+  },
+  {
+    "id": "fg26",
+    "name": "養殖黑鯛",
+    "light": "yellow",
+    "season": "冬春",
+    "methods": [
+      "養殖"
+    ],
+    "behavior": "定棲性",
+    "zone": "aquaculture",
+    "size": 30,
+    "description": "俗稱黑格，養殖者體型較肥美，肉質較野生種更具油脂，是宴席中常見的高級料理食材。"
+  },
+  {
+    "id": "fg27",
+    "name": "黃鰭鯛",
+    "light": "yellow",
+    "season": "冬",
+    "methods": [
+      "一支釣",
+      "底刺網"
+    ],
+    "behavior": "定棲性",
+    "zone": "coastal",
+    "size": 25,
+    "description": "腹鰭與臀鰭呈現明顯鮮黃色，肉質細嫩且帶有獨特香氣，是沿岸磯釣最熱門的目標。"
+  },
+  {
+    "id": "fg28",
+    "name": "牛舌",
+    "light": "yellow",
+    "season": "全年",
+    "methods": [
+      "拖網"
+    ],
+    "behavior": "定棲性",
+    "zone": "coastal",
+    "size": 25,
+    "description": "身體長且扁平，棲息在泥沙底層偽裝。肉質細緻，簡單紅燒或油煎就能呈現鮮甜風味。"
+  },
+  {
+    "id": "fg29",
+    "name": "比目魚",
+    "light": "yellow",
+    "season": "全年",
+    "methods": [
+      "一支釣",
+      "延繩釣",
+      "底拖網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 40,
+    "description": "兩隻眼睛長在身體同一側，擅長埋在沙中偷襲獵物。肉質細嫩柔軟，是高品質的食用魚。"
+  },
+  {
+    "id": "fg30",
+    "name": "海鱺",
+    "light": "yellow",
+    "season": "秋冬",
+    "methods": [
+      "養殖"
+    ],
+    "behavior": "洄游性",
+    "zone": "aquaculture",
+    "size": 90,
+    "description": "成長極快的明星養殖魚種。肉質紮實Q彈且富含膠質，常做成生魚片或魚湯供人品嚐。"
+  },
+  {
+    "id": "fg31",
+    "name": "赤鯮",
+    "light": "yellow",
+    "season": "冬春",
+    "methods": [
+      "一支釣",
+      "延繩釣",
+      "底拖網"
+    ],
+    "behavior": "定棲性",
+    "zone": "coastal",
+    "size": 22,
+    "description": "身披鮮紅橘色鱗片、腹部銀白，是台灣礁區最美麗的鯛科魚之一。龍鳳漁港礁岩底質為其棲地，肉質細緻，但族群恢復速度緩慢。"
+  },
+  {
+    "id": "fg32",
+    "name": "金線魚",
+    "light": "yellow",
+    "season": "全年",
+    "methods": [
+      "一支釣",
+      "延繩釣",
+      "底拖網"
+    ],
+    "behavior": "定棲性",
+    "zone": "coastal",
+    "size": 20,
+    "description": "體側有一條金黃縱紋。棲息在大陸棚沙泥底，常被底拖網捕獲，肉質鮮甜清淡，適合清蒸或煮魚湯。"
+  },
+  {
+    "id": "fg33",
+    "name": "三點蟹",
+    "light": "yellow",
+    "season": "秋冬",
+    "methods": [
+      "籠具",
+      "流刺網",
+      "底拖網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 12,
+    "description": "北海岸「萬里蟹」三寶之一，殼面有三個暗紫紅斑點。多用蟹籠捕撈，過小的蟹和抱卵母蟹依規定不能捕。"
+  },
+  {
+    "id": "fg34",
+    "name": "鬼頭刀",
+    "light": "yellow",
+    "season": "春秋",
+    "methods": [
+      "一支釣",
+      "延繩釣",
+      "流刺網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 60,
+    "description": "頭部高聳如刀，捕獲後體色由藍綠驟變金黃，肉質厚實如魚排。台東新港產量最多，未滿50公分禁捕。"
+  },
+  {
+    "id": "fg35",
+    "name": "秋刀魚",
+    "light": "yellow",
+    "season": "秋",
+    "methods": [
+      "棒受網"
+    ],
+    "behavior": "洄游性",
+    "zone": "pelagic",
+    "size": 35,
+    "description": "細長如秋日短刀，由遠洋漁船在北太平洋用燈光誘捕，全從高雄前鎮出港。近年漁獲量大減。"
+  },
+  {
+    "id": "fg36",
+    "name": "魩仔魚",
+    "light": "yellow",
+    "season": "全年",
+    "methods": [
+      "拖網",
+      "棒受網"
+    ],
+    "behavior": "洄游性",
+    "zone": "coastal",
+    "size": 3,
+    "description": "主要是鯷科、鯡科的仔稚魚，常見於炒飯與粥品。拖網撈捕時易混獲其他魚的仔稚魚，夏季有禁漁期。"
+  },
+  {
+    "id": "fg37",
+    "name": "野生石斑",
+    "light": "red",
+    "season": "夏秋",
+    "methods": [
+      "一支釣",
+      "底拖網"
+    ],
+    "behavior": "定棲性",
+    "zone": "coastal",
+    "size": 50,
+    "description": "棲息在岩礁縫隙中，生長緩慢，肉質鮮甜彈牙、皮厚帶膠質，是高級中式宴席的主角。"
+  },
+  {
+    "id": "fg38",
+    "name": "鯊魚",
+    "light": "red",
+    "season": "夏",
+    "methods": [
+      "延繩釣",
+      "流刺網",
+      "拖網"
+    ],
+    "behavior": "洄游性",
+    "zone": "pelagic",
+    "size": 150,
+    "description": "海中的頂級掠食者。因過度捕撈與重金屬累積風險，建議玩家優先選擇永續替代海鮮。"
+  },
+  {
+    "id": "fg39",
+    "name": "龍占",
+    "light": "red",
+    "season": "全年",
+    "methods": [
+      "一支釣",
+      "延繩釣",
+      "底拖網"
+    ],
+    "behavior": "定棲性",
+    "zone": "coastal",
+    "size": 40,
+    "description": "嘴部厚實且咬合力強，能咬破螃蟹與海星。肉質紮實，在南部海域是非常受歡迎的食用魚。"
+  },
+  {
+    "id": "fg40",
+    "name": "鸚哥魚",
+    "light": "red",
+    "season": "夏",
+    "methods": [
+      "一支釣",
+      "延繩釣",
+      "底刺網"
+    ],
+    "behavior": "定棲性",
+    "zone": "coastal",
+    "size": 40,
+    "description": "牙齒癒合成喙狀，專門啃食珊瑚礁上的藻類。體色極為繽紛亮麗，是珊瑚礁生態的重要魚種。"
+  },
+  {
+    "id": "fg41",
+    "name": "曼波魚",
+    "light": "red",
+    "season": "春",
+    "methods": [
+      "定置網"
+    ],
+    "behavior": "洄游性",
+    "zone": "pelagic",
+    "size": 180,
+    "description": "圓盤狀的大型魚，性情溫和、以水母為食，常誤入東部定置網。又稱翻車魚（翻車魨）。"
+  },
+  {
+    "id": "fg42",
+    "name": "黑鮪魚",
+    "light": "red",
+    "season": "春夏",
+    "methods": [
+      "一支釣",
+      "延繩釣"
+    ],
+    "behavior": "洄游性",
+    "zone": "pelagic",
+    "size": 200,
+    "description": "海洋界的法拉利，游速極快。腹部油脂厚實如冰淇淋，是全球公認最頂級的海鮮珍饈。"
+  },
+  {
+    "id": "fg43",
+    "name": "旗魚",
+    "light": "red",
+    "season": "秋冬",
+    "methods": [
+      "延繩釣",
+      "流刺網",
+      "定置網"
+    ],
+    "behavior": "洄游性",
+    "zone": "pelagic",
+    "size": 200,
+    "description": "上顎延伸成長矛狀，是海中速度最快的魚類之一。台灣主要以延繩釣捕撈，東部秋冬最盛產。"
+  },
+  {
+    "id": "fg44",
+    "name": "鯨鯊",
+    "light": "red",
+    "season": "全年",
+    "methods": [
+      "禁止捕撈"
+    ],
+    "behavior": "洄游性",
+    "zone": "pelagic",
+    "size": 2000,
+    "description": "現存最大的魚類，體長可達約20公尺，濾食浮游生物。台灣2008年起禁捕，2020年列瀕臨絕種保育類。"
+  },
+  {
+    "id": "fg45",
+    "name": "泥鰍",
+    "light": "red",
+    "season": "全年",
+    "methods": [
+      "養殖",
+      "籠具",
+      "手釣"
+    ],
+    "behavior": "定棲性",
+    "zone": "aquaculture",
+    "size": 12,
+    "description": "生命力頑強的底棲魚類，能在低氧水中用腸道呼吸。台灣野生族群因水田消失而驟減，現以養殖為主，但養殖廢水污染問題仍備受關注。"
+  },
+  {
+    "id": "fg46",
+    "name": "對蝦",
+    "light": "red",
+    "season": "夏秋",
+    "methods": [
+      "養殖",
+      "底拖網",
+      "流刺網"
+    ],
+    "behavior": "洄游性",
+    "zone": "aquaculture",
+    "size": 15,
+    "description": "台灣重要的養殖蝦種，台南安平一帶魚塭大量生產。肉質Q彈鮮甜深受喜愛，但高密度養殖的飼料耗魚量大且廢水問題尚待解決。"
+  },
+  {
+    "id": "fg47",
+    "name": "魔鬼魚",
+    "light": "red",
+    "season": "夏",
+    "methods": [
+      "禁止捕撈"
+    ],
+    "behavior": "洄游性",
+    "zone": "pelagic",
+    "size": 700,
+    "description": "翼展可達七公尺的大洋巨人，每胎僅一仔、生長極慢，在台灣是禁止捕撈的瀕臨絕種保育類。"
+  },
+  {
+    "id": "fg48",
+    "name": "白海豚",
+    "light": "red",
+    "season": "全年",
+    "methods": [
+      "禁止捕撈"
+    ],
+    "behavior": "定棲性",
+    "zone": "coastal",
+    "size": 200,
+    "description": "台灣西部沿海特有的中華白海豚，俗稱「媽祖魚」，族群僅約48隻，棲地受工業開發威脅，急需守護。"
+  }
+]

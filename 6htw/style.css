@@ -1,0 +1,1437 @@
+html {
+    height: 100%;
+    background: #000;
+}
+/* 禁用長按彈出瀏覽器選單與文字選取（全手機遊戲通用設定） */
+* {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+/* 輸入欄位恢復正常（若未來有表單） */
+input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+}
+/* CSS 變數：--p 目前保留未使用；--ai1/--ai2/--ai3 是三個 AI 角色的識別色，
+   給 .avatar-img 的 border-color 用（AI1 紅／AI2 綠／AI3 紫），
+   輪到誰的高亮效果（aiPulseGlow）也是用這三個顏色。 */
+:root { --p: #1976D2; --ai1: #FF7A00; --ai2: #00E676; --ai3: #D500F9; }
+/* 效能／耗電優化：App 切到背景（見 perf.js）時，暫停所有 CSS
+   infinite 動畫（呼吸光暈、箭頭閃爍、自動翻牌等），避免背景空跑。 */
+body.app-bg-paused,
+body.app-bg-paused * {
+    animation-play-state: paused !important;
+}
+/* 等待鎖定遮罩：透明但攔截所有觸控 */
+#ui-lock {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: transparent;
+    pointer-events: all;
+}
+/* App 主體。height 寫兩次是刻意的漸進增強：不支援 100dvh 的舊瀏覽器
+   會停在 100vh；支援的手機瀏覽器則用 100dvh（動態視窗高度，網址列
+   收合/展開時高度會跟著變，不會被網址列擋住或留白）。
+   ⚠️ 原本這裡有 transform: translateZ(0) 強制把 body 提升成獨立合成層，
+   已移除：那是永久性的提示，會讓 GPU 一直維持整頁尺寸的常駐圖層待命、
+   無法降到低功耗狀態（手機發燙、耗電的主因之一），而 body 本身平常
+   根本沒有動畫。#ocean-bg-video 自己已經是獨立圖層，不需要靠 body 隔離。 */
+body {
+    font-family: "Microsoft JhengHei", sans-serif;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    background: transparent;
+}
+
+/* 背景海洋影片（見 main.js applyPowerSaveMode()／省電模式）：
+   z-index:-1 墊在最底層，object-fit:cover 滿版鋪滿不變形。
+   translateZ(0) + will-change + backface-visibility + contain 這一組
+   是刻意疊加的「強制獨立 GPU 合成層」寫法，讓影片解碼/合成跟其他
+   DOM 動畫分開處理，避免互相觸發對方重繪；contain:layout paint size
+   額外告訴瀏覽器這個元素的版面不會影響外部，可以進一步縮小重繪範圍。
+   這是目前全場最耗電的效果來源，省電模式開啟時會完全不播放（見 main.js）。 */
+#ocean-bg-video {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    object-fit: cover;
+    z-index: -1;
+    pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    contain: layout paint size;
+}
+/* 讓 body 底下的所有東西預設先消失（影片排除，避免 opacity transition 打斷 GPU 合成） */
+body > *:not(#welcome-screen):not(#intro-screen):not(#collection-modal):not(#collection-zoom-overlay):not(#ocean-bg-video):not(#leaderboard-overlay) {
+    visibility: hidden;
+    opacity: 0;
+}
+
+/* 當遊戲開始，給 body 加一個類別，讓內容顯現 */
+body.game-started > *:not(#welcome-screen):not(#intro-screen):not(#collection-modal):not(#collection-zoom-overlay):not(#ocean-bg-video):not(#leaderboard-overlay) {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 1s ease;
+}
+
+/* 開場歡迎頁（實際 DOM 內容由 welcome-screen.js 動態注入），
+   蓋滿全螢幕、淡入顯示，z-index 1000 蓋過遊戲主畫面。 */
+#welcome-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* 初始透明度為 0，載入完成後淡入 */
+    opacity: 0;
+    animation: welcomeFadeIn 1.5s ease-in-out forwards;
+
+    /* 離開時（加上 .fade-out／.hidden）用這個 transition 淡出 */
+    transition: opacity 1.2s ease-in-out, visibility 1.2s;
+}
+
+/* 淡入動畫本體 */
+@keyframes welcomeFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 點擊「開始遊戲」按鈕後套用，畫面淡出 */
+#welcome-screen.fade-out {
+    opacity: 0;
+    visibility: hidden;
+}
+/* 淡出動畫播完之後最終停留的狀態；用 visibility（而非直接 display:none）
+   是為了保留上面的 transition 效果，同時徹底擋掉點擊事件 */
+#welcome-screen.hidden {
+    opacity: 0;
+    visibility: hidden; /* 使用 visibility 讓它在動畫完後不干涉點擊，且能保有過渡效果 */
+    pointer-events: none; /* 確保徹底無法被點擊 */
+}
+
+/* 標題列：內容其實是空的（文字色=透明），純粹當作一個
+   z-index 錨點/佔位，不接收點擊（pointer-events:none）。
+   實際可見的標題文字是 index.html 裡 img 版的 LOGO，不是這個 #header。
+   padding/font-size 原本另外被一段沒包 @media 的重複宣告無條件覆寫
+   （padding: 0→10px），已經合併回這裡，畫面效果跟合併前一致。 */
+#header {
+    background: transparent;
+    color: transparent;
+    padding: 10px;
+    height: 0;
+    overflow: visible;
+    position: relative;
+    z-index: 50;
+    pointer-events: none;
+    font-size: 1.3rem;
+}
+
+/* 歷史紀錄按鈕 */ 
+/* 出牌記錄按鈕的外觀已整合進上方 #top-bar 的共用規則，這裡只保留 hover 效果 */
+#log-btn:active { transform: scale(0.95); }
+/* 主遊戲頁暫時不顯示出牌記錄按鈕：只隱藏按鈕，按鈕元素與 openLog() 等出牌記錄功能
+   全部保留（記錄照常累積）。之後要恢復顯示，刪掉這條規則即可。
+   用 !important 是因為下方 #top-bar 的共用規則會把它設成 display:flex。 */
+#log-btn { display: none !important; }
+
+/* 彈出式日誌視窗：點 #log-btn 後由 main.js 切 display:flex 顯示，
+   蓋滿全螢幕的半透明背景 + 置中的白色內容卡片 */
+#log-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.78); z-index: 4000;
+    display: none; justify-content: center; align-items: center;
+}
+#log-content {
+    background: rgba(10,38,84,0.98);
+    width: 90%; max-width: 500px; height: 60vh;
+    border-radius: 20px; display: flex; flex-direction: column;
+    border: 1.5px solid rgba(100,180,255,0.4);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 40px rgba(60,140,255,0.15);
+    overflow: hidden;
+}
+.log-header {
+    background: #00796b; color: white; padding: 15px; font-weight: bold;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 1.2rem;
+}
+.log-header button {
+    background: #4FD1E8; border: none; border-radius: 10px;
+    padding: 5px 15px; font-weight: bold; color: #0A3D4D; cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+/* 複製按鈕改用半透明白底，跟 .log-header button 的橘底做出區隔 */
+#log-copy-btn {
+    background: rgba(255,255,255,0.25);
+    color: white;
+}
+#log-messages {
+    padding: 15px; overflow-y: auto; flex-grow: 1; font-size: 1rem; line-height: 1.55;
+    color: #E0F4FF; font-weight: 400;
+}
+
+/* ── 新版「分回合」出牌紀錄樣式 ──
+   每個 .log-block 是一個回合的紀錄區塊，用顏色區分不同語意：
+   log-pass=綠（成功跟牌）、log-fail=棕（失敗）、log-warn=橘斜體（警告/異常）、
+   log-share=藍（分享/系統訊息）、log-meta=灰（時間戳等次要資訊）。 */
+.log-block { padding: 10px 0 16px; border-bottom: 1px dashed rgba(150,190,230,0.25); }
+.log-block:last-child { border-bottom: none; }
+.log-line { padding: 1px 0; word-break: break-word; }
+.log-gap { height: 8px; }
+.log-divider-heavy, .log-divider-light {
+    height: 0; margin: 8px 0; font-size: 0; line-height: 0; color: transparent; overflow: hidden;
+}
+.log-divider-heavy { border-top: 2px solid #80cbc4; }
+.log-divider-light { border-top: 1px dashed #b0bec5; }
+.log-title {
+    text-align: center; font-weight: 900; font-size: 1.15rem; color: #00796b;
+}
+.log-round-num {
+    text-align: center; font-weight: 900; font-size: 1.05rem; color: #00796b;
+}
+.log-meta { color: #90A4C4; }
+.log-summon-caller { color: #90A4C4; font-style: italic; }
+.log-pass { color: #4CD964; font-weight: 700; }
+.log-fail { color: #FF8A65; }
+.log-warn { color: #FFAB40; font-style: italic; }
+.log-share { color: #448AFF; font-weight: 600; }
+
+
+/* =============================================
+   角色列（AI1/AI2/AI3 頭像 + 名字 + 手牌數）
+   ============================================= */
+.char-area { 
+    background: rgba(0, 0, 0, 0.08);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 54px 2px 8px;
+    transition: all 0.3s;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    z-index: 10;
+    /* ⚠️ 已移除 will-change: transform + translateZ(0)：這兩個是永久性的
+       圖層提示，AI 角色區平常沒有動畫，卻讓 GPU 一直保留這塊區域的常駐
+       圖層待命，是耗電來源之一。 */
+}
+.box { 
+    flex: 1; margin: 0; padding: 0; border: none; background: transparent; 
+    text-align: center; color: white; transition: all 0.3s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.ai-name { font-size: 0.85rem; font-weight: bold; text-shadow: 0 1px 6px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.7); }
+.ai-cards { font-size: 1rem; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+
+/* 頭像圓框，邊框色由下面 #ai-1/#ai-2/#ai-3 對應 --ai1/--ai2/--ai3 決定。
+   尺寸/邊框寬度原本被一段沒包 @media 的重複宣告無條件覆寫
+   （55px→40px、border 3px→2px、font-size 1.8rem→1.3rem），
+   已經合併回這裡，畫面效果跟合併前一致。 */
+.avatar-img {
+    width: 40px; height: 40px; background: rgba(0,0,0,0.35);
+    border-radius: 50%; border: 2px solid; display: flex; 
+    justify-content: center; align-items: center; font-size: 1.3rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    transition: all 0.3s;
+}
+#ai-1 .avatar-img { border-color: var(--ai1); }
+#ai-2 .avatar-img { border-color: var(--ai2); }
+#ai-3 .avatar-img { border-color: var(--ai3); }
+
+/* 卡片放大預覽視窗下方的「確認/取消」按鈕列 */
+.preview-controls {
+    display: flex;
+    gap: 50px;
+    margin-top: 10px;
+    justify-content: center;
+    width: 100%;
+}
+
+.preview-btn {
+    font-size: 22px;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: transform 0.1s;
+}
+
+.preview-btn:active { transform: scale(0.9); }
+.btn-confirm { background: #00C896; color: white; }
+.btn-cancel { background: #FF5257; color: #fff; font-weight: 900; font-size: 26px; text-shadow: 0 1px 2px rgba(0,0,0,0.35); }
+
+/* 輪到誰的動畫特效 */
+@keyframes aiPulseGlow {
+    /* opacity-only：讓合成器處理，不觸發 repaint */
+    0%,100% { opacity: 0.65; }
+    50%      { opacity: 1; }
+}
+.box.is-caller .avatar-img {
+    animation: aiPulseGlow 5s ease-in-out infinite;
+    border-color: #ffdfba !important;
+    color: #ffdfba !important;
+    /* 固定縮放取代動態 scale，靜態不耗效能 */
+    transform: scale(1.15) translateZ(0);
+    box-shadow: 0 0 14px 3px currentColor;
+    will-change: opacity;
+}
+/* ⚠️ isCallerPulse 目前是「定義了但沒有任何規則套用」的 dead code——
+   沒有任何選擇器有 `animation: isCallerPulse`，這個 @keyframes 目前
+   不會被觸發。當初可能是搭配 player-zone 邊框做的「玩家是召喚者、
+   AI 跟牌中」提示，後來被下面 #player-zone.my-turn::after{display:none}
+   停用了。保留在這裡不影響效能（沒被引用的 keyframes 不會執行），
+   但之後如果要重新設計「輪到誰」的視覺提示，可以考慮從這裡下手，
+   或者確認真的用不到就整段刪掉。 */
+@keyframes isCallerPulse {
+    0%, 100% { border-top-color: rgba(255, 179, 71, 0.3); }
+    50%       { border-top-color: rgba(255, 220, 80, 0.8); }
+}
+
+/* ===== 玩家回合強化提示（my-turn：玩家需要出牌）=====
+   ⚠️ myTurnPulse 同樣是 dead code：沒有任何規則套用這個 keyframes，
+   目前「輪到玩家」只靠 #player-zone.my-turn 的背景漸層變化來提示，
+   沒有额外的呼吸動畫。 */
+@keyframes myTurnPulse {
+    0%, 100% { opacity: 0.4; }
+    50%       { opacity: 1;   }
+}
+#player-zone.my-turn {
+    background:
+        linear-gradient(
+            to top,
+            rgba(255, 200, 60, 0.15) 0%,
+            rgba(255, 200, 60, 0.05) 60%,
+            transparent 100%
+        ),
+        rgba(0, 10, 30, 0.7) !important;
+}
+/* 原本 ::after 是一層額外的光暈疊層，效能考量下已經直接關掉（display:none），
+   目前「輪到玩家」的視覺提示只靠上面 #player-zone.my-turn 的背景漸層。 */
+#player-zone.my-turn::after {
+    display: none;
+}
+
+
+
+/* =============================================
+   媽祖贈牌系統（mazu-*）：金黃色系，跟遊戲主色系（藍/青）刻意區隔，
+   讓玩家一眼認出「這是媽祖事件，不是一般出牌」
+   ============================================= */
+
+/* 收到媽祖贈牌加持的卡片：金黃發光 + 呼吸動畫 */
+.mazu-glow {
+    background: rgba(60, 30, 0, 0.75) !important;
+    box-shadow: 0 0 40px #f5b942, inset 0 0 20px rgba(245,185,66,0.15) !important;
+    border: 2px solid #f5b942 !important;
+    color: #fde9a2 !important;
+    animation: mazuPulse 2s ease-in-out infinite;
+}
+@keyframes mazuPulse {
+    0%, 100% { opacity: 0.85; }
+    50%       { opacity: 1;    }
+}
+
+/* 媽祖贈牌：選擇對象遮罩（玩家要挑選要送牌給哪個 AI 時顯示） */
+#mazu-target-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(40, 18, 0, 0.93);
+    z-index: 4500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+#mazu-target-overlay .mazu-overlay-title {
+    color: #fde9a2;
+    font-size: 1.6rem;
+    font-weight: bold;
+    text-align: center;
+    text-shadow: 0 0 20px #f5b942;
+    margin-bottom: 8px;
+}
+#mazu-target-overlay .mazu-overlay-sub {
+    color: #f5cb75;
+    font-size: 1rem;
+    margin-bottom: 12px;
+}
+/* 每個可選對象（AI）的按鈕 */
+.mazu-target-btn {
+    background: rgba(255,220,100,0.1);
+    border: 2px solid #f5b942;
+    border-radius: 16px;
+    color: white;
+    padding: 14px 30px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 220px;
+    transition: background 0.2s, transform 0.15s;
+}
+.mazu-target-btn:active { transform: scale(0.96); }
+.mazu-target-btn .btn-cards {
+    font-size: 0.9rem;
+    color: #f5cb75;
+}
+
+/* 贈牌特效：卡片從送出者飛向接收者的動畫層 */
+#mazu-gift-effect {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    pointer-events: none;
+    overflow: hidden;
+}
+/* 單張飛行中的卡片；--fly-x/--fly-y（中繼點）、--fly-x2/--fly-y2（終點）
+   是由 JS 依送出者/接收者在畫面上的實際座標算出來、當作 inline style
+   設定的，這裡的 keyframes 只負責讀取套用 */
+.mazu-gift-card-fly {
+    position: absolute;
+    animation: cardFly 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+}
+@keyframes cardFly {
+    0%   { opacity: 1; transform: scale(1) translate(0, 0); }
+    60%  { opacity: 1; transform: scale(1.15) translate(var(--fly-x), var(--fly-y)); }
+    100% { opacity: 0; transform: scale(0.7) translate(var(--fly-x2), var(--fly-y2)); }
+}
+.mazu-gift-banner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #4a2800, #7a4500);
+    border: 3px solid #f5b942;
+    border-radius: 20px;
+    padding: 20px 30px;
+    color: white;
+    text-align: center;
+    animation: bannerPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    box-shadow: 0 0 20px rgba(245,185,66,0.4); /* 固定底色光暈，不再動畫 */
+    z-index: 5001;
+    pointer-events: none;
+    min-width: 260px;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+}
+@keyframes bannerPop {
+    from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    to   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+}
+/* 呼吸光暈改由疊在上面的 ::after 動 opacity 達成（合成器處理，不觸發 repaint），
+   取代原本每一幀都要重算的 box-shadow 動畫。 */
+.mazu-gift-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: 0 0 50px rgba(245,185,66,0.9), 0 0 0 6px rgba(245,185,66,0.15);
+    opacity: 0;
+    animation: bannerGlow 2s ease-in-out 0.4s infinite;
+    will-change: opacity;
+    pointer-events: none;
+}
+@keyframes bannerGlow {
+    0%, 100% { opacity: 0; }
+    50%       { opacity: 1; }
+}
+/* banner 內文字/圖片排版：icon（圖示）→from（送出者）→fish（魚名，最大最醒目）→to（接收者） */
+.mazu-gift-banner .banner-icon  { font-size: 2.5rem; margin-bottom: 8px; }
+.mazu-gift-banner .banner-from  { font-size: 1rem; color: #f5cb75; margin-bottom: 4px; }
+.mazu-gift-banner .banner-fish  { font-size: 1.6rem; font-weight: bold; color: #fde9a2; margin: 6px 0; }
+.mazu-gift-banner .banner-to    { font-size: 1rem; color: #f5cb75; }
+.mazu-gift-banner .banner-img-wrap {
+    width: 100%;
+    height: 120px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    background: rgba(0,0,0,0.2);
+}
+.mazu-gift-banner .banner-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* =============================================
+   海洋主區塊：桌面出牌區（#table）+ 召喚顯示（#summon-display）
+   margin 原本被一段沒包 @media 的重複宣告無條件覆寫成
+   `5px 5px 0 5px`（底邊距改 0），已經合併回這裡，畫面效果跟合併前一致。
+   ============================================= */
+#ocean {
+    flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    position: relative; margin: 5px 5px 0 5px; border-radius: 12px;
+    padding-top: 8px; /* 原本 35px：是留給以前絕對定位在這裡面的 #deck-info／#log-btn
+                          的淨空，那兩個現在都搬到畫面頂端的 #top-bar 去了，這裡不用再留
+                          那麼多，不然召喚框會憑空多一大截空白，看起來很怪。 */
+    min-height: 0;
+    background: transparent;
+    z-index: 1;
+    /* ⚠️ 已移除 will-change: transform + translateZ(0)：主遊戲區面積大，
+       永久保留常駐圖層對 GPU 記憶體與功耗的負擔最明顯，而這一區本身
+       平常沒有動畫（動的是裡面的卡牌，那些自己有各自的動畫設定）。 */
+}
+
+/* 召喚訊息文字框（例如「召喚：黑鮪魚」），單行寫在一起沒有換行是原始寫法 */
+/* 召喚顯示框：固定高度，不隨文字長短變高變矮。
+   召喚卡文字最長 41 字、含換行最多會排到 4 行，所以高度抓 4 行的量
+   （4 × 23.5px 行高 + padding 20 + border 6 ≒ 120px）。
+   原本用 min-height 會讓框隨內容忽大忽小，連帶把下方出牌區推來推去。
+   萬一遇到更長的內容（例如極窄螢幕多折一行），用 overflow-y 捲動吸收，
+   不讓它撐開版面。transition 也拿掉 height，避免切換召喚卡時看到抽動。 */
+#summon-display { z-index: 205; position: relative; background: rgba(0,20,60,0.82); padding: 10px; border-radius: 12px; width: 92%; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15); margin-bottom: 5px; font-weight: bold; height: 120px; overflow-y: auto; border: 3px solid rgba(100,180,255,0.3); font-size: 1.05rem; color: #e0f4ff; display: flex; align-items: center; justify-content: center; line-height: 1.4; white-space: pre-wrap; box-sizing: border-box; transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; text-shadow: 0 1px 8px rgba(0,0,0,0.8); }
+
+/* 召喚聚焦遮罩：召喚發生時蓋滿全螢幕，把 #summon-display 的內容放大複製一份顯示在中間 */
+#summon-focus-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 10, 30, 0.82);
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+/* 遮罩內的召喚框複製體 */
+#summon-focus-box {
+    background: rgba(0,20,60,0.92);
+    border: 1px solid rgba(100,180,255,0.5);
+    border-radius: 20px;
+    padding: 20px 22px;
+    width: 82%;
+    max-width: 420px;
+    max-height: 78vh;
+    overflow: hidden;
+    box-sizing: border-box;
+    text-align: center;
+    color: #e0f4ff;
+    font-size: 1.35rem;
+    font-weight: bold;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    box-shadow: 0 0 60px rgba(100,180,255,0.2), 0 16px 40px rgba(0,0,0,0.6);
+    text-shadow: 0 1px 8px rgba(0,0,0,0.8);
+    animation: summonPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+/* 若這次召喚是媽祖事件觸發，改用媽祖金黃色系（跟 .mazu-glow 同一套配色） */
+#summon-focus-box.mazu-style {
+    background: rgba(60,30,0,0.85) !important;
+    border-color: #f5b942 !important;
+    color: #fde9a2 !important;
+    box-shadow: 0 0 60px rgba(245,185,66,0.3), 0 16px 40px rgba(0,0,0,0.6) !important;
+}
+/* 召喚彈入動畫：先放大超出目標尺寸一點（scale 1.04）再回彈，做出 Q 彈感 */
+@keyframes summonPop {
+    0%   { transform: scale(0.75) translateY(-16px); opacity: 0; }
+    70%  { transform: scale(1.04) translateY(0);     opacity: 1; }
+    100% { transform: scale(1)    translateY(0);     opacity: 1; }
+}
+/* 桌面出牌區（AI/玩家出的牌會疊放在這裡） */
+#table { z-index: 5; position: relative; display: flex; gap: 6px; flex-grow: 1; min-height: 122px; align-items: center; width: 95%; justify-content: center; overflow-x: auto; }
+/* 頂端控制列：整列固定在畫面上方，用 flex 把「左／中／右」三組平均攤開。
+   六個元素若各自用絕對定位（尤其中間那組用 left:50%+translateX(-50%) 置中），
+   在手機寬度下一定會跟右側按鈕重疊，所以改成由 flex 自動分配空間。 */
+#top-bar {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    z-index: 2000;
+    display: none;              /* 進遊戲後由 main.js 改成 flex */
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    pointer-events: none;       /* 列本身不擋點擊，只有按鈕可點 */
+}
+#top-bar .top-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    pointer-events: auto;
+}
+/* 🏆收藏進度是「跨局累積的個人收藏」，跟後面兩個「本局即時資訊」性質不同，
+   間距拉開一點，視覺上不會誤以為是同一組。 */
+#top-center-group #deck-info {
+    margin-left: 10px;
+}
+/* 頂端列裡的圖示按鈕共用外觀：統一底色、邊框、尺寸，視覺一致。
+   position:relative 是必要的——結算報告關閉時會用 inset:0 疊一個紅色 ✕ 在
+   圖示上，需要按鈕自己是定位基準，否則 ✕ 會跑到其他元素上面去。 */
+#top-bar #exit-control,
+#top-bar #leaderboard-control,
+#top-bar #log-btn,
+#top-bar #power-save-control,
+#top-bar #music-control,
+#top-bar #report-control,
+#top-bar #deck-info {
+    box-sizing: border-box;   /* 這份 CSS 沒有全域 border-box，不寫的話邊框會額外撐寬 2px，
+                                 七個元素累積起來就會超出螢幕、把最右邊的按鈕擠掉 */
+    position: relative;
+    height: 38px;
+    flex: 0 0 auto;
+    background: rgba(10,10,10,0.55);
+    border: 1px solid rgba(255,255,255,0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 19px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+/* 圓形圖示按鈕 */
+#top-bar #exit-control,
+#top-bar #leaderboard-control,
+#top-bar #log-btn,
+#top-bar #power-save-control,
+#top-bar #music-control,
+#top-bar #report-control {
+    width: 38px;
+    border-radius: 50%;
+}
+#top-bar #exit-control {
+    font-size: 18px;
+    filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));
+}
+#top-bar #power-save-control { opacity: 0.4; }
+
+/* 極窄螢幕（約 340px 以下的舊機型）：六個元素會擠不下，
+   把按鈕與間距等比縮小一級，確保不會換行或溢出。 */
+@media (max-width: 359px) {
+    #top-bar { gap: 3px; }
+    #top-bar .top-group { gap: 3px; }
+    #top-center-group #deck-info { margin-left: 6px; }
+    #top-bar #exit-control,
+    #top-bar #leaderboard-control,
+    #top-bar #log-btn,
+    #top-bar #power-save-control,
+    #top-bar #music-control,
+    #top-bar #report-control,
+    #top-bar #deck-info {
+        height: 33px;
+        font-size: 16px;
+    }
+    #top-bar #exit-control,
+    #top-bar #leaderboard-control,
+    #top-bar #log-btn,
+    #top-bar #power-save-control,
+    #top-bar #music-control,
+    #top-bar #report-control {
+        width: 33px;
+    }
+    #deck-info {
+        padding: 0 7px;
+        font-size: 0.75rem;
+    }
+}
+/* 剩餘召喚次數：沿用上面的共用外觀，只改成藥丸形＋較小字級。
+   文字精簡成「🎴數字」節省寬度，完整說明放在 title 提示。 */
+#deck-info {
+    padding: 0 9px;
+    border-radius: 30px;
+    font-size: 0.82rem;
+    font-weight: bold;
+    color: rgba(220,240,255,0.95);
+    white-space: nowrap;
+    cursor: default;
+}
+
+/* 玩家區：極淡半透明 */
+#player-zone {
+    background: transparent;
+    padding: 8px;
+    border-top: 1px solid rgba(100,180,255,0.2);
+    transition: all 0.3s;
+    border-radius: 15px 15px 0 0;
+    position: relative;
+    z-index: 10;
+    /* ⚠️ 已移除 will-change: transform + translateZ(0)：手牌區面積大，
+       這一區本身平常沒有動畫（動的是裡面的卡牌），不需要永久常駐圖層。 */
+}
+.hand { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 5px; min-height: 126px; align-items: flex-end; -webkit-overflow-scrolling: touch; }
+
+/* 預覽放大卡牌專用 */
+#card-preview-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.82); z-index: 4500;
+    display: none; justify-content: center; align-items: center;
+}
+#card-preview-container {
+    transform: scale(1);
+    transition: transform 0.2s;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 詳情卡片本體：點卡片放大看到的詳細介紹卡（魚圖＋名稱＋標籤＋介紹文字） */
+/* 詳情卡片本體：點卡片放大看到的詳細介紹卡（魚圖＋名稱＋標籤＋介紹文字）
+   （原本這裡跟圖片區/魚名/標籤區各自還有第二份「無條件覆寫」的重複宣告，
+   沒有包在 @media 裡、卻把尺寸從 300px/200px/2rem/1rem 蓋成
+   260px/173px/1.6rem/0.85rem，已經合併成單一定義，維持合併前實際生效
+   的縮小版尺寸不變。） */
+.preview-detail-card {
+    width: 260px;
+    background: white;
+    border-radius: 20px;
+    border: 4px solid #ccc;
+    overflow: hidden;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+/* 圖片區 */
+.preview-fish-img-wrap {
+    width: 100%;
+    height: 173px;
+    background: #e8f4f8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+.preview-fish-img-wrap.no-img {
+    background: linear-gradient(135deg, #e8f4f8, #d0e8f0);
+}
+.preview-fish-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 魚名 */
+.preview-fish-name {
+    font-size: 1.6rem;
+    font-weight: 900;
+    text-align: center;
+    padding: 10px 8px 8px;
+    color: #333;
+    border-bottom: 2px solid #eee;
+}
+
+/* 標籤區 */
+.preview-fish-tags {
+    padding: 8px 12px 6px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.preview-fish-tags .tag {
+    font-size: 0.85rem;
+    padding: 4px 10px;
+    margin: 3px;
+}
+
+/* 介紹文字 */
+.preview-fish-desc {
+    font-size: 1.1rem;
+    color: #555;
+    line-height: 1.6;
+    padding: 8px 16px 16px;
+    text-align: justify;
+}
+
+/* 詳情卡片上的關閉/切換等控制按鈕 */
+.ctrl-btn { padding: 5px 10px; background: rgba(255,255,255,0.6); border: none; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+/* 舊版圖鑑說明頁遺留的 id，目前一律隱藏（實際圖鑑用 #info-overlay 以外的元件） */
+#info-overlay { display: none; }
+
+/* =============================================
+   卡牌基礎：冰晶玻璃 + 鐵金屬框架
+   ============================================= */
+.card {
+    width: 74px;
+    height: 115px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    position: relative;
+    touch-action: manipulation;
+    overflow: hidden;
+    transition: transform 0.6s ease, box-shadow 0.22s ease;
+
+    background: transparent;
+
+    /* 鐵金屬雙層外框 + 懸浮陰影 */
+    box-shadow:
+        0 0 0 1.5px rgba(160,200,255,0.3),
+        0 0 0 3.5px rgba(80,120,180,0.2),
+        0 0 10px rgba(100,160,255,0.18),
+        0 8px 16px rgba(0,10,40,0.55),
+        0 18px 36px rgba(0,5,30,0.4);
+}
+
+/* 效能優化：不再讓「每一張卡」永久提升為獨立 GPU 合成層。
+   之前 will-change / preserve-3d / translateZ(0) 是套在 .card 這個
+   基礎規則上，代表整場遊戲裡所有已出的桌面牌、AI 展示牌、手牌全部
+   永久佔用合成層，牌越多、手機 GPU 記憶體與耗電就越高。
+   現在只在「真的會 3D 翻轉／位移」的狀態 class 上才提升合成層，
+   動畫結束、class 移除後就會自動釋放合成層。 */
+.card.is-valid,
+.card.flipped,
+.card.card-auto-flip {
+    transform-style: preserve-3d;
+}
+/* will-change 只在「正在翻轉的那一刻」才需要：手牌現在改成依回合切換翻面
+   （見下方 .card-show-info），不再是無限循環動畫，所以不必永久掛著這個提示。
+   省電模式下固定停在資訊頁、根本不翻，更不需要。 */
+#player-hand .card.card-auto-flip.card-show-info {
+    will-change: transform;
+}
+
+/* 鐵框內側細線 — 桌面大卡 */
+.card:not(#player-hand .card)::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    border-radius: 13px;
+    border: 1px solid rgba(255,255,255,0.13);
+    pointer-events: none;
+    z-index: 20;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        inset 0 -1px 0 rgba(0,0,0,0.2);
+}
+
+/* ── 手牌翻轉：正反面共用基礎 ── */
+.card-front,
+.card-back {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    overflow: hidden;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #0a1a3a;
+}
+
+/* 反面預設翻轉 180° */
+.card-back {
+    transform: rotateY(180deg);
+}
+
+/* ── iPhone（WebKit）翻面鏡像修正 ──
+   iPhone 上所有瀏覽器（Safari、Chrome 都一樣，蘋果規定只能用 WebKit 引擎）翻到資訊頁時，
+   魚名會變成左右顛倒的鏡像文字，但同一面的標籤卻正常。差別在於整張卡只有魚名 .card-n
+   設了 position:relative + z-index，WebKit 會把這種元素拉到獨立圖層，翻面時不再正確套用
+   backface-visibility，背對玩家的魚名就透了出來。
+   兩層修法，不再依賴 WebKit 有問題的 backface-visibility：
+   1. 手牌裡的魚名拿掉 z-index，不讓它被拉到獨立圖層（跟正常顯示的標籤一樣）
+   2. 背對玩家的那一面直接用 visibility 整面藏起來（visibility 會繼承給所有子元素，
+      獨立圖層也藏得住），切換時間點延後 0.25 秒，對準 0.5 秒翻轉動畫轉到 90 度側面、
+      看不見任何一面的那一刻，視覺上跟原本的翻轉效果一樣。 */
+#player-hand .card-n {
+    position: static;
+    z-index: auto;
+}
+#player-hand .card.card-auto-flip .card-front,
+#player-hand .card.card-auto-flip .card-back {
+    transition: visibility 0s linear .25s;
+}
+#player-hand .card.card-auto-flip .card-back { visibility: hidden; }
+#player-hand .card.card-auto-flip.card-show-info .card-front { visibility: hidden; }
+#player-hand .card.card-auto-flip.card-show-info .card-back { visibility: visible; }
+/* 省電模式固定停在資訊頁、不播翻轉，直接顯示反面，不延遲 */
+body.power-save #player-hand .card.card-auto-flip .card-front { visibility: hidden; transition: none; }
+body.power-save #player-hand .card.card-auto-flip .card-back { visibility: visible; transition: none; }
+
+/* 翻轉觸發 class */
+#player-hand .card.flipped {
+    transform: rotateY(180deg);
+}
+
+/* ── 手牌翻面：改成「依玩家回合狀態切換」，取代原本 10 秒一輪的無限循環動畫 ──
+   原本每張手牌都掛著 cardFlipCycle infinite，7 張牌 × 正反兩面 = 十幾個 3D 合成層
+   永遠在旋轉，是遊戲進行中最大的 GPU 負擔與耗電來源。現在只有真的需要切換時才動：
+     - 開局預設／非玩家回合 → 魚圖頁（正面）
+     - 輪到玩家出牌         → 資訊頁（背面，看特性標籤方便決定出哪張）
+     - 省電模式             → 固定停在資訊頁，回合結束不翻回去，完全不產生翻轉動畫
+   切換由 main.js renderUI() 加/移除 .card-show-info 這個 class 控制。 */
+#player-hand .card.card-auto-flip {
+    transition: transform .5s ease-in-out;
+}
+#player-hand .card.card-auto-flip.card-show-info {
+    transform: rotateY(180deg);
+}
+/* 省電模式：直接停在資訊頁，連翻轉過場都不播 */
+body.power-save #player-hand .card.card-auto-flip {
+    transition: none;
+    transform: rotateY(180deg);
+}
+
+/* 反面：魚名下方的特性標籤容器 */
+.card-back-tags {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 3px 2px 2px;
+    background-color: #000;
+    background-image: radial-gradient(rgba(180,210,255,0.2) 1px, transparent 1px);
+    background-size: 10px 10px;
+}
+.card-back-tags .tag {
+    font-size: 0.62rem;
+    padding: 1px 3px;
+    border-radius: 3px;
+    margin: 0;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.card-n { font-weight: 900; text-align: center; padding: 4px 1px; border-bottom: 1px solid rgba(0,0,0,0.12); font-size: 0.8rem; color: #444; position: relative; z-index: 5; border-radius: 8px 8px 0 0; }
+.light-1 .card-n { background-color: #d4f5e2 !important; color: #1b4d2e; }
+.light-2 .card-n { background-color: #fef3cd !important; color: #5d4037; }
+.light-3 .card-n { background-color: #ffd6da !important; color: #7b1c2a; }
+
+.card-img {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+    background-image: radial-gradient(rgba(180,210,255,0.2) 1px, transparent 1px);
+    background-size: 10px 10px;
+}
+.card-img img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.card-i { padding: 2px; flex-grow: 1; color: #222; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background-color: #000; background-image: radial-gradient(rgba(180,210,255,0.2) 1px, transparent 1px); background-size: 15px 15px; position: relative; z-index: 5; }
+
+.card:active { transform: scale(0.95) translateY(3px) !important; transition: transform 0.08s ease !important; }
+
+/* 魚卡特性標籤色票：季節（春/夏/秋/冬）用粉/黃/橘/藍對應直覺聯想，
+   其餘是生態/棲地類：eco=保育類（深綠）、warn=警戒/稀有（紫）、
+   migratory=洄游（暗紅）、sedentary=定棲（棕）、coastal=近海（黃）、
+   ocean=遠洋（藍）、farm=養殖（綠）、all=四季皆可（灰） */
+.tag { display: inline-block; padding: 2px 4px; border-radius: 4px; font-size: 0.6rem; margin: 1px; color: white; font-weight: bold; text-shadow: 1px 1px 1px rgba(0,0,0,0.3); white-space: nowrap; box-shadow: 1px 1px 3px rgba(0,0,0,0.1); line-height: 1.1; }
+.tag-spring { background-color: #f48fb1; }
+.tag-summer { background-color: #ffd54f; color: #5d4037; }
+.tag-autumn { background-color: #ff8a65; }
+.tag-winter { background-color: #4fc3f7; }
+.tag-all { background-color: #90a4ae; }
+.tag-eco { background-color: #2ECC71; }
+.tag-warn { background-color: #C158DC; }
+.tag-migratory { background-color: #E53935; }
+.tag-sedentary { background-color: #D2691E; }
+.tag-coastal { background-color: #FBC02D; color: #5D4037 !important; }
+.tag-ocean { background-color: #2979FF; }
+.tag-farm { background-color: #00897B; }
+
+/* 不可出牌：整張卡調暗＋降低彩度，一眼看出「這張現在不能用」 */
+.is-not-valid { filter: brightness(0.6) grayscale(0.2); }
+
+/* 可出牌（全域，桌面卡用）：卡片浮起＋加陰影，跟 .valid-dot 紅點是兩套並存的提示 */
+.card.is-valid { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+
+/* =============================================
+   手牌區卡牌
+   ============================================= */
+#player-hand .card {
+    position: relative;
+    border-radius: 15px;
+    overflow: visible;
+    transition: transform 0.6s ease, box-shadow 0.22s ease;
+}
+
+/* 符合條件的紅點標記 — 貼在卡片右上角外側，像通知徽章 */
+.valid-dot {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 14px;
+    height: 14px;
+    background: #e53935;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.9);
+    box-shadow: 0 0 6px rgba(229,57,53,0.9), 0 0 12px rgba(229,57,53,0.5);
+    pointer-events: none;
+    z-index: 30;
+}
+
+/* 手牌允許紅點溢出卡片邊框 */
+#player-hand .card {
+    overflow: visible;
+}
+
+/* 按下效果 */
+#player-hand .card:active {
+    transform: translateY(3px) !important;
+    box-shadow:
+        0 0 0 1.5px rgba(120,160,220,0.2),
+        0 2px 6px rgba(0,0,0,0.45) !important;
+    transition: transform 0.08s ease, box-shadow 0.08s ease !important;
+}
+#player-hand .card.flipped:active {
+    transform: rotateY(180deg) translateY(3px) !important;
+}
+/* 停在資訊頁時被按下：上面的 .card:active 會用 !important 把整個 transform 換成
+   translateY(3px)，rotateY(180deg) 會不見、卡片瞬間翻回正面又翻回去。這裡把兩個
+   變換寫在一起，按壓回饋才不會意外觸發翻牌動作。 */
+#player-hand .card.card-auto-flip.card-show-info:active,
+body.power-save #player-hand .card.card-auto-flip:active {
+    transform: rotateY(180deg) translateY(3px) !important;
+}
+
+/* 燈號色帶 */
+#player-hand .light-1 { border-top: 4px solid #4caf50 !important; }
+#player-hand .light-2 { border-top: 4px solid #ffc107 !important; }
+#player-hand .light-3 { border-top: 4px solid #f44336 !important; }
+
+/* 這裡原本還有一段沒包 @media、跟上面 selector 完全同名的重複宣告區塊
+   （#header／.avatar-img／#ocean／#deck-info／#summon-display／.hand／
+   .card／.card-n／.card-i／.tag）。逐條核對後：
+     - #header 的 padding（0→10px）、.avatar-img 的尺寸（55px→40px）、
+       #ocean 的 margin（5px→5px 5px 0 5px）是真的有作用的覆寫，
+       已經直接合併回上面對應的原始規則裡，畫面效果維持跟合併前一致。
+     - 其餘幾條（.ai-name／#deck-info／#summon-display／.hand／.card／
+       .card-n／.card-i／.tag）比對後數值跟上面原始定義完全相同，
+       是沒有作用的重複宣告，已整段移除。 */
+
+@keyframes playCardAnim {
+    0% { transform: translateY(100px) scale(0.5); opacity: 0; }
+    70% { transform: translateY(-10px) scale(1.1); }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.card-played { animation: playCardAnim 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important; transition: none !important; }
+
+/* AI 聊天氣泡的容器層：蓋在畫面上方，本身不接收點擊（pointer-events:none），
+   氣泡自己的定位是絕對定位、由 JS 依角色頭像位置動態決定 */
+#chat-layer {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    width: 100%;
+    pointer-events: none;
+    z-index: 2500;
+}
+
+/* 單顆聊天氣泡：淡入→停留→淡出，3 秒後自動消失（見 fadeInOut）。
+   contain:layout paint 限制瀏覽器只需要重繪這顆氣泡自己的範圍，
+   不會因為氣泡出現/消失去重新計算整個 #chat-layer 的版面。 */
+.chat-bubble {
+    position: absolute;
+    background: white;
+    padding: 8px 10px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    white-space: nowrap;
+    animation: fadeInOut 3s ease forwards;
+    contain: layout paint;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(10px); }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-10px); }
+}
+
+/* 同一個 .chat-bubble 選擇器分兩段寫（這段補充文字換行相關屬性），
+   跟上面那組不衝突，只是没合併成同一個規則區塊 */
+.chat-bubble {
+    max-width: 200px;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* 倒數結算氣泡
+   原本用 box-shadow 動畫做「呼吸」效果，每一幀都要觸發 repaint，
+   對手機是不小的常駐負擔（這顆氣泡在結算前會一直顯示）。
+   改成固定的 box-shadow（只算一次），呼吸感由疊在上面的 ::after
+   動 opacity 達成，opacity 動畫可以交給合成器處理，不用每幀重繪陰影。 */
+.countdown-bubble {
+    position: relative !important; /* 讓 ::after 可以疊在上面 */
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 2px solid #77D9A8;
+    border-radius: 20px !important;
+    padding: 10px 18px !important;
+    font-size: 1.1rem !important;
+    white-space: nowrap !important;
+    max-width: none !important;
+    opacity: 1 !important;
+    box-shadow: 0 4px 10px rgba(119,217,168,0.3) !important; /* 固定底色陰影，不再動畫 */
+}
+.countdown-bubble::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    box-shadow: 0 4px 28px rgba(119,217,168,0.9), 0 0 0 4px rgba(119,217,168,0.15);
+    opacity: 0;
+    animation: countdownGlow 1.8s ease-in-out infinite;
+    will-change: opacity;
+    pointer-events: none;
+}
+.countdown-bubble-count {
+    display: inline-block;
+    min-width: 1.2em;
+    text-align: center;
+}
+@keyframes countdownGlow {
+    0%, 100% { opacity: 0; }
+    50%       { opacity: 1; }
+}
+
+/* 新手教學：被指到的元素套這個 class，黃色外框高亮，z-index 拉到最高
+   確保浮在遮罩/其他 UI 之上 */
+.tutorial-highlight {
+    position: relative;
+    z-index: 5000;
+    box-shadow: 0 0 0 5px rgba(255,255,0,0.8),
+                0 0 25px rgba(255,255,0,0.8);
+    border-radius: 15px;
+}
+
+/* 新手教學的說明文字泡泡，定位由 tutorial.js 依當前高亮目標動態計算 */
+#tutorial-tooltip {
+    position: fixed;
+    z-index: 6000;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    max-width: 260px;
+    text-align: center;
+    pointer-events: none;
+    transition: all 0.2s;
+	display: none;
+}
+
+/* =============================================
+   上滑提示箭頭：提示玩家「手牌太多了，可以上滑/左右滑展開」，
+   顯示在 #player-hand 上方，點了會觸發下面的 #hand-drawer 全螢幕抽屜
+   ============================================= */
+#drawer-up-arrow {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: rgba(255, 210, 120, 0.85);
+    letter-spacing: 0.1em;
+    padding: 2px 0 1px;
+    transform: scale(1.1);
+    pointer-events: none;
+    user-select: none;
+}
+
+/* =============================================
+   手牌抽屜（Drawer）：從螢幕底部滑出的手牌總覽面板，
+   用 3 欄網格一次顯示所有手牌（平常 #player-hand 是橫向捲動列表，
+   牌一多不容易一眼看完，這裡提供另一種瀏覽方式）
+   ============================================= */
+#hand-drawer {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 800;
+    background: rgba(6, 14, 36, 0.97);
+    border-top: 1.5px solid rgba(100, 180, 255, 0.4);
+    border-radius: 14px 14px 0 0;
+    padding: 6px 8px 10px;
+    max-height: 72vh;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.25s ease-out;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.drawer-handle-bar {
+    width: 36px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    margin: 0 auto 6px;
+}
+
+.drawer-hint {
+    font-size: 0.72rem;
+    color: rgba(200, 230, 255, 0.45);
+    text-align: center;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+}
+
+/* 3欄網格 */
+.drawer-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+/* 每張卡的外層包裹（放紅點用） */
+.drawer-card-wrap {
+    position: relative;
+}
+
+/* 抽屜卡片本體 */
+.drawer-card {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(100, 180, 255, 0.18);
+    background: rgba(255, 255, 255, 0.09);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    height: 160px;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.drawer-card:active {
+    transform: scale(0.95);
+}
+
+/* 符合條件的抽屜卡 */
+.drawer-card.drawer-valid {
+    border-color: rgba(229, 57, 53, 0.65);
+    box-shadow: 0 0 6px rgba(229, 57, 53, 0.35);
+}
+
+/* 燈號色帶（沿用 light- class） */
+.drawer-card.light-1 { border-top: 3px solid #4caf50; }
+.drawer-card.light-2 { border-top: 3px solid #ffc107; }
+.drawer-card.light-3 { border-top: 3px solid #f44336; }
+
+/* 魚名 */
+.drawer-card-name {
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-align: center;
+    padding: 5px 3px 4px;
+    border-bottom: 1px solid rgba(0,0,0,0.12);
+    position: relative;
+    z-index: 5;
+}
+.drawer-card.light-1 .drawer-card-name { background: #d4f5e2; color: #1b4d2e; }
+.drawer-card.light-2 .drawer-card-name { background: #fef3cd; color: #5d4037; }
+.drawer-card.light-3 .drawer-card-name { background: #ffd6da; color: #7b1c2a; }
+
+/* 魚圖：contain 顯示完整，黑底加點點 */
+.drawer-card-img {
+    height: 59px;
+    overflow: hidden;
+    background-color: #000;
+    background-image: radial-gradient(rgba(180,210,255,0.18) 1px, transparent 1px);
+    background-size: 10px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.drawer-card-img img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* 標籤區 */
+.drawer-card-tags {
+    flex: 1;
+    overflow: hidden;
+    padding: 3px 2px 3px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    justify-content: center;
+    gap: 0;
+}
+.drawer-card-tags .tag {
+    font-size: 0.62rem;
+    padding: 1px 4px;
+    margin: 1px;
+    line-height: 1.2;
+}
+
+/* 符合條件紅點（右上角） */
+.drawer-valid-dot {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 11px;
+    height: 11px;
+    background: #e53935;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 6px rgba(229, 57, 53, 0.8);
+    pointer-events: none;
+    z-index: 30;
+}
+/* 彈窗彈入動畫：目前用在結算/總結彈窗（.summary-pop-anim） */
+@keyframes modalPop {
+    from { 
+        transform: scale(0.8); 
+        opacity: 0; 
+    }
+    to { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+}
+
+/* 這是要套用在彈窗容器上的類別 */
+.summary-pop-anim {
+    animation: modalPop 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    /* cubic-bezier 增加一點點「Q彈」的感覺 */
+}
+
+/* AI 最後一張牌的閃爍效果：只動 transform + opacity，交給合成器處理，
+   不再用 filter: drop-shadow（會逐幀重繪）。紅色光暈改用固定的
+   text-shadow，只在套用 class 當下算一次，動畫過程中不會重算。 */
+@keyframes last-card-blink {
+    0%, 100% { transform: scale(1);   opacity: 1; }
+    50%      { transform: scale(1.3); opacity: 0.55; }
+}
+
+.ai-last-card-danger {
+    display: inline-block;
+    animation: last-card-blink 0.6s infinite ease-in-out;
+    /* 讓 🎴 變色或加強存在感 */
+    position: relative;
+    text-shadow: 0 0 4px red, 0 0 8px red;
+}
+
+/* 牌堆告急閃爍：套在「剩餘召喚卡」數字快用完時，提醒玩家/AI 牌快抽完了 */
+.deck-danger {
+    color: #ff5252 !important;
+    font-weight: bold;
+    animation: pulse-simple 1s infinite;
+}
+
+@keyframes pulse-simple {
+    50% { opacity: 0.5; }
+}
+
+/* 桌機展示版（desktop.html iframe）沒有觸控滑動，
+   這些按鈕預設隱藏，只有 body 被加上 .desktop-mode 時才顯示，
+   手機正常瀏覽完全不受影響。 */
+.desktop-only-btn {
+    display: none;
+}
+body.desktop-mode .desktop-only-btn {
+    display: block;
+}
+/* 手牌左右箭頭：桌機模式下才變成可點擊按鈕（手機上維持純視覺提示，不受影響） */
+body.desktop-mode .hand-arrow {
+    pointer-events: auto;
+    cursor: pointer;
+}
+body.desktop-mode .hand-arrow:hover {
+    background: linear-gradient(to right, rgba(0,10,30,0.75), rgba(0,10,30,0.15));
+}
+body.desktop-mode #arrow-right:hover {
+    background: linear-gradient(to left, rgba(0,10,30,0.75), rgba(0,10,30,0.15));
+}
+
+/* 手牌左右溢出指示箭頭（純視覺，手機觸控滑動用） */
+.hand-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 66px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: none;
+    border-radius: 6px;
+    background: linear-gradient(to right, rgba(0,10,30,0.55), rgba(0,10,30,0.0));
+}
+
+#arrow-left  { left: 0; background: linear-gradient(to right, rgba(0,10,30,0.6), rgba(0,10,30,0.0)); }
+#arrow-right { right: 0; background: linear-gradient(to left,  rgba(0,10,30,0.6), rgba(0,10,30,0.0)); }
+
+/* 三角形指示。原本靠 arrow-pulse 動畫閃爍來吸引注意，改成靜態之後
+   把三角形放大（原 8/11 → 現 18/24）、透明度提高，不靠動就看得清楚。 */
+.hand-arrow::after {
+    content: "";
+    display: block;
+    width: 0;
+    height: 0;
+    border-top: 18px solid transparent;
+    border-bottom: 18px solid transparent;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
+}
+#arrow-right::after {
+    border-left: 24px solid rgba(255, 255, 255, 0.9);
+    margin-left: 4px;
+}
+#arrow-left::after {
+    border-right: 24px solid rgba(255, 255, 255, 0.9);
+    margin-right: 4px;
+}
+
+/* 玩家回合時箭頭更醒目但仍柔和 */
+#player-zone.my-turn #arrow-right::after {
+    border-left-color: rgba(255, 210, 120, 0.95);
+}
+#player-zone.my-turn #arrow-left::after {
+    border-right-color: rgba(255, 210, 120, 0.95);
+}
+
+/* 已移除 arrow-pulse-right / arrow-pulse-left 的 infinite 脈動動畫（耗電），
+   改用上面放大＋提高不透明度的靜態樣式來維持辨識度。 */
+
+/* 讓手牌區可以水平滾動 */
+#player-hand {
+    display: flex;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px 8px;
+    gap: 10px;
+}
+
+/* 隱藏滾動條（讓畫面更乾淨） */
+#player-hand::-webkit-scrollbar {
+    display: none;
+}

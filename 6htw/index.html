@@ -1,0 +1,241 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script>
+        (function() {
+            var ua = navigator.userAgent;
+            if (ua.indexOf("Line") > -1) {
+                var url = window.location.href;
+                if (url.indexOf('openExternalBrowser=1') === -1) {
+                    var separator = url.indexOf('?') === -1 ? '?' : '&';
+                    window.location.replace(url + separator + 'openExternalBrowser=1');
+                }
+            }
+        })();
+    </script>
+	<script>
+        /* 桌機/寬螢幕自動導向「手機外框」展示版（desktop.html），
+           手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var inIframe = (window.self !== window.top);
+            if (window.innerWidth > 700 && !inIframe && !params.has('embedded')) {
+                window.location.replace('desktop.html');
+            }
+        })();
+    </script>
+    <title>友魚守護團 台灣海線任務</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@900&display=swap" rel="stylesheet">
+
+	<style>
+		body { background: #000; transition: background 0.8s ease; }
+		body.game-started { background: transparent; }
+
+		/* LOGO 防閃現：<img id="intro-logo"> 寫在下面的 HTML 裡，瀏覽器一解析到
+		   就會用「圖片原始尺寸」直接畫出來；但控制它尺寸與淡入的完整樣式是由
+		   intro.js 動態注入的，而 intro.js 排在所有 script 的最後才載入。
+		   中間這段空窗期會閃出一個超大的 LOGO，所以這裡先把最關鍵的兩個屬性
+		   （隱藏、限制寬度）寫在跟 HTML 一起解析的樣式區塊中擋住。
+		   intro.js 之後注入的完整樣式（含 transition/animation）會自然接手。 */
+		#intro-logo {
+			opacity: 0;
+			max-width: min(82vw, 720px);
+			width: 100%;
+			height: auto;
+		}
+	</style>
+
+</head>
+<body>
+
+  <!-- ══ 開場畫面 ══ -->
+  <div id="intro-screen">
+    <div id="intro-vig"></div>
+    <div id="intro-blk"></div>
+    <div id="intro-scan"></div>
+    <div id="intro-flash"></div>
+
+    <!-- 特效層 -->
+    <div id="fx-vignette"></div>
+    <div id="fx-particles"></div>
+    <div id="fx-weather"></div>
+    <div id="fx-halo"></div>
+    <div id="fx-spotlight"></div>
+    <div id="fx-scan"></div>
+    <div id="fx-glitch"></div>
+    <div id="fx-ripple"></div>
+    <div id="fx-ripple2"></div>
+    <div id="fx-ripple3"></div>
+
+    <div id="intro-ts">
+      <img src="image/LOGO.png" id="intro-logo" alt="友魚守護團 台灣海線任務">
+      <div id="intro-hint">點擊畫面開場</div>
+    </div>
+
+    <div id="intro-cs">
+      <img id="iimg-a" class="iimg" src="" alt="">
+      <img id="iimg-b" class="iimg" src="" alt="">
+      <div id="intro-pgnum"></div>
+    </div>
+
+	<div id="intro-credits" style="opacity:0">Built by Eric</div>
+    <button id="intro-skip" onclick="introSkip()" style="display:none">不要跳過 >></button>
+  </div>
+
+
+	<script src="platform.js"></script>
+	<script src="weather-event.js"></script>
+	<script src="welcome-screen.js"></script>
+
+
+
+  <script>
+  if(sessionStorage.getItem('skipIntro')==='1'){
+    sessionStorage.removeItem('skipIntro');
+    document.getElementById('intro-screen').remove();
+    var _w=document.getElementById('welcome-screen');
+    _w.style.display='block';
+    _w.style.animation='welcomeFadeIn 1.5s ease-in-out forwards';
+  }
+  </script>
+
+    <!-- preload="none"：頁面一開啟不下載主遊戲音樂，等故事圖與開場音樂都下載完，
+         才由 intro.js 的 preloadMainBgm() 開始下載，避免跟開場素材搶網路 -->
+    <audio id="bgm" loop preload="none">
+        <source src="Below_the_Surface.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- 頂端控制列：用 flex 一列排開，左／中／右三組自動分配空間，
+         不再各自絕對定位（6 個元素在手機寬度下用絕對置中一定會互相重疊）。
+         左＝返回平台／中＝收藏進度、剩餘召喚數、出牌記錄／右＝省電、聲音、結算 -->
+    <div id="top-bar">
+        <div class="top-group">
+            <div id="exit-control" onclick="confirmExitDuringGame()" title="返回平台">🔚</div>
+        </div>
+        <div class="top-group" id="top-center-group">
+            <div id="leaderboard-control" onclick="openLeaderboard()" title="我的收藏進度">🏆</div>
+            <div id="deck-info" title="剩餘召喚次數">🎴--</div>
+            <div id="log-btn" onclick="openLog()" title="出牌記錄">📜</div>
+        </div>
+        <div class="top-group">
+            <div id="power-save-control" onclick="togglePowerSave()" title="省電模式">🔋</div>
+            <div id="music-control" onclick="toggleMusic()" title="音樂">🔊</div>
+            <div id="report-control" onclick="toggleReportMode()" title="結算報告">🧮</div>
+        </div>
+    </div>
+	
+    <div id="log-modal">
+        <div id="log-content">
+            <div class="log-header">
+                <span>出牌紀錄</span>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button id="log-copy-btn" onclick="copyLog()">📋 複製</button>
+                    <button onclick="closeLog()">關閉</button>
+                </div>
+            </div>
+            <div id="log-messages"></div>
+        </div>
+    </div>
+
+    <div id="story-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:3000;">
+        <img id="story-img" src="" style="width:100%; height:100%; object-fit: cover;">
+        <div style="position:absolute; top:20px; right:20px; width:100%; display:flex; justify-content:right; gap:20px;">
+            <button class="ctrl-btn" onclick="closeStory()">X</button>
+        </div>
+        <div id="story-page-num" style="position:absolute; top:20px; left:20px; color:white; background:rgba(0,0,0,0.2); padding:5px 10px; border-radius:20px;">1 / 9</div>
+    </div>
+
+	<div id="contact-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.82); z-index:3000; align-items:center; justify-content:center; font-family:'Microsoft JhengHei','PingFang TC',sans-serif;">
+	<div style="width:88%;max-width:360px;background:rgba(8,20,14,.96);border:1px solid rgba(100,200,150,.28);border-radius:20px;padding:28px 24px 24px;position:relative;">
+		<button onclick="closeContact()" style="position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;font-size:20px;color:rgba(200,240,220,.55);">✕</button>
+		<div style="font-size:1.1rem;font-weight:900;color:rgba(200,245,220,.9);letter-spacing:1px;margin-bottom:4px;">聯絡我們</div>
+		<div style="font-size:12px;color:rgba(160,210,180,.55);margin-bottom:20px;">歡迎留下您的想法或回饋</div>
+		<div style="display:flex;flex-direction:column;gap:12px;">
+			<div>
+				<div style="font-size:11px;color:rgba(160,210,180,.6);margin-bottom:5px;">名字（選填）</div>
+				<input id="contact-name" type="text" maxlength="30" placeholder="您的名字…" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.08);border:1px solid rgba(100,200,150,.25);border-radius:10px;padding:10px 12px;color:rgba(220,245,230,.9);font-size:14px;font-family:inherit;outline:none;">
+			</div>
+			<div>
+				<div style="font-size:11px;color:rgba(160,210,180,.6);margin-bottom:5px;">電子信箱（選填）</div>
+				<input id="contact-email" type="email" maxlength="80" placeholder="方便我們回覆您…" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.08);border:1px solid rgba(100,200,150,.25);border-radius:10px;padding:10px 12px;color:rgba(220,245,230,.9);font-size:14px;font-family:inherit;outline:none;">
+			</div>
+			<div>
+				<div style="font-size:11px;color:rgba(160,210,180,.6);margin-bottom:5px;">留言內容（必填）</div>
+				<textarea id="contact-message" maxlength="500" placeholder="想說的話…" rows="4" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.08);border:1px solid rgba(100,200,150,.25);border-radius:10px;padding:10px 12px;color:rgba(220,245,230,.9);font-size:14px;font-family:inherit;outline:none;resize:none;"></textarea>
+			</div>
+			<div id="contact-msg" style="font-size:12px;text-align:center;min-height:18px;color:rgba(120,220,160,.8);"></div>
+			<button id="contact-submit-btn" onclick="submitContact()" style="width:100%;padding:14px;border-radius:50px;border:none;cursor:pointer;font-size:1rem;font-weight:900;font-family:inherit;background:linear-gradient(135deg,rgba(60,180,110,.9),rgba(30,140,80,.9));color:#fff;box-shadow:0 4px 16px rgba(40,160,90,.35);">送出留言</button>
+		</div>
+	</div>
+</div>
+
+<div id="info-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:3000;">
+        <img id="info-img" src="" style="width:100%; height:100%; object-fit: cover;">
+        <div style="position:absolute; top:20px; right:20px; width:100%; display:flex; justify-content:right; gap:20px;">
+            <button class="ctrl-btn" onclick="closeInfo()">X</button>
+        </div>
+        <div id="info-page-num" style="position:absolute; top:20px; left:20px; color:white; background:rgba(0,0,0,0.2); padding:5px 10px; border-radius:20px;">1 / 18</div>
+        <!-- 桌機展示版專用：沒有觸控滑動，加左右按鈕當替代操作，預設隱藏，只在 desktop-mode 顯示 -->
+        <button id="info-prev-btn" class="ctrl-btn desktop-only-btn" onclick="prevInfo()" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:1.3rem; padding:8px 14px;">‹</button>
+        <button id="info-next-btn" class="ctrl-btn desktop-only-btn" onclick="nextInfo()" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:1.3rem; padding:8px 14px;">›</button>
+    </div>
+
+    <div id="card-preview-overlay">
+        <div id="card-preview-container"></div>
+    </div>
+
+		<div id="header">友魚守護團：台灣海線任務</div>
+
+		<div class="char-area">
+			<div id="ai-1" class="box"></div>
+			<div id="ai-2" class="box"></div>
+			<div id="ai-3" class="box"></div>
+		</div>
+
+		<div id="ocean">
+			<div id="summon-display"></div>
+			<div id="table"></div>
+		</div>
+
+		<div id="player-zone" style="position: relative; overflow: hidden;">
+			<div id="drawer-up-arrow" style="display:none;">▲ 上滑/左滑/右滑選牌</div>
+			<div id="arrow-left" class="hand-arrow" onclick="scrollHand(-1)"></div>
+			<div id="player-hand" class="hand"></div>
+			<div id="arrow-right" class="hand-arrow" onclick="scrollHand(1)"></div>
+		</div>
+
+    <!-- 排行榜（收集分數計算＋UI）現在併在 win-screen.js 裡了 -->
+
+    <script src="sfx.js"></script>
+    <script src="db.js"></script>
+    <script src="main.js"></script>
+	<script src="tutorial.js"></script>
+	<script src="win-screen.js"></script>
+
+	<div id="tutorial-tooltip"></div>
+	<div id="ui-lock"></div>
+	<div id="summon-focus-overlay">
+		<div id="summon-focus-box">🔍 尋找守護員...<br>等待中...</div>
+	</div>
+
+	<script>
+		document.addEventListener('contextmenu', e => e.preventDefault());
+	</script>
+
+  <script src="intro.js"></script>
+
+  <script>
+  /* 預載 tw.png */
+  (function(){ var p = new Image(); p.src = 'image/tw.png'; })();
+  /* 預載 LOGO.png */
+  (function(){ var p = new Image(); p.src = 'image/LOGO.png'; })();
+  </script>
+
+</body>
+</html>

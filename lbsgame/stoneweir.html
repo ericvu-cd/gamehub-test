@@ -1,0 +1,2621 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<script>
+    /* 桌機/寬螢幕自動導向「手機外框」展示版（stoneweir-desktop.html），
+       手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        var inIframe = (window.self !== window.top);
+        if (window.innerWidth > 700 && !inIframe && !params.has('embedded')) {
+            window.location.replace('stoneweir-desktop.html');
+        }
+    })();
+</script>
+<title>石滬修復</title>
+<link rel="icon" type="image/png" href="image/sricon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ocean-deep:#063d78;
+    --ocean-mid:#0d8fdb;
+    --ocean-panel:#17a3ea;
+    --ocean-glow:#4ee0ff;
+    --teal:#00d4c2;
+    --teal-dark:#087a89;
+    --cream:#fffaea;
+    --cream-dim:#ffe9a8;
+    --green:#3fc244;
+    --amber:#ffcd00;
+    --coral:#ff4327;
+    --coral-dark:#c2280f;
+    --gold:#ffcd00;
+    --stone-ok-1:#ffda6e;
+    --stone-ok-2:#d47f0a;
+    --stone-bad-1:#8fa0aa;
+    --stone-bad-2:#3a4750;
+    --sky-top:#2fb2f7;
+    --sky-horizon:#7ee3ff;
+    --land-upper:#f3d066;
+    --land-lower:#dda832;
+    --gold-dark:#b8790a;
+    --coral-dark2:#c2280f;
+    --ink:#1a2942;
+    --ink-dim:#4a5568;
+    --outline:#241407;
+    --wood:#d0842f;
+    --wood-dark:#8a4b16;
+    --rock:#9aa7ae;
+    --rock-dark:#414c55;
+    --ab-red-1:#ff6a4d;
+    --ab-red-2:#ff3b1f;
+    --ab-red-3:#c2280f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none;}
+  /* 避免長按畫面時跳出系統選單（複製/分享/儲存圖片等），
+     也避免長按選取到文字或觸發放大鏡 */
+  html,body,button,.stat,.icon-btn,.sound-toggle-btn,.basket-btn,#board,.board-wrap{
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+    touch-action:manipulation;
+  }
+  img,svg,use{-webkit-user-drag:none;user-drag:none;-khtml-user-drag:none;-moz-user-drag:none;-o-user-drag:none;}
+  body{
+    font-family:'Noto Sans TC', sans-serif;
+    color:var(--ink);
+    background:
+      linear-gradient(180deg, rgba(8,30,50,.12) 0%, rgba(8,30,50,0) 18%, rgba(8,30,50,0) 70%, rgba(4,20,35,.28) 100%),
+      url('image/swbg.png') center center / cover no-repeat;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    height:100dvh;
+  }
+  #ocean{
+    position:fixed;left:0;right:0;bottom:0;height:62vh;z-index:0;pointer-events:none;
+    transform:translateY(48vh);
+  }
+  #ocean .crest{position:absolute;top:-1px;left:0;width:200%;height:64px;transform-origin:center bottom;}
+  #ocean .crest-back{animation:driftWave 24s linear infinite, breatheWave 6.5s ease-in-out infinite;opacity:.92;}
+  #ocean .crest-mid{animation:driftWave 18s linear infinite, breatheWave 5s ease-in-out infinite reverse;opacity:.8;}
+  #ocean .crest-front{animation:driftWave 13s linear infinite reverse, breatheWave 4s ease-in-out infinite;opacity:.92;}
+  #ocean .crest-foam{animation:driftWave 13s linear infinite reverse;opacity:.9;filter:drop-shadow(0 0 6px rgba(255,255,255,.6));}
+  @keyframes driftWave{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+  @keyframes breatheWave{0%,100%{transform:scaleY(1) translateY(0);}50%{transform:scaleY(1.06) translateY(-2px);}}
+  #ocean .fill{position:absolute;left:0;right:0;top:50px;bottom:-10vh;
+    background:
+      radial-gradient(130% 70% at 18% 0%, rgba(255,255,255,.16) 0%, transparent 55%),
+      radial-gradient(90% 55% at 78% 6%, rgba(255,255,255,.12) 0%, transparent 50%),
+      linear-gradient(180deg, var(--teal-dark) 0%, var(--ocean-panel) 16%, var(--ocean-mid) 46%, var(--ocean-deep) 82%, #063a63 100%);
+    -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 10px);
+    mask-image:linear-gradient(to bottom, transparent 0, #000 10px);}
+  #ocean.impact-flash .crest{filter:brightness(1.9) saturate(1.5) drop-shadow(0 0 16px rgba(63,198,214,.75));transition:filter .15s ease;}
+
+  #tideFlash{position:fixed;inset:0;pointer-events:none;z-index:60;background:radial-gradient(circle at 50% 100%, rgba(255,94,70,.35), rgba(63,198,214,.18) 55%, transparent 80%);opacity:0;}
+  #tideFlash.hit{animation:flashHit .6s ease;}
+  @keyframes flashHit{0%{opacity:0;}18%{opacity:1;}100%{opacity:0;}}
+
+  .shake{animation:shakeBoard .5s cubic-bezier(.36,.07,.19,.97) both;}
+  @keyframes shakeBoard{
+    10%,90%{transform:translateX(-1px);}
+    20%,80%{transform:translateX(2px);}
+    30%,50%,70%{transform:translateX(-4px);}
+    40%,60%{transform:translateX(4px);}
+  }
+
+  .app{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;min-height:0;
+    padding:calc(10px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));}
+
+  h1.title{
+    font-family:'Noto Sans TC', sans-serif;font-weight:900;font-size:1.5rem;letter-spacing:3px;
+    text-align:center;margin:0 0 8px;flex-shrink:0;
+    /* 不用漸層挖字、不用多層陰影堆疊，單純實色文字 + 實色底板，
+       對比穩定可靠，不會因為背景圖或瀏覽器支援度不同而看不清 */
+    color:#fffaea;
+    align-self:center;width:fit-content;
+    padding:6px 22px;
+    background:linear-gradient(180deg,#f0c988 0%, var(--wood) 55%, var(--wood-dark) 100%);
+    border:3px solid var(--outline);border-radius:10px;
+    box-shadow:0 4px 0 var(--wood-dark), 0 4px 0 1px var(--outline);
+  }
+
+
+  .screen{display:none;}
+  .screen.active{display:flex;flex-direction:column;flex:1;min-height:0;animation:fadeUp .4s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes bounceIn{
+    0%{opacity:0;transform:scale(.4) rotate(-6deg);}
+    55%{opacity:1;transform:scale(1.08) rotate(2deg);}
+    75%{transform:scale(.96) rotate(-1deg);}
+    100%{transform:scale(1) rotate(0);}
+  }
+
+  /* ---- 說明首頁：整張圖滿版鋪滿 + 疊加的 GO 按鈕 ---- */
+  #screen-intro{margin:-10px -14px -16px;}
+  .intro-frame{
+    position:relative;flex:1;min-height:0;overflow:hidden;
+  }
+  .intro-media{position:relative;width:100%;height:100%;}
+  .intro-media img{
+    width:100%;height:100%;object-fit:fill;display:block;
+  }
+  .intro-go-btn{
+    position:absolute;left:0;top:0;width:29%;height:19%;
+    background:transparent;border:none;cursor:pointer;padding:0;
+    border-radius:50%;
+  }
+  .intro-go-btn:active{transform:scale(.94);}
+
+  .start-btn{
+    position:relative;display:block;margin:10px auto 4px;
+    background:linear-gradient(180deg,#fff2a8 0%, var(--gold) 48%, var(--gold-dark) 100%);
+    color:var(--ink);font-family:'Noto Sans TC',sans-serif;font-weight:900;font-size:1.1rem;letter-spacing:1px;
+    border:4px solid var(--outline);padding:12px 42px;border-radius:999px;cursor:pointer;
+    box-shadow:0 6px 0 var(--gold-dark), 0 6px 0 1px var(--outline), 0 11px 16px rgba(0,0,0,.4),
+      inset 0 2px 0 rgba(255,255,255,.6);
+    flex-shrink:0;overflow:hidden;
+    transition:transform .1s cubic-bezier(.34,1.56,.64,1), box-shadow .1s ease;
+  }
+  .start-btn::before{
+    content:'';position:absolute;left:8%;right:8%;top:10%;height:34%;border-radius:999px;
+    background:linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,0));pointer-events:none;
+  }
+  .start-btn:active{transform:translateY(5px) scale(.98);
+    box-shadow:0 1px 0 var(--gold-dark), 0 1px 0 1px var(--outline), 0 3px 6px rgba(0,0,0,.3),
+      inset 0 2px 0 rgba(255,255,255,.4);}
+
+  /* ---- 遊戲畫面：HUD ---- */
+  .game-header{display:flex;flex-direction:column;align-items:center;gap:7px;margin:14px 0 8px;flex-shrink:0;}
+  .hud-row{display:flex;flex-wrap:wrap;align-items:stretch;justify-content:center;gap:6px;width:100%;}
+  .hud-row.hud-actions{gap:10px;}
+  .game-title{font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:0.8rem;color:var(--ink);
+    text-align:center;opacity:.9;width:100%;}
+  .game-title span{display:block;}
+  .stat-bar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+  .stat{
+    position:relative;background:linear-gradient(180deg,#fffaea 0%, #ecd792 100%);
+    border:3px solid var(--outline);border-radius:12px;
+    padding:5px 10px 6px;font-family:'JetBrains Mono',monospace;font-size:0.76rem;min-width:46px;text-align:center;
+    box-shadow:0 4px 0 var(--outline), inset 0 2px 0 rgba(255,255,255,.65), inset 0 -4px 0 rgba(0,0,0,.1);
+  }
+  .stat b{display:block;font-size:1.05rem;color:var(--ink);font-weight:800;}
+  .stat span{color:var(--ink-dim);font-size:0.62rem;font-weight:700;}
+  .stat.score-stat{border-color:var(--outline);background:linear-gradient(180deg,#fff3ba 0%, var(--gold) 100%);width:58px;min-width:58px;box-sizing:border-box;}
+  .stat.score-stat b{color:var(--gold-dark);font-variant-numeric:tabular-nums;}
+  .stat.fish-stat{border-color:var(--outline);background:linear-gradient(180deg,#dbf6ff 0%, #6fd4f0 100%);}
+  .stat.fish-stat b{color:var(--ocean-deep);}
+  .icon-btn{
+    position:relative;
+    background:linear-gradient(180deg,#f0c988 0%, var(--wood) 55%, var(--wood-dark) 100%);
+    border:3px solid var(--outline);color:var(--cream);
+    border-radius:10px;padding:7px 12px;cursor:pointer;font-size:0.8rem;font-weight:800;font-family:'Noto Sans TC',sans-serif;
+    box-shadow:0 4px 0 var(--wood-dark), 0 4px 0 1px var(--outline), inset 0 2px 0 rgba(255,255,255,.35);
+    text-shadow:0 1px 0 var(--outline);
+    transition:transform .1s cubic-bezier(.34,1.56,.64,1), box-shadow .1s ease;
+  }
+  .icon-btn:active{transform:translateY(3px) scale(.97);box-shadow:0 1px 0 var(--wood-dark), 0 1px 0 1px var(--outline);}
+
+  .board-wrap{position:relative;display:flex;flex:1;min-height:0;align-items:center;justify-content:center;margin:38px 0 6px;}
+  .tool-broken-banner{
+    position:absolute;top:6px;left:50%;transform:translateX(-50%) scale(.85);z-index:40;
+    background:linear-gradient(180deg,#ffdc7a 0%, var(--coral) 100%);color:#fff;
+    border:3px solid var(--outline);border-radius:999px;padding:6px 16px;
+    font-family:'Noto Sans TC',sans-serif;font-weight:800;font-size:0.82rem;
+    box-shadow:0 4px 0 var(--outline), 0 6px 12px rgba(0,0,0,.35);text-shadow:0 1px 0 rgba(0,0,0,.35);
+    opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;white-space:nowrap;
+  }
+  .tool-broken-banner.show{opacity:1;transform:translateX(-50%) scale(1);animation:toolShake .4s ease .1s 2;}
+  @keyframes toolShake{0%,100%{transform:translateX(-50%) scale(1) rotate(0);}25%{transform:translateX(-50%) scale(1) rotate(-3deg);}75%{transform:translateX(-50%) scale(1) rotate(3deg);}}
+  #birdFlyLayer{position:absolute;inset:0;pointer-events:none;z-index:35;overflow:visible;}
+  .bird-fly{position:absolute;top:10%;width:59.8px;height:44.2px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));
+    animation:birdSwoop 1.6s cubic-bezier(.4,0,.6,1) forwards;}
+  .bird-fly svg{width:100%;height:100%;display:block;}
+  .bird-fly.reverse{animation-name:birdSwoopRev;}
+  .bird-fly.reverse svg{transform:scaleX(-1);}
+  .bird-wing{transform-origin:20px 15px;animation:wingFlap .26s ease-in-out infinite alternate;}
+  @keyframes wingFlap{from{transform:rotate(-6deg) scaleY(1);}to{transform:rotate(-38deg) scaleY(.82);}}
+  @keyframes birdSwoop{
+    0%{left:-10%;transform:translateY(0) scale(.85);}
+    48%{transform:translateY(22px) scale(1.05);}
+    100%{left:106%;transform:translateY(-4px) scale(.85);}
+  }
+  @keyframes birdSwoopRev{
+    0%{left:106%;transform:translateY(0) scale(.85);}
+    48%{transform:translateY(22px) scale(1.05);}
+    100%{left:-10%;transform:translateY(-4px) scale(.85);}
+  }
+  #board{width:min(340px, 88vw);height:auto;overflow:visible;}
+  .stone-cell{cursor:pointer;}
+  .stone-visual{transform-box:fill-box;transform-origin:center;transition:transform .15s ease;}
+  .stone-visual.pulse{animation:pulse .35s ease;}
+  @keyframes pulse{0%{transform:scale(1);}45%{transform:scale(.82);}100%{transform:scale(1);}}
+  .stone-cell .hit{fill:transparent;}
+  .connector-line{stroke:var(--outline);stroke-width:2.5;stroke-linecap:round;opacity:.35;}
+  .fish-icon{opacity:.95;}
+  .repair-ring{fill:none;stroke:var(--gold);stroke-width:5;opacity:.95;pointer-events:none;}
+  .repair-glow{fill:var(--gold);opacity:.85;pointer-events:none;}
+  .repair-sparkle{fill:var(--coral);stroke:var(--outline);stroke-width:.6;opacity:1;pointer-events:none;}
+  @keyframes repairPop{
+    0%{transform:scale(1);}
+    35%{transform:scale(1.35);}
+    62%{transform:scale(.92);}
+    100%{transform:scale(1);}
+  }
+  .stone-visual.repair-pop{animation:repairPop .55s cubic-bezier(.34,1.56,.64,1);}
+
+  .float-text{
+    position:fixed;transform:translate(-50%,0);
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1rem;
+    pointer-events:none;z-index:90;text-shadow:0 1px 3px rgba(0,0,0,.35);
+    animation:floatUp 1.15s ease-out forwards;
+  }
+  @keyframes floatUp{
+    0%{opacity:0;transform:translate(-50%,4px) scale(.75);}
+    18%{opacity:1;transform:translate(-50%,-8px) scale(1.2);}
+    100%{opacity:0;transform:translate(-50%,-38px) scale(1);}
+  }
+  .stat.fish-stat.flash-gain{animation:statFlashGain .7s ease;}
+  .stat.fish-stat.flash-loss{animation:statFlashLoss .7s ease;}
+  @keyframes statFlashGain{
+    0%{background:rgba(75,209,145,.55);transform:scale(1.12);}
+    100%{background:rgba(224,247,247,.9);transform:scale(1);}
+  }
+  @keyframes statFlashLoss{
+    0%{background:rgba(255,94,70,.5);transform:scale(1.12);}
+    100%{background:rgba(224,247,247,.9);transform:scale(1);}
+  }
+
+  .legend-mini{display:flex;justify-content:center;gap:10px;margin-top:2px;font-size:0.86rem;color:var(--ink);flex-shrink:0;font-weight:800;flex-wrap:wrap;}
+  .legend-mini > div{background:rgba(255,255,255,.55);border:2px solid var(--outline);border-radius:999px;padding:4px 12px;box-shadow:0 2px 0 rgba(0,0,0,.15);}
+  .legend-mini .swatch{display:inline-block;width:19px;height:19px;border-radius:5px;margin-right:6px;vertical-align:-4px;object-fit:cover;}
+
+  .portrait-warning{
+    display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(20,20,20,.94);color:#fff;
+    flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:24px;
+  }
+  .portrait-warning-icon{font-size:48px;margin-bottom:16px;}
+  @media screen and (orientation:landscape){
+    .portrait-warning{display:flex;}
+  }
+  .overlay{position:fixed;inset:0;background:rgba(10,30,45,.72);display:none;align-items:center;justify-content:center;z-index:80;padding:14px;}
+  .overlay.active{display:flex;animation:fadeUp .3s ease both;}
+  .modal{
+    position:relative;
+    background:linear-gradient(180deg,#fffaea 0%, #ecd792 100%);color:var(--ink);
+    border:5px solid var(--outline);border-radius:24px;max-width:340px;width:100%;padding:12px 16px 10px;text-align:center;
+    max-height:94dvh;box-shadow:0 10px 0 var(--outline), 0 16px 30px rgba(0,0,0,.45),
+      inset 0 3px 0 rgba(255,255,255,.55);
+    animation:bounceIn .5s cubic-bezier(.34,1.56,.64,1) both;
+    /* 改成彈性欄：標題（醫章/分數）跟最下面的關閉按鈕永遠固定看得到，
+       只有中間 .modal-scroll 那塊（成績明細/提示卡）內容太長時才會自己捲動，
+       不用像以前那樣把整個彈窗當一塊捲動、要滑到最後才找得到關閉按鈕。 */
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .modal-scroll{
+    flex: 0 1 auto; min-height:0; overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .modal::before,.modal::after{
+    content:'';position:absolute;top:10px;width:9px;height:9px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff, var(--wood-dark) 70%);border:1.5px solid var(--outline);
+  }
+  .modal::before{left:14px;}
+  .modal::after{right:14px;}
+  .modal h2{font-family:'Noto Sans TC',sans-serif;font-weight:900;font-size:1.3rem;margin:0 0 2px;color:var(--ink);
+    position:relative;z-index:1;-webkit-text-stroke:.6px var(--outline);}
+  .modal .medal{font-size:2rem;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25));position:relative;display:inline-block;margin-bottom:0;line-height:1;}
+  .modal .medal::before{
+    content:'';position:absolute;left:50%;top:50%;width:74px;height:74px;transform:translate(-50%,-50%);z-index:-1;
+    background:repeating-conic-gradient(rgba(255,205,0,.5) 0deg 10deg, transparent 10deg 20deg);
+    border-radius:50%;animation:sunburstSpin 12s linear infinite;
+  }
+  @keyframes sunburstSpin{from{transform:translate(-50%,-50%) rotate(0deg);}to{transform:translate(-50%,-50%) rotate(360deg);}}
+  .modal-lose .medal::before{display:none;} /* 決堤失敗是壞消息，不該有慶祝用的陽光放射效果 */
+  .modal .stars{font-size:1.5rem;letter-spacing:6px;margin:0 0 2px;}
+  .modal .stars .star-on{color:var(--gold);text-shadow:0 2px 0 var(--gold-dark), 0 3px 4px rgba(0,0,0,.35);
+    -webkit-text-stroke:1px var(--outline);animation:starPop .5s cubic-bezier(.34,1.56,.64,1) both;}
+  .modal .stars .star-off{color:#e8dfc4;text-shadow:none;-webkit-text-stroke:1px rgba(0,0,0,.25);}
+  @keyframes starPop{0%{transform:scale(0) rotate(-40deg);opacity:0;}70%{transform:scale(1.3) rotate(8deg);opacity:1;}100%{transform:scale(1) rotate(0);}}
+
+  #badgePopup{
+    display:none;position:fixed;left:50%;top:50%;z-index:500;
+    transform:translate(-50%,-50%);pointer-events:none;
+  }
+  #badgePopup img{
+    width:min(62vw,260px);height:auto;display:block;
+    filter:drop-shadow(0 10px 24px rgba(0,0,0,.45));
+  }
+  #badgePopup.show{display:block;animation:badgeIn .55s cubic-bezier(.34,1.56,.64,1) both;}
+  #badgePopup.hide{display:block;animation:badgeOut 1.1s ease both;}
+  @keyframes badgeIn{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-25deg);}
+    60%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(6deg);}
+    100%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0);}
+  }
+  @keyframes badgeOut{
+    0%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+    100%{opacity:0;transform:translate(-50%,-70%) scale(.7);}
+  }
+
+  .score-rank{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:2px 0 3px;}
+  .score-rank b{font-family:'JetBrains Mono',monospace;font-size:1.85rem;font-weight:800;color:var(--gold-dark);}
+  .score-rank .score-unit{font-size:0.8rem;color:var(--ink-dim);font-weight:700;}
+  .score-breakdown{
+    background:rgba(0,0,0,.06);border:2px solid rgba(0,0,0,.15);border-radius:10px;
+    padding:5px 10px;margin-bottom:5px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;
+    color:var(--ink-dim);text-align:left;line-height:1.36;
+  }
+  .score-breakdown .sb-row{display:flex;justify-content:space-between;}
+  .score-breakdown .sb-total{color:var(--gold-dark);border-top:2px dashed rgba(0,0,0,.2);margin-top:2px;padding-top:2px;font-weight:800;}
+  .score-breakdown .sb-notice{
+    margin-top:4px;padding:5px 8px;background:rgba(255,200,0,0.18);border-radius:8px;
+    color:var(--gold-dark);font-weight:800;line-height:1.5;
+  }
+  .ack-notice{
+    margin-top:6px;padding:6px 9px;background:rgba(200,40,40,.14);border:1.5px solid rgba(200,40,40,.4);
+    border-radius:8px;color:#8a2323;font-weight:700;font-size:0.78rem;line-height:1.5;text-align:left;
+  }
+  .modal .result-grid{display:flex;justify-content:center;gap:12px;margin:4px 0 5px;flex-wrap:wrap;}
+  .modal .result-grid div b{display:block;font-size:1.05rem;font-family:'JetBrains Mono',monospace;color:var(--ink);}
+  .modal .result-grid div span{font-size:0.7rem;color:var(--ink-dim);}
+  .modal .tip-carousel{
+    display:flex;align-items:flex-start;gap:8px;background:rgba(0,0,0,.05);border:2px solid rgba(0,0,0,.1);
+    border-radius:10px;padding:5px 8px 6px;margin-bottom:4px;text-align:left;
+    touch-action:pan-y;user-select:none;cursor:grab;
+  }
+  .modal .tip-carousel:active{cursor:grabbing;}
+  .tip-icon{font-size:1.15rem;line-height:1.45;flex-shrink:0;filter:drop-shadow(0 1px 0 rgba(0,0,0,.2));}
+  .tip-body{flex:1;min-width:0;}
+  .tip-text{font-size:0.92rem;color:var(--ink-dim);line-height:1.48;min-height:4.6rem;}
+  .tip-text.slide-next{animation:tipSlideNext .28s ease both;}
+  .tip-text.slide-prev{animation:tipSlidePrev .28s ease both;}
+  @keyframes tipSlideNext{0%{opacity:0;transform:translateX(14px);}100%{opacity:1;transform:translateX(0);}}
+  @keyframes tipSlidePrev{0%{opacity:0;transform:translateX(-14px);}100%{opacity:1;transform:translateX(0);}}
+  .tip-dots{display:flex;gap:4px;margin-top:5px;}
+  .tip-dots span{width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.18);flex-shrink:0;transition:background .2s ease, transform .2s ease;}
+  .tip-dots span.active{background:var(--gold-dark);transform:scale(1.3);}
+  .modal .btn-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:2px;flex-shrink:0;}
+  .modal .btn-row .start-btn{margin:0 auto;}
+  .modal-lose{background:linear-gradient(180deg,#ffdcd0 0%, #f3ab8f 100%);}
+  .modal-lose h2{color:var(--coral-dark2);}
+  .lose-msg{font-size:0.83rem;color:var(--ink);font-weight:600;margin:0 0 8px;line-height:1.42;}
+  .stat.danger{border-color:var(--outline);background:linear-gradient(180deg,#ffcdbd 0%, var(--coral) 100%);}
+  .stat.danger b{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5);}
+
+  .board-pit-shadow{mix-blend-mode:multiply;}
+
+  .icon-slot{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;line-height:0;}
+  .icon-slot canvas{display:block;}
+
+  .sound-toggle-btn{
+    position:fixed;top:calc(10px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right));z-index:70;
+    width:40px;height:40px;border-radius:50%;
+    background:linear-gradient(180deg,#f0c988 0%, var(--wood) 55%, var(--wood-dark) 100%);
+    border:3px solid var(--outline);color:var(--cream);font-size:1.1rem;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
+    box-shadow:0 4px 0 var(--wood-dark), 0 4px 0 1px var(--outline), inset 0 2px 0 rgba(255,255,255,.35);
+    transition:transform .1s cubic-bezier(.34,1.56,.64,1), box-shadow .1s ease;
+  }
+  .sound-toggle-btn:active{transform:translateY(3px) scale(.95);box-shadow:0 1px 0 var(--wood-dark), 0 1px 0 1px var(--outline);}
+  .sound-toggle-btn.corner-left{left:calc(10px + env(safe-area-inset-left));right:auto;}
+  .sound-toggle-btn.corner-left2{left:calc(58px + env(safe-area-inset-left));right:auto;}
+
+  /* ── 說明介紹頁 ── */
+  #helpOverlay{position:fixed;inset:0;z-index:200;display:none;background:rgba(20,10,4,.7);align-items:center;justify-content:center;padding:20px;font-family:'Noto Sans TC',sans-serif;color:var(--ink);}
+  #helpOverlay.show{display:flex;}
+  #helpInner{width:100%;max-width:360px;max-height:80vh;overflow-y:auto;background:var(--cream);padding:18px;box-sizing:border-box;border-radius:16px;box-shadow:0 12px 34px rgba(0,0,0,0.4);}
+  #helpInner h2{font-size:1.1rem;margin:0 0 4px;color:var(--wood-dark);}
+  #helpInner h3{font-size:.95rem;margin:18px 0 8px;color:var(--wood-dark);display:flex;align-items:center;gap:6px;}
+  #helpInner p, #helpInner li{font-size:.83rem;line-height:1.7;}
+  #helpInner ol{margin:0;padding-left:1.4em;}
+  #helpInner .help-icon-row{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0;}
+  #helpInner .help-icon-item{display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;text-align:center;}
+  #helpInner .help-icon-item .icon-box{width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #e0d5bd;border-radius:10px;}
+  #helpInner .help-icon-item .icon-box svg{width:36px;height:36px;}
+  #helpInner .help-icon-item span.label{font-size:.68rem;color:#5a4a2f;line-height:1.3;}
+  #helpInner .help-note{background:rgba(90,60,20,.08);border-radius:8px;padding:8px 10px;font-size:.78rem;color:#5a4a2f;margin-top:8px;}
+  #helpInner .help-close-row{margin-top:22px;}
+  #helpInner .help-close-row button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--wood-dark);color:#fff;font-weight:bold;font-size:.95rem;cursor:pointer;}
+  #helpInner .help-copyright{margin-top:16px;text-align:center;font-size:.7rem;color:#999;}
+  #helpInner .help-version{text-align:center;font-size:.7rem;color:#999;margin:-4px 0 4px;}
+
+  /* 竹簍收魚按鈕：畫在石滬缺口正上方，滑鼠移過去/按下去有輕微回饋。
+     transform-origin 明確指定 0 0，位置完全由這裡的 translate+scale 決定，
+     避免跟 SVG 元素本身的 transform 屬性混用導致位置跑掉。
+     Y 值算過：整個竹簍（含簍口）都收在 viewBox 的 y=0~100 之間，
+     完全不會跑到 SVG 上緣以外的「board-wrap 額外留白區」，
+     才不會跟畫在那個留白區裡的「工具壞了」警示條疊在一起。 */
+  .basket-btn{
+    cursor:pointer;
+    outline:none;
+    -webkit-tap-highlight-color:transparent;
+    transform-origin:0 0;
+    transform:translate(203px,-18.4px) scale(0.4);
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .basket-btn:focus-visible{outline:4px dashed var(--gold);outline-offset:6px;}
+  .basket-btn:hover{transform:translate(203px,-22px) scale(0.42);}
+  .basket-btn:active{transform:translate(203px,-14px) scale(0.37);}
+
+  /* 統計 chip 尺寸微調，讓 5 個 chip 在小螢幕也能排得整齊 */
+  .hud-stats .stat{padding:4px 8px 5px;min-width:0;flex:1 1 0;}
+  .hud-stats .stat.score-stat{flex:1.15 1 0;width:auto;}
+  .hud-stats .stat.time-stat{flex:1.35 1 0;transition:color 0.2s, text-shadow 0.2s;}
+  .hud-stats .stat.time-stat.urgent{animation:timeUrgent 0.6s ease-in-out infinite; color:var(--coral);}
+  @keyframes timeUrgent{0%,100%{color:var(--coral);text-shadow:0 0 12px rgba(255,67,39,0.8);}50%{color:#ff6b6b;text-shadow:0 0 20px rgba(255,107,107,0.8);transform:scale(1.08);}}
+
+  /* 介紹頁面統計 */
+  .intro-stats {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .intro-stats .stat {
+    min-width: auto;
+    padding: 6px 12px;
+  }
+  
+  /* 日夜模式：石滬本體只做很輕微的降彩度，主要靠下面的罩層來營造夜色，
+     避免多層濾鏡疊加讓畫面暗到看不清楚、沒法玩 */
+  #board.night-mode {
+    filter: brightness(0.88) saturate(0.85);
+  }
+
+  body.night-mode {
+    --ocean-glow: #051215;
+  }
+
+  /* 全螢幕夜晚罩層：從左滑入蓋住畫面、退場時往右滑出（用 transform 由 JS 控制方向），
+     顏色也調淡很多，維持看得清楚石塊狀態、還能玩的亮度，只是帶點夜色氛圍 */
+  #nightOverlay{
+    position:fixed;inset:0;z-index:20;pointer-events:none;
+    background:linear-gradient(100deg, rgba(4,14,34,.4) 0%, rgba(6,20,42,.32) 55%, rgba(6,20,42,.2) 100%);
+    transform:translateX(-100%);
+  }
+
+</style>
+</head>
+<body>
+
+<div id="portrait-warning" class="portrait-warning">
+  <div class="portrait-warning-icon">📱↻</div>
+  <h2>請將手機轉為直式</h2>
+  <p>本頁面專為直式螢幕設計，以提供最佳體驗。</p>
+</div>
+
+<div id="ocean">
+  <svg class="crest crest-back" viewBox="0 0 1600 140" preserveAspectRatio="none">
+    <defs><linearGradient id="waveGradBack" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--teal)"/><stop offset="78%" stop-color="var(--teal)"/><stop offset="100%" stop-color="var(--teal-dark)"/></linearGradient></defs>
+    <path d="M0,60 C200,110 400,10 600,60 C800,110 1000,10 1200,60 C1400,110 1500,40 1600,60 L1600,140 L0,140 Z" fill="url(#waveGradBack)"/>
+    <path d="M0,60 C200,110 400,10 600,60 C800,110 1000,10 1200,60 C1400,110 1500,40 1600,60" fill="none" stroke="var(--outline)" stroke-width="3"/></svg>
+  <svg class="crest crest-mid" viewBox="0 0 1600 140" preserveAspectRatio="none">
+    <defs><linearGradient id="waveGradMid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--ocean-glow)"/><stop offset="78%" stop-color="var(--ocean-glow)"/><stop offset="100%" stop-color="var(--teal-dark)"/></linearGradient></defs>
+    <path d="M0,50 C220,20 420,100 640,55 C860,10 1060,100 1280,55 C1440,20 1540,70 1600,55 L1600,140 L0,140 Z" fill="url(#waveGradMid)" opacity=".85"/>
+    <path d="M0,50 C220,20 420,100 640,55 C860,10 1060,100 1280,55 C1440,20 1540,70 1600,55" fill="none" opacity=".85" stroke="var(--outline)" stroke-width="2.5"/></svg>
+  <svg class="crest crest-front" viewBox="0 0 1600 140" preserveAspectRatio="none">
+    <defs><linearGradient id="waveGradFront" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--teal-dark)"/><stop offset="100%" stop-color="var(--teal-dark)"/></linearGradient></defs>
+    <path d="M0,80 C180,30 380,120 580,70 C780,20 980,120 1180,70 C1380,20 1500,90 1600,70 L1600,140 L0,140 Z" fill="url(#waveGradFront)" opacity=".9"/>
+    <path d="M0,80 C180,30 380,120 580,70 C780,20 980,120 1180,70 C1380,20 1500,90 1600,70" fill="none" opacity=".9" stroke="var(--outline)" stroke-width="3"/></svg>
+  <svg class="crest crest-foam" viewBox="0 0 1600 140" preserveAspectRatio="none"><path d="M0,72 C180,22 380,112 580,62 C780,12 980,112 1180,62 C1380,12 1500,82 1600,62" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/></svg>
+  <div class="fill"></div>
+</div>
+<div id="nightOverlay"></div>
+<div id="tideFlash"></div>
+
+<button class="sound-toggle-btn corner-left" id="restartBtn" aria-label="返回平台" title="返回平台" style="display:none; filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">⛔</button>
+<button class="sound-toggle-btn" id="muteBtn" aria-label="切換音效" title="切換音效">🔊</button>
+<button class="sound-toggle-btn corner-left" id="helpBtn" aria-label="遊戲說明" title="遊戲說明" onclick="document.getElementById('helpOverlay').classList.add('show')">📖</button>
+
+<div id="helpOverlay">
+  <div id="helpInner">
+    <h2>📖 石滬修復</h2>
+    <div class="help-version">版本 260915</div>
+
+    <h3>🎮 遊戲介紹</h3>
+    <p>取材自後龍真實的石滬文化——先民利用潮汐、以天然石材堆砌石牆捕魚的傳統漁法。因石滬日久失修，你是搶修匠師，要在潮水不斷侵蝕、鳥賊環伺下把石滬修復完好。</p>
+
+    <h3>📋 玩法流程</h3>
+    <ol>
+      <li>點擊龜裂/損壞的石塊修復（損壞較重的可能要點兩次）</li>
+      <li>潮汐持續輪替：漲潮魚群游進來，退潮時牆修得夠好，魚就會被困住</li>
+      <li>白天用「竹簍」把困住的魚收進安全總數，不收好隨時可能被鳥叼走、被小偷偷走</li>
+      <li>修理工具偶爾故障，故障中沒辦法修理，要等它恢復</li>
+      <li>把所有石塊都修到完好即修復完成過關；分數被扣到 0 則滬堤決堤、直接失敗</li>
+    </ol>
+
+    <h3>🔎 圖示說明</h3>
+    <div class="help-icon-row">
+      <div class="help-icon-item">
+        <div class="icon-box"><svg viewBox="0 0 60 60"><use href="#stoneOk"></use></svg></div>
+        <span class="label">完好</span>
+      </div>
+      <div class="help-icon-item">
+        <div class="icon-box"><svg viewBox="0 0 60 60"><use href="#stoneCracked"></use></svg></div>
+        <span class="label">龜裂</span>
+      </div>
+      <div class="help-icon-item">
+        <div class="icon-box"><svg viewBox="0 0 60 60"><use href="#stoneBad"></use></svg></div>
+        <span class="label">損壞</span>
+      </div>
+      <div class="help-icon-item">
+        <div class="icon-box"><svg viewBox="0 0 44 32"><path d="M2,18 L11,13 L11,23 Z" fill="var(--rock-dark)" stroke="var(--outline)" stroke-width="1.3" stroke-linejoin="round"/><ellipse cx="21" cy="19" rx="10.5" ry="7.5" fill="var(--cream)" stroke="var(--outline)" stroke-width="1.6"/><circle cx="32" cy="12" r="6.4" fill="var(--cream)" stroke="var(--outline)" stroke-width="1.6"/><path d="M37,10 L44.5,8 L38,13.5 Z" fill="var(--gold)" stroke="var(--outline)" stroke-width="1.2" stroke-linejoin="round"/><circle cx="34.2" cy="10.2" r="1.3" fill="var(--outline)"/><path d="M17,17 Q2,4 -3,13 Q9,15 19,21 Z" fill="var(--rock-dark)" stroke="var(--outline)" stroke-width="1.3" stroke-linejoin="round"/></svg></div>
+        <span class="label">飛鳥：叼走還沒收進竹簍的魚</span>
+      </div>
+      <div class="help-icon-item" id="helpThiefIcon">
+        <div class="icon-box"></div>
+        <span class="label">小偷：夜間偷走已捕獲但沒收好的魚</span>
+      </div>
+      <div class="help-icon-item">
+        <div class="icon-box"><svg viewBox="0 0 300 300"><path d="M64,72 C40,110 34,150 42,190 C48,225 62,255 90,278 C110,292 190,292 210,278 C238,255 252,225 258,190 C266,150 260,110 236,72 C220,84 180,90 150,90 C120,90 80,84 64,72 Z" fill="#d0842f" stroke="#241407" stroke-width="4.5" stroke-linejoin="round"/><ellipse cx="150" cy="282" rx="62" ry="14" fill="#8a4b16" stroke="#241407" stroke-width="3.5"/></svg></div>
+        <span class="label">竹簍：白天點擊收魚</span>
+      </div>
+    </div>
+    <div class="help-note">工具故障提示 banner 出現時，石塊點了也沒反應，要等它自己恢復。</div>
+
+    <h3>🏆 計分與獎勵</h3>
+    <p>基礎 1000 分，每秒扣 5 分、每個修理動作扣 10 分，每收進竹簍一尾魚 +20 分。</p>
+    <ul>
+      <li>3★：720 分以上</li>
+      <li>2★：350 分以上</li>
+      <li>1★：120 分以上</li>
+      <li>首次達 800 分：發「石滬達人」徽章 +20 金幣</li>
+      <li>之後每次破紀錄：+1 金幣</li>
+    </ul>
+
+    <div class="help-close-row">
+      <button onclick="document.getElementById('helpOverlay').classList.remove('show')">關閉說明</button>
+    </div>
+    <div class="help-copyright">© 2026 石滬修復 苗栗縣在地文化推廣協會</div>
+  </div>
+</div>
+
+<div class="app">
+  <!-- 畫面一：說明（整張說明圖 + 疊加在「GO!」石頭上的透明按鈕） -->
+  <div class="screen active" id="screen-intro">
+    <div class="intro-frame">
+    <div class="intro-media">
+      <img src="image/srbg.png" alt="石滬修復玩法說明">
+      <button class="intro-go-btn" id="startBtn" aria-label="開始遊戲" title="開始遊戲"></button>
+    </div>
+    <div class="intro-stats" id="introStats"></div>
+    </div>
+  </div>
+
+  <!-- 畫面二：遊戲進行 -->
+  <div class="screen" id="screen-game">
+    <h1 class="title">石滬修復</h1>
+    
+    <!-- 上層HUD：主要信息 -->
+    <div class="game-header">
+      <div class="hud-row hud-stats">
+        <div class="stat time-stat"><b id="statTime">00:00</b><span>時間</span></div>
+        <div class="stat"><b id="statMoves">0</b><span>步數</span></div>
+        <div class="stat score-stat"><b id="statScore">1000</b><span>分數</span></div>
+        <div class="stat fish-stat"><b id="statFish">0</b><span>魚獲</span></div>
+        <div class="stat fish-stat" style="color:var(--teal-dark)"><b id="statCollected">0</b><span>已收</span></div>
+      </div>
+
+      <div class="game-title"><span id="gameSub">點擊石塊來修堤，注意海浪來襲會沖潰毀損</span></div>
+    </div>
+
+    <div class="board-wrap">
+    <div class="tool-broken-banner" id="toolBrokenBanner"><span class="icon-slot" id="iconWrench"></span> 工具壞了，維修中…</div>
+    <div id="birdFlyLayer"></div>
+    <svg id="board" viewBox="0 0 526 476">
+      <defs>
+        <symbol id="stoneOk" viewBox="0 0 60 60">
+          <ellipse cx="30" cy="47" rx="20" ry="5" fill="var(--outline)" opacity=".22"/>
+          <image href="image/m0.png" x="4" y="2" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>
+        </symbol>
+        <symbol id="stoneBad" viewBox="0 0 60 60">
+          <ellipse cx="30" cy="47" rx="20" ry="5" fill="var(--outline)" opacity=".22"/>
+          <image href="image/m2.png" x="4" y="2" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>
+        </symbol>
+        <symbol id="stoneCracked" viewBox="0 0 60 60">
+          <ellipse cx="30" cy="47" rx="20" ry="5" fill="var(--outline)" opacity=".22"/>
+          <image href="image/m1.png" x="4" y="2" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>
+        </symbol>
+        <symbol id="fishIcon" viewBox="0 0 32 20">
+          <path d="M20 10 L30 3 L25 10 L30 17 Z" fill="currentColor" stroke="var(--outline)" stroke-width="1" stroke-linejoin="round" opacity=".95"/>
+          <ellipse cx="13" cy="10" rx="9" ry="5.4" fill="currentColor" stroke="var(--outline)" stroke-width="1.2"/>
+          <path d="M10 5 L13 0 L15.5 5 Z" fill="currentColor" opacity=".9"/>
+          <path d="M9 15 L12 19.5 L14.5 15 Z" fill="currentColor" opacity=".8"/>
+          <path d="M4.5 10 Q7 12.5 9.5 11" stroke="currentColor" stroke-width="1" fill="none" opacity=".5"/>
+          <circle cx="6.3" cy="9" r="1.5" fill="var(--outline)"/>
+          <circle cx="6.7" cy="8.6" r=".5" fill="#fff"/>
+        </symbol>
+        <radialGradient id="pitShadowGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#b8790a" stop-opacity=".55"/>
+          <stop offset="50%" stop-color="#dda832" stop-opacity=".22"/>
+          <stop offset="100%" stop-color="#dda832" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="pitBlur" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="7"/>
+        </filter>
+      </defs>
+      <ellipse class="board-pit-shadow" cx="263" cy="215" rx="248" ry="238" fill="url(#pitShadowGrad)" filter="url(#pitBlur)"/>
+      <g id="connectorLayer"></g>
+      <g id="fishLayer"></g>
+      <g id="stoneLayer"></g>
+
+      <!-- 收魚：畫成竹簍，擺在石滬缺口正上方（開口朝天的方向），取代原本的按鈕。
+           線條比預覽版加粗，跟遊戲整體的粗框卡通風格更搭。
+           位置完全交給 CSS 的 transform 控制（不用 SVG 的 transform 屬性），
+           避免兩邊互相覆蓋導致位置跑掉、沒有真正置中在缺口正中間。 -->
+      <g id="collectFishBtn" class="basket-btn" role="button" tabindex="0" aria-label="日間時可收魚" title="日間時可收魚">
+        <path d="M64,72 C40,110 34,150 42,190 C48,225 62,255 90,278 C110,292 190,292 210,278 C238,255 252,225 258,190 C266,150 260,110 236,72 C220,84 180,90 150,90 C120,90 80,84 64,72 Z"
+          fill="#d0842f" stroke="#241407" stroke-width="4.5" stroke-linejoin="round"/>
+
+        <ellipse cx="150" cy="282" rx="62" ry="14" fill="#8a4b16" stroke="#241407" stroke-width="3.5"/>
+
+        <path d="M85,80 C65,120 62,160 70,195 C76,225 86,250 100,270" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
+        <path d="M118,86 C108,130 106,170 110,205 C112,235 116,258 122,275" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
+        <path d="M150,88 C150,140 150,180 150,215 C150,245 150,262 150,278" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
+        <path d="M182,86 C192,130 194,170 190,205 C188,235 184,258 178,275" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
+        <path d="M215,80 C235,120 238,160 230,195 C224,225 214,250 200,270" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
+
+        <path d="M56,124 Q150,138 244,124" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
+        <path d="M46,158 Q150,174 254,158" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
+        <path d="M42,192 Q150,208 258,192" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
+        <path d="M52,226 Q150,240 248,226" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
+        <path d="M70,256 Q150,268 230,256" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
+
+        <path d="M70,78 Q38,112 52,148 Q64,160 80,150" fill="none" stroke="#c9a876" stroke-width="8.5" stroke-linecap="round"/>
+        <path d="M70,78 Q38,112 52,148 Q64,160 80,150" fill="none" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+        <path d="M230,78 Q262,112 248,148 Q236,160 220,150" fill="none" stroke="#c9a876" stroke-width="8.5" stroke-linecap="round"/>
+        <path d="M230,78 Q262,112 248,148 Q236,160 220,150" fill="none" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+
+        <ellipse cx="150" cy="74" rx="87" ry="19" fill="none" stroke="#8a4b16" stroke-width="13"/>
+        <ellipse cx="150" cy="74" rx="87" ry="19" fill="none" stroke="#241407" stroke-width="3.5"/>
+        <ellipse cx="150" cy="71" rx="66" ry="12" fill="#3a2313" stroke="#241407" stroke-width="2.5"/>
+
+        <path d="M160,60 Q167,53 176,60 L171,76 Q160,71 151,76 Z" fill="#00d4c2" stroke="#241407" stroke-width="3.5" stroke-linejoin="round"/>
+        <path d="M154,64 Q160,68 166,64" fill="none" stroke="#065c66" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+      </g>
+    </svg></div>
+
+    <div class="legend-mini">
+      <div><img class="swatch" src="image/m0.png" alt="已修復"/>已修復</div>
+      <div><img class="swatch" src="image/m1.png" alt="龜裂中"/>龜裂中</div>
+      <div><img class="swatch" src="image/m2.png" alt="毀損中"/>毀損中</div>
+    </div>
+  </div>
+</div>
+
+<div id="badgePopup">
+  <img src="swbd1.jpg" alt="徽章">
+</div>
+
+<div class="overlay" id="winOverlay">
+  <div class="modal">
+    <div class="medal"><span class="icon-slot" id="iconMedalWin"></span></div>
+    <h2>石滬修復完成！</h2>
+    <div class="stars" id="finalStars"></div>
+    <div class="score-rank"><b id="finalScore">1000</b><span class="score-unit">分</span></div>
+    <div class="modal-scroll">
+      <div class="result-grid">
+        <div><b id="finalTime">00:00</b><span>總時間</span></div>
+        <div><b id="finalMoves">0</b><span>使用步數</span></div>
+        <div><b id="finalCollected">0</b><span>已收魚</span></div>
+      </div>
+      <div class="score-breakdown" id="scoreBreakdown"></div>
+      <div class="ack-notice" id="platformAckNotice" style="display:none;"></div>
+      <div class="tip-carousel" id="winTipCarousel">
+        <div class="tip-icon"><span class="icon-slot" id="iconTipWin"></span></div>
+        <div class="tip-body">
+          <div class="tip-text" id="winTipText"></div>
+          <div class="tip-dots" id="winTipDots"></div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="start-btn" id="playAgainBtn" style="padding:12px 30px;">再玩一次</button>
+      <button class="start-btn" id="closeGameBtn" style="padding:12px 30px;">關閉</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="loseOverlay">
+  <div class="modal modal-lose">
+    <div class="medal"><span class="icon-slot" id="iconMedalLose"></span></div>
+    <h2>滬堤決堤了……</h2>
+    <p class="lose-msg">分數已歸零，海水衝破了滬堤，這次搶修失敗了。</p>
+    <div class="modal-scroll">
+      <div class="result-grid">
+        <div><b id="failTime">00:00</b><span>撐過時間</span></div>
+        <div><b id="failMoves">0</b><span>使用步數</span></div>
+      </div>
+      <div class="tip-carousel" id="loseTipCarousel">
+        <div class="tip-icon"><span class="icon-slot" id="iconTipLose"></span></div>
+        <div class="tip-body">
+          <div class="tip-text" id="loseTipText"></div>
+          <div class="tip-dots" id="loseTipDots"></div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="start-btn" id="playAgainLoseBtn" style="padding:12px 30px;">再玩一次</button>
+      <button class="start-btn" id="closeGameLoseBtn" style="padding:12px 30px;">關閉</button>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ 平台通訊（對應「任務頁面通訊介面規格.md」） ============ */
+const TASK_ID = 'stoneweir';
+const BADGE_ID = 'stoneweir_master'; // 徽章「石滬達人」
+let platformNickname = null;     // 收到 player_info 後才會有值
+let platformBadges = [];         // 玩家目前已擁有的徽章清單
+let myBestScore = null;          // 這個任務的個人最佳成績 { scoreLabel, scoreValue } | null
+
+// 送訊息給平台。targetOrigin 用 '*'：不預先假設平台網址，這則訊息也不含敏感資料，可接受。
+//
+// ⚠️ 桌機/寬螢幕模式下，這個頁面是被 stoneweir-desktop.html 用 <iframe> 包起來執行的，
+// iframe 裡的 window.opener 永遠是 null。就算改成摸 window.top.opener 直接送，也會因為
+// postMessage 的 event.source 永遠是「實際執行這行程式碼的視窗」（也就是 iframe 自己），
+// 跟平台記錄的視窗物件對不上而被忽略（6htw 實測踩過這個坑）。正確做法：iframe 只送給
+// 自己的上一層（window.parent），由 stoneweir-desktop.html 自己執行 postMessage 轉發給
+// 平台；沒有套桌機外框時 window.parent 就是 window 自己，效果等同直接送給 window.opener。
+function sendToPlatform(type, payload){
+  const target = (window.self !== window.top) ? window.parent : window.opener;
+  if(!target) return;
+  target.postMessage({
+    source: 'culture-task',
+    version: 1,
+    taskId: TASK_ID,
+    type: type,
+    payload: payload || {}
+  }, '*');
+}
+
+// 送 exit 訊息 + 關閉分頁的共用做法：postMessage 是非同步的，如果送完立刻同步呼叫
+// close()，桌機外框模式下這則 exit 訊息還要多轉一手（iframe → window.parent →
+// 轉發給平台），視窗有可能在轉發完成前就被關掉，導致平台收到訊息時記錄已經被判定
+// 失效、或訊息根本沒轉發成功就消失了（實測遇過「exit 訊息但查無記錄」的警告）。
+// 延遲一小段時間再關閉，確保訊息有時間走完整趟轉發。
+function exitAndClosePlatform(){
+  sendToPlatform('exit', {});
+  setTimeout(function(){ (window.top || window).close(); }, 150);
+}
+
+// ── 攔截瀏覽器「上一頁」（含手機滑動返回手勢）：不要讓它直接把分頁導覽走 ──
+// 原理：先塞一筆假的瀏覽紀錄，使用者按上一頁時只會觸發 popstate（不會真的離開），
+// 這時候把假紀錄補回去、跳確認視窗；確定要走才真的送 exit + 關閉分頁。
+if (window.history && window.history.pushState) {
+  history.pushState(null, '', location.href);
+  window.addEventListener('popstate', function () {
+    history.pushState(null, '', location.href);
+    if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+    exitAndClosePlatform();
+  });
+}
+
+// 收平台送來的訊息：ready 之後回傳的 player_info；complete 之後回傳的 ack（可能帶拒絕原因）
+window.addEventListener('message', function(event){
+  const msg = event.data;
+  if(!msg || msg.source !== 'culture-platform') return;
+
+  if(msg.type === 'player_info'){
+    platformNickname = (msg.payload && msg.payload.nickname) || null;
+    platformBadges = (msg.payload && msg.payload.badges) || [];
+    myBestScore = (msg.payload && msg.payload.myScore) || null;
+    if(typeof updateIntroStats === 'function') updateIntroStats();
+  }
+
+  if(msg.type === 'ack' && msg.forType === 'complete'){
+    const result = msg.result || {};
+    const noticeEl = document.getElementById('platformAckNotice');
+    if(noticeEl){
+      if(result.rejectedReason){
+        // 平台有拒絕的部分（通常是金幣，徽章本身很少被拒），明確顯示原因，不要讓玩家以為系統沒反應
+        noticeEl.style.display = 'block';
+        noticeEl.textContent = `⚠️ 部分獎勵未發放成功：${result.rejectedReason}`;
+      } else {
+        noticeEl.style.display = 'none';
+      }
+    }
+  }
+});
+
+sendToPlatform('ready', {}); // 越早送出，player_info 越有機會在玩家按下開始前就準備好
+
+/* ============ 音效系統（Web Audio API 即時合成，不需外部音檔） ============ */
+const SoundFX = (function(){
+  let ctx = null;
+  let master = null;
+  let muted = false;
+  let noiseBuffer = null;
+
+  function ensureCtx(){
+    if(!ctx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.85;
+      master.connect(ctx.destination);
+    }
+    if(ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  function getNoiseBuffer(){
+    const c = ensureCtx();
+    if(!c) return null;
+    if(!noiseBuffer){
+      const len = c.sampleRate * 1.2;
+      noiseBuffer = c.createBuffer(1, len, c.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for(let i=0;i<len;i++) data[i] = Math.random()*2-1;
+    }
+    return noiseBuffer;
+  }
+
+  // 持續性潮聲底噪：只建立一次，之後只調整音量大小，音量會跟著水位升降即時變化
+  let ambientGain = null, ambientStarted = false;
+  function ensureAmbient(){
+    const c = ensureCtx();
+    if(!c || ambientStarted) return;
+    const buf = getNoiseBuffer();
+    if(!buf) return;
+    ambientStarted = true;
+    const src = c.createBufferSource();
+    src.buffer = buf; src.loop = true;
+    // 用帶通而非低通：把能量集中在手機喇叭放得出來的中高頻段（純低頻在手機小喇叭上幾乎聽不到）
+    const filter = c.createBiquadFilter();
+    filter.type = 'bandpass'; filter.frequency.value = 850; filter.Q.value = 0.6;
+    const filter2 = c.createBiquadFilter();
+    filter2.type = 'highshelf'; filter2.frequency.value = 1800; filter2.gain.value = 5;
+    ambientGain = c.createGain();
+    ambientGain.gain.value = 0.0001;
+    src.connect(filter); filter.connect(filter2); filter2.connect(ambientGain); ambientGain.connect(master);
+    src.start();
+  }
+  function setAmbientLevel(level, rampSec){
+    const c = ensureCtx();
+    if(!c || !ambientGain) return;
+    // 音量上限設在 0.25，手機外放清楚但不過大聲
+    const target = muted ? 0.0001 : Math.max(0.0001, Math.min(0.25, level * 0.25));
+    const now = c.currentTime;
+    ambientGain.gain.cancelScheduledValues(now);
+    ambientGain.gain.setValueAtTime(Math.max(0.0001, ambientGain.gain.value), now);
+    ambientGain.gain.linearRampToValueAtTime(target, now + Math.max(0.05, rampSec || 0.5));
+  }
+
+  function tone(freq, dur, type, vol, delay, glideTo){
+    if(muted) return;
+    const c = ensureCtx();
+    if(!c) return;
+    const t0 = c.currentTime + (delay||0);
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    if(glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0 + dur);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(vol||0.2, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(gain); gain.connect(master);
+    osc.start(t0); osc.stop(t0 + dur + 0.05);
+  }
+
+  function noiseBurst(opts){
+    if(muted) return;
+    const c = ensureCtx();
+    const buf = getNoiseBuffer();
+    if(!c || !buf) return;
+    const o = opts || {};
+    const dur = o.dur || 0.5, vol = o.vol || 0.3, delay = o.delay || 0;
+    const t0 = c.currentTime + delay;
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const filter = c.createBiquadFilter();
+    filter.type = o.filterType || 'bandpass';
+    filter.frequency.value = o.filterFreq || 800;
+    filter.Q.value = o.Q != null ? o.Q : 1;
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(filter); filter.connect(gain); gain.connect(master);
+    src.start(t0); src.stop(t0 + dur + 0.05);
+  }
+
+  return {
+    unlock(){ ensureCtx(); ensureAmbient(); },
+    setMuted(v){
+      muted = v;
+      if(ambientGain){
+        const c = ensureCtx();
+        if(c){
+          ambientGain.gain.cancelScheduledValues(c.currentTime);
+          ambientGain.gain.setValueAtTime(muted ? 0.0001 : ambientGain.gain.value, c.currentTime);
+        }
+      }
+    },
+    isMuted(){ return muted; },
+    setAmbientLevel(level, rampSec){ setAmbientLevel(level, rampSec); },
+    uiClick(){ tone(720, 0.07, 'square', 0.12); },
+    stoneTap(){ tone(340, 0.09, 'triangle', 0.16, 0, 260); },
+    repair(){
+      tone(520, 0.12, 'sine', 0.22, 0);
+      tone(780, 0.16, 'sine', 0.16, 0.05);
+      tone(1040, 0.18, 'sine', 0.12, 0.1);
+    },
+    fishIn(){
+      tone(900, 0.09, 'sine', 0.1, 0);
+      tone(1200, 0.09, 'sine', 0.09, 0.06);
+    },
+    fishOut(){
+      tone(700, 0.18, 'sine', 0.1, 0, 260);
+    },
+    toolBreak(){
+      if(muted) return;
+      const c = ensureCtx();
+      const buf = getNoiseBuffer();
+      if(!c) return;
+      const t0 = c.currentTime;
+      // 金屬鏗一聲：短促高頻噪音爆發
+      if(buf){
+        const src = c.createBufferSource(); src.buffer = buf;
+        const filter = c.createBiquadFilter();
+        filter.type = 'bandpass'; filter.frequency.value = 2600; filter.Q.value = 3.5;
+        const gain = c.createGain();
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.24, t0+0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0+0.13);
+        src.connect(filter); filter.connect(gain); gain.connect(master);
+        src.start(t0); src.stop(t0+0.15);
+      }
+      // 卡住的齒輪聲：兩記下滑方波，模擬「咔啦—咔」故障感
+      tone(320, 0.1, 'square', 0.17, 0.05, 150);
+      tone(220, 0.16, 'square', 0.14, 0.16, 90);
+      // 洩氣噴氣聲：低頻噪音尾韻
+      if(buf){
+        const src2 = c.createBufferSource(); src2.buffer = buf;
+        const filter2 = c.createBiquadFilter();
+        filter2.type = 'lowpass'; filter2.frequency.value = 260; filter2.Q.value = 0.5;
+        const gain2 = c.createGain();
+        gain2.gain.setValueAtTime(0.0001, t0+0.24);
+        gain2.gain.exponentialRampToValueAtTime(0.14, t0+0.32);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, t0+0.62);
+        src2.connect(filter2); filter2.connect(gain2); gain2.connect(master);
+        src2.start(t0+0.24); src2.stop(t0+0.65);
+      }
+    },
+    birdSwoop(){
+      tone(1400, 0.06, 'sine', 0.12, 0);
+      tone(1100, 0.06, 'sine', 0.1, 0.08);
+      tone(1600, 0.07, 'sine', 0.1, 0.16);
+    },
+    birdCall(){
+      if(muted) return;
+      const c = ensureCtx();
+      if(!c) return;
+      const t0 = c.currentTime;
+      // 海鳥鳴叫：鋸齒波頻率快速上揚再下滑，模擬「嘎—嘎—」的叫聲，兩聲交錯更像一群海鳥
+      [0, 0.16].forEach((delay,i)=>{
+        const startF = 1250 + i*180;
+        const osc = c.createOscillator(); osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(startF, t0+delay);
+        osc.frequency.exponentialRampToValueAtTime(startF*1.55, t0+delay+0.05);
+        osc.frequency.exponentialRampToValueAtTime(startF*0.65, t0+delay+0.19);
+        const filter = c.createBiquadFilter();
+        filter.type = 'bandpass'; filter.frequency.value = 1900; filter.Q.value = 3.2;
+        const gain = c.createGain();
+        gain.gain.setValueAtTime(0.0001, t0+delay);
+        gain.gain.exponentialRampToValueAtTime(0.16, t0+delay+0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0+delay+0.2);
+        osc.connect(filter); filter.connect(gain); gain.connect(master);
+        osc.start(t0+delay); osc.stop(t0+delay+0.22);
+      });
+    },
+    tideCrash(urgency){
+      if(muted) return;
+      const c = ensureCtx();
+      const buf = getNoiseBuffer();
+      if(!c || !buf) return;
+      const t0 = c.currentTime;
+      const u = Math.max(0, Math.min(1, urgency || 0));
+      // 急迫度越高：撞擊音調越尖、時值稍微壓縮，聽感上節奏更急促
+      const pitchMul = 1 + u * 0.35;
+      const timeMul = 1 - u * 0.18;
+
+      // 主體浪湧：噪音經帶通濾波，頻率從高快速下滑到低，模擬浪頭捲下的「唰」聲
+      const src1 = c.createBufferSource(); src1.buffer = buf;
+      const filter1 = c.createBiquadFilter();
+      filter1.type = 'bandpass'; filter1.Q.value = 1.1;
+      filter1.frequency.setValueAtTime(2400 * pitchMul, t0);
+      filter1.frequency.exponentialRampToValueAtTime(160 * pitchMul, t0 + 0.5 * timeMul);
+      const gain1 = c.createGain();
+      gain1.gain.setValueAtTime(0.0001, t0);
+      gain1.gain.exponentialRampToValueAtTime(0.42, t0 + 0.05);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6 * timeMul);
+      src1.connect(filter1); filter1.connect(gain1); gain1.connect(master);
+      src1.start(t0); src1.stop(t0 + 0.65);
+
+      // 低頻悶響：撞擊瞬間的沉重感
+      const src2 = c.createBufferSource(); src2.buffer = buf;
+      const filter2 = c.createBiquadFilter();
+      filter2.type = 'lowpass'; filter2.frequency.value = 170 * pitchMul; filter2.Q.value = 0.7;
+      const gain2 = c.createGain();
+      gain2.gain.setValueAtTime(0.0001, t0 + 0.02);
+      gain2.gain.exponentialRampToValueAtTime(0.38, t0 + 0.08);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.85 * timeMul);
+      src2.connect(filter2); filter2.connect(gain2); gain2.connect(master);
+      src2.start(t0 + 0.02); src2.stop(t0 + 0.9);
+
+      // 次低音重擊：一記下墜的正弦音，加強衝擊的「份量」
+      const osc = c.createOscillator(); osc.type = 'sine';
+      osc.frequency.setValueAtTime(130 * pitchMul, t0);
+      osc.frequency.exponentialRampToValueAtTime(42 * pitchMul, t0 + 0.35 * timeMul);
+      const gainO = c.createGain();
+      gainO.gain.setValueAtTime(0.0001, t0);
+      gainO.gain.exponentialRampToValueAtTime(0.32, t0 + 0.03);
+      gainO.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5 * timeMul);
+      osc.connect(gainO); gainO.connect(master);
+      osc.start(t0); osc.stop(t0 + 0.55);
+
+      // 浪花泡沫：短促的高頻嘶聲，撞擊後半拍出現
+      const src3 = c.createBufferSource(); src3.buffer = buf;
+      const filter3 = c.createBiquadFilter();
+      filter3.type = 'highpass'; filter3.frequency.value = 3200 * pitchMul;
+      const gain3 = c.createGain();
+      gain3.gain.setValueAtTime(0.0001, t0 + 0.05);
+      gain3.gain.exponentialRampToValueAtTime(0.13, t0 + 0.12);
+      gain3.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4 * timeMul);
+      src3.connect(filter3); filter3.connect(gain3); gain3.connect(master);
+      src3.start(t0 + 0.05); src3.stop(t0 + 0.45);
+    },
+    win(){
+      [523.25, 659.25, 784.0, 1046.5].forEach((f,i)=> tone(f, 0.32, 'triangle', 0.18, i*0.11));
+    },
+    lose(){
+      tone(220, 0.5, 'sawtooth', 0.18, 0, 90);
+      noiseBurst({dur:0.6, vol:0.15, filterFreq:300, filterType:'lowpass', Q:0.6, delay:0.05});
+    }
+  };
+})();
+
+/* 手機震動回饋：只在支援的裝置上生效，包在 try/catch 避免部分瀏覽器丟例外 */
+function vibrate(pattern){
+  if(navigator.vibrate){
+    try{ navigator.vibrate(pattern); }catch(e){}
+  }
+}
+
+const muteBtn = document.getElementById('muteBtn');
+muteBtn.addEventListener('click', ()=>{
+  SoundFX.unlock();
+  const nowMuted = !SoundFX.isMuted();
+  SoundFX.setMuted(nowMuted);
+  muteBtn.textContent = nowMuted ? '🔇' : '🔊';
+});
+
+/* 說明圖用 object-fit:fill 直接拉伸滿版，寬高各自獨立縮放，無裁切，
+   據此換算「GO!」按鈕在畫面上的實際像素位置。 */
+(function(){
+  const imgEl = document.querySelector('.intro-media img');
+  const btn = document.getElementById('startBtn');
+  const NATURAL_W = 600, NATURAL_H = 900;
+  // 「GO!」石頭在原圖（600x900）中的像素範圍
+  const ROCK = { x0:75, x1:465, y0:775, y1:900 };
+
+  function layoutIntro(){
+    const cw = imgEl.clientWidth, ch = imgEl.clientHeight;
+    if(!cw || !ch) return;
+    const scaleX = cw / NATURAL_W, scaleY = ch / NATURAL_H;
+    btn.style.left = (ROCK.x0 * scaleX) + 'px';
+    btn.style.top = (ROCK.y0 * scaleY) + 'px';
+    btn.style.width = ((ROCK.x1 - ROCK.x0) * scaleX) + 'px';
+    btn.style.height = ((ROCK.y1 - ROCK.y0) * scaleY) + 'px';
+  }
+  if(imgEl.complete) layoutIntro();
+  imgEl.addEventListener('load', layoutIntro);
+  window.addEventListener('resize', layoutIntro);
+  window.addEventListener('orientationchange', layoutIntro);
+})();
+
+/* ============ 石滬小知識 ============ */
+const FACTS = [
+  "石滬利用潮汐漲退，以天然石材堆成石牆。漲潮時魚群進入，退潮後受困滬內，方便捕撈。",
+  "石滬多以海邊的天然卵石或石材建造，展現後龍先民善用海岸資源與潮汐的智慧。",
+  "石滬採傳統乾砌工法，不使用水泥，匠師順應卵石的形狀、重量與角度緊密堆疊、彼此固定。",
+  "石滬長年承受潮汐、海浪與季風侵襲，石牆損壞後需要定期修補與維護。",
+  "修造石滬需要豐富經驗，匠師依石材大小與形狀堆砌，展現傳統漁業工藝智慧。",
+  "隨著漁業技術改變，石滬逐漸失去捕魚功能，部分石滬也因缺乏維護而荒廢。",
+  "近年地方社區與文化團體推動石滬修復及體驗活動，讓傳統技藝重新走入生活。",
+  "石滬也是潮間帶生態棲地，魚、蟹、螺貝等生物可在石縫間棲息，兼具生態價值。"
+];
+
+/* 石滬小知識輪播：icon + 文字可用滑鼠拖曳／觸控滑動左右切換，圓點指示目前位置 */
+function makeTipCarousel(rootId, textId, dotsId){
+  const root = document.getElementById(rootId);
+  const textEl = document.getElementById(textId);
+  const dotsEl = document.getElementById(dotsId);
+  let idx = 0;
+
+  function render(dir){
+    textEl.textContent = FACTS[idx];
+    textEl.classList.remove('slide-next','slide-prev');
+    void textEl.offsetWidth;
+    textEl.classList.add(dir === 'prev' ? 'slide-prev' : 'slide-next');
+    dotsEl.innerHTML = FACTS.map((_,i)=>`<span class="${i===idx?'active':''}"></span>`).join('');
+  }
+  function go(delta){
+    idx = (idx + delta + FACTS.length) % FACTS.length;
+    render(delta < 0 ? 'prev' : 'next');
+  }
+
+  let startX = 0, startY = 0, dragging = false;
+  root.addEventListener('pointerdown', e=>{
+    dragging = true; startX = e.clientX; startY = e.clientY;
+  });
+  root.addEventListener('pointerup', e=>{
+    if(!dragging) return;
+    dragging = false;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if(Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
+  });
+  root.addEventListener('pointercancel', ()=>{ dragging = false; });
+  root.addEventListener('pointerleave', ()=>{ dragging = false; });
+
+  return {
+    showRandom(){
+      idx = Math.floor(Math.random()*FACTS.length);
+      render('next');
+    }
+  };
+}
+const winTipCarousel = makeTipCarousel('winTipCarousel','winTipText','winTipDots');
+const loseTipCarousel = makeTipCarousel('loseTipCarousel','loseTipText','loseTipDots');
+
+/* ============ 佈局：內外雙層弧形滬堤 ============ */
+const N = 11;          // 每層石塊數
+const R_OUT = 213, R_IN = 135;  // 半徑加大，讓開口與石塊間距有足夠空間
+const CX = 263, CY = 211;
+const OPENING = 84;             // 滬口開口角度（原本60度，加大到84度）
+const STEP = (360 - OPENING) / (N - 1);
+const START_ANGLE = (90 - OPENING/2) - STEP*(N-1); // 讓開口以正上方為中心對稱
+
+function angleRad(i){ return (START_ANGLE + STEP * i) * Math.PI / 180; }
+
+const STONES = [];
+for(let i=0;i<N;i++){
+  const a = angleRad(i);
+  STONES.push({ id:i, layer:'outer', pos:i, x: CX + R_OUT*Math.cos(a), y: CY - R_OUT*Math.sin(a) });
+}
+for(let i=0;i<N;i++){
+  const a = angleRad(i);
+  STONES.push({ id:N+i, layer:'inner', pos:i, x: CX + R_IN*Math.cos(a), y: CY - R_IN*Math.sin(a) });
+}
+const TOTAL = STONES.length; // 22
+
+/* 相鄰石塊間的連接線（同層鏈狀連接 + 內外層對應的鏡射連接），只需畫一次，不隨損壞狀態改變 */
+/* 通道：純粹用來計算魚群逃脫比例的邏輯定義，不影響畫面上的連接線。
+   一內層石塊 + 一外層石塊的配對。
+   直線通道：內外層同一角度對齊的配對（inner[i]-outer[i]）。
+   斜線通道：內外層錯開一格的配對（inner[i]-outer[i+1] 與 inner[i+1]-outer[i]）。
+   直線11條 + 斜線20條 = 共31條通道。 */
+function buildChannels(){
+  const channels = [];
+  for(let i=0;i<N;i++){
+    channels.push([i, N+i]); // 直線：outer[i] - inner[i]
+  }
+  for(let i=0;i<N-1;i++){
+    channels.push([N+i, i+1]);   // 斜線：inner[i] - outer[i+1]
+    channels.push([N+i+1, i]);   // 斜線：inner[i+1] - outer[i]
+  }
+  return channels;
+}
+const CHANNELS = buildChannels();
+
+/* 相鄰石塊間的連接線（同層鏈狀連接 + 內外層對應的鏡射連接），只是畫面上的視覺呈現，
+   跟上面的「通道」邏輯定義無關，只需畫一次，不隨損壞狀態改變 */
+function renderConnectors(){
+  const layer = document.getElementById('connectorLayer');
+  let html = '';
+  for(let i=0;i<N-1;i++){
+    const o1 = STONES[i], o2 = STONES[i+1];
+    html += `<line x1="${o1.x}" y1="${o1.y}" x2="${o2.x}" y2="${o2.y}" class="connector-line"/>`;
+    const in1 = STONES[N+i], in2 = STONES[N+i+1];
+    html += `<line x1="${in1.x}" y1="${in1.y}" x2="${in2.x}" y2="${in2.y}" class="connector-line"/>`;
+  }
+  for(let i=0;i<N;i++){
+    const o = STONES[i], inn = STONES[N+i];
+    html += `<line x1="${o.x}" y1="${o.y}" x2="${inn.x}" y2="${inn.y}" class="connector-line"/>`;
+  }
+  layer.innerHTML = html;
+}
+renderConnectors();
+
+const MAX_FISH_SHOWN = 14;
+let fishIdSeq = 0;
+const FISH_COLORS = ['#3fc6d6','#f0b93e','#ff8a5c','#4bd191','#7ea8ff','#e888c2','#ffd166','#5cc9a7'];
+
+// 魚群進出的錨點：畫布下緣，對應畫面下方真正的海水（不是版面上方的滬口位置）
+const BOARD_VIEW_H = 476; // 需與 <svg viewBox="0 0 526 476"> 的高度一致
+const GAP_X = CX;
+const GAP_Y = BOARD_VIEW_H + 60;
+
+function clearFish(){
+  document.getElementById('fishLayer').innerHTML = '';
+  if(state) state.fishList = [];
+}
+
+/* 漲潮：新魚從海水那一側慢慢游進來，游到牠們各自的落點；動畫時長跟水位上升的時間同步 */
+function spawnFish(n, riseDurationMs){
+  if(!state) return;
+  const layer = document.getElementById('fishLayer');
+  const room = MAX_FISH_SHOWN - state.fishList.length;
+  const toSpawn = Math.max(0, Math.min(n, room));
+  
+  // 如果没法生成所有的鱼，调整fishCaught以匹配实际显示数（畫面上的數字統一交給呼叫端在魚游到定位後才更新）
+  if(toSpawn < n){
+    state.fishCaught = Math.max(0, state.fishCaught - (n - toSpawn));
+  }
+  
+  const posDurS = (Math.max(600, riseDurationMs || 900) / 1000).toFixed(2);
+  for(let i=0;i<toSpawn;i++){
+    const r = Math.random() * (R_IN - 45);
+    const ang = Math.random() * Math.PI * 2;
+    const x = CX + r*Math.cos(ang);
+    const y = CY + r*Math.sin(ang);
+    const rot = Math.floor(Math.random()*360);
+    const id = 'fish-' + (fishIdSeq++);
+    const color = FISH_COLORS[Math.floor(Math.random()*FISH_COLORS.length)];
+    const bobDur = (2 + Math.random()*1.6).toFixed(2);
+    const bobBegin = (-Math.random()*bobDur).toFixed(2);
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('id', id);
+    g.setAttribute('class','fish-icon');
+    g.style.transform = `translate(${GAP_X}px,${GAP_Y}px) rotate(${rot}deg) scale(.5)`;
+    g.style.opacity = '0';
+    g.innerHTML = `<use href="#fishIcon" x="-31.2" y="-19.2" width="62.4" height="38.4" style="color:${color}">
+      <animateTransform attributeName="transform" type="translate" values="0,0; 3,-2; 0,0" dur="${bobDur}s" begin="${bobBegin}s" repeatCount="indefinite"/>
+    </use>`;
+    layer.appendChild(g);
+    void g.getBoundingClientRect();
+    g.style.transition = `transform ${posDurS}s ease-in-out, opacity 1.4s ease`;
+    g.style.transform = `translate(${x}px,${y}px) rotate(${rot}deg) scale(1)`;
+    g.style.opacity = '1';
+
+    state.fishList.push({ id, x, y, rot });
+  }
+}
+
+/* 退潮：從目前留在滬內的魚裡隨機挑出要逃走的，跟著水位後退的時間慢慢游回海水側後淡出移除 */
+function despawnFish(n, recedeDurationMs){
+  if(!state) return;
+  const toRemove = Math.max(0, Math.min(n, state.fishList.length));
+  const durMs = Math.max(400, recedeDurationMs || 900);
+  const durS = (durMs/1000).toFixed(2);
+  for(let i=0;i<toRemove;i++){
+    const idx = Math.floor(Math.random()*state.fishList.length);
+    const fish = state.fishList.splice(idx,1)[0];
+    const el = document.getElementById(fish.id);
+    if(!el) continue;
+    el.style.transition = `transform ${durS}s ease-in, opacity ${durS}s ease-in`;
+    el.style.transform = `translate(${GAP_X}px,${GAP_Y}px) rotate(${fish.rot}deg) scale(.35)`;
+    el.style.opacity = '0';
+    setTimeout(()=>{ if(el.parentNode) el.remove(); }, durMs + 60);
+  }
+}
+
+/* 魚獲增減時，在「魚獲」欄位上方彈出 +N / -N 的浮動文字，並讓欄位閃一下顏色，讓變化更明顯 */
+function showFishDelta(delta){
+  const statEl = document.getElementById('statFish').closest('.stat');
+  if(!statEl) return;
+  const rect = statEl.getBoundingClientRect();
+  const div = document.createElement('div');
+  div.className = 'float-text';
+  div.textContent = (delta > 0 ? '+' : '') + delta + ' 🐟';
+  div.style.left = (rect.left + rect.width/2) + 'px';
+  div.style.top = rect.top + 'px';
+  div.style.color = delta > 0 ? 'var(--teal-dark)' : 'var(--coral-dark2)';
+  document.body.appendChild(div);
+  setTimeout(()=>div.remove(), 1200);
+
+  statEl.classList.remove('flash-gain','flash-loss');
+  void statEl.offsetWidth;
+  statEl.classList.add(delta > 0 ? 'flash-gain' : 'flash-loss');
+}
+
+/* 翻動影響清單：自己 + 同層左右相鄰 + 對面另一層。
+   三態石塊（0完好/1龜裂/2毀損）用 mod-3 加法取代原本的位元 XOR，
+   所以這裡改成存「受影響格子 id 的陣列」，而不是位元遮罩整數。 */
+const MASKS = new Array(TOTAL).fill(null);
+for(let i=0;i<N;i++){
+  const cells = [i];
+  if(i>0) cells.push(i-1);
+  if(i<N-1) cells.push(i+1);
+  cells.push(N+i);
+  MASKS[i] = cells;
+}
+for(let i=0;i<N;i++){
+  const cells = [N+i];
+  if(i>0) cells.push(N+i-1);
+  if(i<N-1) cells.push(N+i+1);
+  cells.push(i);
+  MASKS[N+i] = cells;
+}
+
+/* 對一組石塊狀態陣列套用某個點的翻動效果：delta=+1 表示往毀損方向推一階（海浪），
+   delta=-1（即 mod 3 的 +2）表示往完好方向修一階（點擊修復）。
+   同一顆格子若同時被兩個點影響到，會各自疊加，不會互相抵銷──
+   這維持了跟原本 XOR 版本相同的「保證可解」性質：因為 -1 在 mod 3 底下是可逆的，
+   任何由這組生成元疊加出來的損壞狀態，都能單靠反覆套用「修復」操作（同一組生成元的逆元）解回全 0。 */
+function applyMask(cellsArr, idx, delta){
+  MASKS[idx].forEach(cid=>{
+    cellsArr[cid] = ((cellsArr[cid] + delta) % 3 + 3) % 3;
+  });
+}
+
+/* ============ 計分基準 ============ */
+const BASE_SCORE = 1000;
+const PENALTY_PER_SEC = 5;     // 每秒扣分
+const PENALTY_PER_MOVE = 10;   // 每步扣分
+const BONUS_PER_FISH = 20;     // 每尾留在滬內的魚加分
+
+function computeScore(seconds, moves, fishCaught, totalFishCollected){
+  const timePenalty = seconds * PENALTY_PER_SEC;
+  const movePenalty = moves * PENALTY_PER_MOVE;
+  // 分數要算「還在石滬裡的魚」加上「已經收進倉庫的魚」，收魚才不會白忙一場
+  const fishBonus = ((fishCaught||0) + (totalFishCollected||0)) * BONUS_PER_FISH;
+  const total = Math.max(0, BASE_SCORE - timePenalty - movePenalty + fishBonus);
+  return { timePenalty, movePenalty, fishBonus, total };
+}
+
+/* 依照「通道」（畫面上看得到的直線+斜線連接線，CHANNELS）計算目前有幾處缺口：
+   每條通道都是一內層+一外層的配對。三態石塊下，缺口不是全有全無：
+   完好(0)=沒缺口，龜裂(1)=半個缺口，毀損(2)=整個缺口，兩端取較嚴重的那一個。
+   缺口比率 = 加總缺口權重 / 全部通道數，取代單純用「毀損顆數/22」的算法 */
+function countGapRatio(cells){
+  let breached = 0;
+  CHANNELS.forEach(([a,b])=>{
+    const worst = Math.max(cells[a], cells[b]); // 0/1/2
+    breached += worst / 2;
+  });
+  return breached / CHANNELS.length;
+}
+
+/* ============ 狀態 ============ */
+let state = null; // {cells(每格0/1/2三態陣列), moves, seconds, timerHandle, tideHandle}
+
+function switchScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+
+  // 返回按鈕（原本是重來按鈕，改成強制返回平台用）：只在遊戲進行中顯示，說明頁/結算頁不需要
+  const restartBtn = document.getElementById('restartBtn');
+  if(restartBtn) restartBtn.style.display = (id === 'screen-game') ? '' : 'none';
+
+  // 說明按鈕：只在介紹頁出現，不需要在遊戲進行中或結算頁顯示
+  const helpBtn = document.getElementById('helpBtn');
+  if(helpBtn) helpBtn.style.display = (id === 'screen-intro') ? '' : 'none';
+  
+  // 如果切換到介紹頁面，更新統計顯示
+  if(id === 'screen-intro'){
+    updateIntroStats();
+  }
+}
+
+function updateIntroStats(){
+  const statsEl = document.getElementById('introStats');
+  if(!statsEl) return;
+
+  const nicknameHtml = platformNickname
+    ? `<div style="color:var(--cream);font-size:0.95rem;font-weight:bold;margin-bottom:6px;">👤 ${platformNickname}，歡迎回來！</div>`
+    : '';
+  const bestScoreHtml = myBestScore
+    ? `<div class="stat score-stat"><b>${myBestScore.scoreValue}</b><span>歷史最佳</span></div>`
+    : '<div style="color:var(--cream);font-size:0.9rem;">開始你的第一局修復之旅吧！</div>';
+
+  statsEl.innerHTML = nicknameHtml + bestScoreHtml;
+}
+
+document.getElementById('startBtn').addEventListener('click', ()=>{ SoundFX.unlock(); SoundFX.uiClick(); startGame(); });
+// 長按畫面時（尤其是石塊、竹簍）避免跳出系統的右鍵/長按選單
+document.addEventListener('contextmenu', (e)=>{ e.preventDefault(); });
+document.getElementById('restartBtn').addEventListener('click', ()=>{
+  SoundFX.uiClick();
+  if(!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+  exitAndClosePlatform();
+});
+document.getElementById('collectFishBtn').addEventListener('click', ()=>{
+  if(!state || state.over || state.tidePhase !== 'day') return;
+  SoundFX.uiClick?.();
+  collectFish();
+});
+document.getElementById('collectFishBtn').addEventListener('keydown', (e)=>{
+  if(e.key !== 'Enter' && e.key !== ' ') return;
+  e.preventDefault();
+  if(!state || state.over || state.tidePhase !== 'day') return;
+  SoundFX.uiClick?.();
+  collectFish();
+});
+document.getElementById('playAgainBtn').addEventListener('click', ()=>{
+  SoundFX.uiClick();
+  startGame(); // 只重置遊戲內部狀態、重新開始，不跳回平台，不會再走到扣款流程
+});
+document.getElementById('closeGameBtn').addEventListener('click', ()=>{
+  SoundFX.uiClick();
+  exitAndClosePlatform(); // 通知平台這個任務視窗要關了，平台會清掉對應的記錄
+});
+document.getElementById('playAgainLoseBtn').addEventListener('click', ()=>{
+  SoundFX.uiClick();
+  startGame();
+});
+document.getElementById('closeGameLoseBtn').addEventListener('click', ()=>{
+  SoundFX.uiClick();
+  exitAndClosePlatform(); // 通知平台這個任務視窗要關了，平台會清掉對應的記錄
+});
+
+/* ============ 遊戲邏輯 ============ */
+/* 三態版本：從全部完好(0)開始，隨機對某些點套用「+1」(往毀損方向推一階)。
+   因為都是用同一組 MASKS 生成元疊加出來的，不管疊加幾次、順不順路，
+   最終狀態一定落在玩家用「修復」操作（同一生成元的逆元）可以推回全 0 的空間內，
+   保證整局一定有解。 */
+function randomPuzzle(){
+  const cells = new Array(TOTAL).fill(0);
+  const scrambleMoves = 26 + Math.floor(Math.random()*8); // 三態的狀態空間更大，多疊幾次讓初始局更需要推理
+  for(let k=0;k<scrambleMoves;k++){
+    const idx = Math.floor(Math.random()*TOTAL);
+    applyMask(cells, idx, 1);
+  }
+  if(cells.every(v=>v===0)) applyMask(cells, Math.floor(Math.random()*TOTAL), 1);
+  return cells;
+}
+
+function stopTimers(){
+  if(state){
+    clearInterval(state.timerHandle);
+    clearTimeout(state.tideHandle);
+    clearTimeout(state.fishInHandle);
+    clearTimeout(state.fishArriveHandle);
+    clearTimeout(state.shakeWaitHandle);
+    clearTimeout(state.recedeHandle);
+    clearTimeout(state.birdHandle);
+    clearTimeout(state.toolBrokenHandle);
+    clearTimeout(state.thiefHandle);
+  }
+}
+
+/* ============ 日夜模式系统 ============ */
+const THIEF_CHECK_MIN_MS = 2000, THIEF_CHECK_MAX_MS = 5000;
+const THIEF_CHANCE = 0.5;  // 提高到 50%，更容易出现
+
+function updateTidePhase(){
+  if(!state) return;
+  state.tideCount++;
+  // 遊戲一開始是白天，第 1 波沖刷後轉夜，第 2 波轉回白天，如此純交替：日→夜→日→夜
+  const newPhase = (state.tideCount % 2 === 1) ? 'night' : 'day';
+  if(newPhase !== state.tidePhase){
+    transitionToPhase(newPhase);
+  }
+}
+
+/* 夜晚罩層：進場一律從左滑入、退場一律往右滑出，方向不對稱，
+   所以不能只切換一個 class 讓瀏覽器自己算，要分開控制 transform 才行。
+   用 nightOverlayShown 記著目前是不是「正蓋在畫面上」，避免重來/一開始時
+   在畫面上跑一段不必要的滑動。 */
+let nightOverlayShown = false;
+function slideNightOverlayIn(){
+  const el = document.getElementById('nightOverlay');
+  if(!el) return;
+  el.style.transition = 'none';
+  el.style.transform = 'translateX(-100%)';
+  void el.offsetWidth; // 強制 reflow，確保下一行的 transition 真的會生效
+  el.style.transition = 'transform 2s ease';
+  el.style.transform = 'translateX(0)';
+  nightOverlayShown = true;
+}
+function slideNightOverlayOut(){
+  const el = document.getElementById('nightOverlay');
+  if(!el) return;
+  if(!nightOverlayShown){
+    el.style.transition = 'none';
+    el.style.transform = 'translateX(-100%)';
+    return;
+  }
+  el.style.transition = 'transform 2s ease';
+  el.style.transform = 'translateX(100%)';
+  nightOverlayShown = false;
+}
+
+function transitionToPhase(newPhase){
+  if(!state) return;
+  state.dayNightTransitioning = true;
+  state.tidePhase = newPhase;
+  
+  if(newPhase === 'night'){
+    enterNightMode();
+  } else {
+    enterDayMode();
+  }
+  
+  setTimeout(()=>{ if(state) state.dayNightTransitioning = false; }, 1000);
+}
+
+function enterDayMode(){
+  if(!state) return;
+  const board = document.getElementById('board');
+  if(board) board.classList.remove('night-mode');
+  document.body.classList.remove('night-mode');
+  slideNightOverlayOut();
+  
+  const collectBtn = document.getElementById('collectFishBtn');
+  if(collectBtn){
+    collectBtn.style.pointerEvents = 'auto';
+    collectBtn.style.opacity = '1';
+  }
+  
+  if(state.thiefHandle){
+    clearTimeout(state.thiefHandle);
+    state.thiefHandle = null;
+  }
+  
+  state.toolBreakRateMultiplier = 1;
+  scheduleBirdCheck();
+  SoundFX.daylight?.();
+}
+
+function enterNightMode(){
+  if(!state) return;
+  const board = document.getElementById('board');
+  if(board) board.classList.add('night-mode');
+  document.body.classList.add('night-mode');
+  slideNightOverlayIn();
+  
+  const collectBtn = document.getElementById('collectFishBtn');
+  if(collectBtn){
+    collectBtn.style.pointerEvents = 'none';
+    collectBtn.style.opacity = '0.5';
+  }
+  
+  // 停止海鳥檢查
+  if(state.birdHandle){
+    clearTimeout(state.birdHandle);
+    state.birdHandle = null;
+  }
+  
+  // 停止舊的小偷檢查（如果有）
+  if(state.thiefHandle){
+    clearTimeout(state.thiefHandle);
+    state.thiefHandle = null;
+  }
+  
+  state.toolBreakRateMultiplier = 3;
+  
+  // 立即啟動小偷檢查
+  scheduleThiefCheck();
+  SoundFX.nightfall?.();
+}
+
+function scheduleThiefCheck(){
+  if(!state || state.over) return;
+  if(state.tidePhase !== 'night') return;
+  
+  const wait = THIEF_CHECK_MIN_MS + Math.random()*(THIEF_CHECK_MAX_MS - THIEF_CHECK_MIN_MS);
+  state.thiefHandle = setTimeout(()=>{
+    // 检查时才判断，允许跨越阶段
+    if(!state || state.over) return;
+    
+    // 只在夜间且有鱼时才考虑小偷
+    if(state.tidePhase === 'night' && state.fishCaught > 0){
+      if(Math.random() < THIEF_CHANCE){
+        triggerThiefEvent();
+      }
+    }
+    
+    // 如果还是夜间，继续调度
+    if(state && !state.over && state.tidePhase === 'night'){
+      scheduleThiefCheck();
+    }
+  }, wait);
+}
+
+function triggerThiefEvent(){
+  if(!state || state.fishCaught <= 0) return;
+  
+  const toSteal = Math.min(state.fishCaught, 1 + Math.floor(Math.random()*3));
+  state.fishCaught = Math.max(0, state.fishCaught - toSteal);
+  document.getElementById('statFish').textContent = state.fishCaught;
+  despawnFish(toSteal, 700); // 石滬裡實際要少掉對應數量的魚圖示，數字才會跟畫面對得起來
+  
+  playThiefEffect();
+  updateLiveScore();
+  showFishDelta(-toSteal);
+  SoundFX.steal?.();
+  vibrate([50, 100, 50]);
+}
+
+/* 偷魚小賊造型：紅頭巾扛著魚袋的角色，頭、身體、手、腳畫成同一組連續形狀，
+   避免看起來像各部位分開的零件拼湊在一起。從畫面左側跑進來，往右側跑出去。 */
+function thiefFigureSVG(){
+  return `
+    <svg viewBox="0 0 260 300" width="100%" height="100%">
+      <ellipse cx="150" cy="286" rx="76" ry="10" fill="#000000" opacity="0.15"/>
+
+      <path d="M65,102 C60,130 60,160 65,190 C66,215 64,245 68,265 C72,272 82,274 90,270 C96,266 96,255 93,245 C97,220 96,198 92,188 L108,188 C104,198 103,220 107,245 C104,255 104,266 110,270 C118,274 128,272 132,265 C136,245 134,215 135,190 C140,160 140,130 135,102 C122,94 78,94 65,102 Z"
+        fill="#d0842f" stroke="#241407" stroke-width="3" stroke-linejoin="round"/>
+
+      <path d="M69,225 L92,222" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round" opacity="0.65"/>
+      <path d="M108,222 L131,225" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round" opacity="0.65"/>
+
+      <path d="M65,150 L135,150" stroke="#8a4b16" stroke-width="4"/>
+      <circle cx="100" cy="150" r="6" fill="#c2280f" stroke="#241407" stroke-width="1.5"/>
+
+      <path d="M128,108 C145,100 160,90 172,86 C180,84 187,88 187,96 C187,104 179,109 170,107 C158,105 145,109 133,117 Z"
+        fill="#e0a878" stroke="#241407" stroke-width="3" stroke-linejoin="round"/>
+
+      <circle cx="100" cy="66" r="42" fill="#e0a878" stroke="#241407" stroke-width="3"/>
+
+      <path d="M64,55 C64,30 84,20 100,20 C116,20 136,30 136,55 C136,42 118,34 100,38 C82,34 64,42 64,55 Z"
+        fill="#ff4327" stroke="#241407" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M130,42 C154,44 168,60 166,80 C155,72 143,70 131,74 Z" fill="#c2280f" stroke="#241407" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M126,36 C150,32 166,44 170,64 C157,58 144,58 132,64 Z" fill="#ff4327" stroke="#241407" stroke-width="2.5" stroke-linejoin="round"/>
+
+      <path d="M76,58 Q83,53 90,57" fill="none" stroke="#241407" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M100,57 Q107,53 114,58" fill="none" stroke="#241407" stroke-width="2.5" stroke-linecap="round"/>
+      <ellipse cx="84" cy="65" rx="3" ry="4" fill="#241407"/>
+      <ellipse cx="106" cy="65" rx="3" ry="4" fill="#241407"/>
+      <path d="M82,80 Q94,86 106,79" fill="none" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round"/>
+
+      <path d="M172,86 Q184,72 196,64" fill="none" stroke="#8a4b16" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="205" cy="108" rx="34" ry="42" fill="#087a89" stroke="#241407" stroke-width="3"/>
+      <path d="M205,68 Q211,62 219,68 L215,82 Q205,78 195,82 Z" fill="#00d4c2" stroke="#241407" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M183,102 Q205,94 227,104" fill="none" stroke="#065c66" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+    </svg>
+  `;
+}
+
+function playThiefEffect(){
+  const thief = document.createElement('div');
+  thief.className = 'thief-figure';
+  thief.style.cssText = `
+    position: fixed;
+    top: 38%;
+    left: -100px;
+    width: 84px;
+    height: 97px;
+    pointer-events: none;
+    z-index: 50;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,.35));
+    animation: thiefDash 1.35s ease-in-out forwards;
+  `;
+  thief.innerHTML = thiefFigureSVG();
+
+  if(!document.querySelector('style[data-thief-animation]')){
+    const style = document.createElement('style');
+    style.setAttribute('data-thief-animation', 'true');
+    style.textContent = `
+      @keyframes thiefDash {
+        0% { left: -100px; opacity: 0; transform: translateY(0) scale(.92); }
+        14% { opacity: 1; }
+        50% { transform: translateY(-6px) scale(1); }
+        86% { opacity: 1; }
+        100% { left: 110vw; opacity: 0; transform: translateY(0) scale(.92); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(thief);
+  setTimeout(()=>{ if(thief.parentNode) thief.remove(); }, 1400);
+}
+
+function collectFish(){
+  if(!state || state.over || state.tidePhase !== 'day') return;
+  
+  const toCollect = state.fishCaught;
+  if(toCollect <= 0) return;
+  
+  // 魚被保存到倉庫
+  state.totalFishCollected = (state.totalFishCollected || 0) + toCollect;
+  state.fishCaught = 0;
+  document.getElementById('statFish').textContent = '0';
+  
+  // 更新已收魚顯示
+  updateCollectedFishDisplay();
+  updateLiveScore(); // 立刻刷新分數顯示（魚的加總其實沒變，但保險起見還是跟偷魚一樣即時刷新一次）
+  
+  playCollectFishEffect(); // 要在清空 fishList 之前呼叫，飛向收魚按鈕的動畫才有魚可以飛
+  SoundFX.collectFish?.();
+  vibrate([100, 50, 100]);
+}
+
+function updateCollectedFishDisplay(){
+  const collectedEl = document.getElementById('statCollected');
+  if(collectedEl){
+    collectedEl.textContent = state.totalFishCollected || 0;
+  }
+}
+
+function playCollectFishEffect(){
+  const btn = document.getElementById('collectFishBtn');
+  if(!btn) return;
+  
+  const rect = btn.getBoundingClientRect();
+  
+  state.fishList.forEach(fish=>{
+    const el = document.getElementById(fish.id);
+    if(!el) return;
+    
+    el.style.transition = 'transform 0.6s ease-in, opacity 0.6s ease-in';
+    el.style.transform += ` translate(${rect.left - fish.x}px, ${rect.top - fish.y}px) scale(0.3)`;
+    el.style.opacity = '0';
+  });
+  
+  setTimeout(()=>{ 
+    clearFish();
+  }, 650);
+}
+
+/* ---- 水位控制：倒數期間緩緩上升，撞擊後快速退回 ---- */
+const OCEAN_LOW = '48vh';
+const OCEAN_PEAK = '6vh';
+
+function setOceanTransition(css){
+  document.getElementById('ocean').style.transition = css;
+}
+function setOceanLevel(vh){
+  document.getElementById('ocean').style.transform = `translateY(${vh})`;
+}
+function resetOceanInstant(){
+  setOceanTransition('none');
+  setOceanLevel(OCEAN_LOW);
+  void document.getElementById('ocean').offsetWidth;
+}
+function riseOceanOverDelay(delayMs){
+  setOceanTransition(`transform ${delayMs}ms linear`);
+  void document.getElementById('ocean').offsetWidth;
+  setOceanLevel(OCEAN_PEAK);
+}
+function recedeOceanQuickly(){
+  setOceanTransition('transform .9s cubic-bezier(.34,1.2,.4,1)');
+  setOceanLevel(OCEAN_LOW);
+}
+
+function updateLiveScore(){
+  const { total } = computeScore(state.seconds, state.moves, state.fishCaught, state.totalFishCollected);
+  const scoreEl = document.getElementById('statScore');
+  scoreEl.textContent = total;
+  scoreEl.parentElement.classList.toggle('danger', total <= 150);
+  if(total <= 0 && !state.over){
+    failGame();
+  }
+}
+
+function failGame(){
+  state.over = true;
+  stopTimers();
+  SoundFX.lose();
+  SoundFX.setAmbientLevel(0, 1.2);
+  vibrate([80, 60, 80, 60, 200]); // 決堤失敗，較長的震動提示
+  document.getElementById('failTime').textContent = formatTime(state.seconds);
+  document.getElementById('failMoves').textContent = state.moves;
+  loseTipCarousel.showRandom();
+  document.getElementById('loseOverlay').classList.add('active');
+}
+
+const SHAKE_MS = 500;   // 需與 .shake 的CSS動畫時長一致
+const RECEDE_MS = 900;  // 需與 recedeOceanQuickly() 的transition時長一致
+const TIDE_INTERVAL_MIN = 6; // 海浪間隔下限（秒）
+
+function scheduleTide(){
+  // 每沖刷一次，下一次的海浪間隔就縮短 1 秒，直到縮到最短 6 秒為止，讓後期越修越急
+  if(state.tideInterval === undefined) state.tideInterval = 12 + Math.random()*3; // 第一次仍是 12~15 秒隨機
+  const delay = state.tideInterval * 1000;
+  riseOceanOverDelay(delay); // 水位在整段倒數期間緩緩爬升，撞擊瞬間到達最高點
+  SoundFX.setAmbientLevel(1, delay / 1000); // 潮聲底噪隨水位同步變大，聽覺跟視覺同步
+
+  // 魚群要到這次漲潮週期的後半段才開始出現，不是一開始就跟著游進來；
+  // 剩餘時間內游到定位，正好跟撞擊同時抵達
+  const fishInDelay = delay / 2;
+  state.fishInHandle = setTimeout(()=>{
+    if(!state || state.over) return;
+    const fishIn = 2 + Math.floor(Math.random()*4); // 每次漲潮帶入2~5尾
+    const riseDur = delay - fishInDelay;
+    state.fishCaught += fishIn; // 先內部累加，讓 spawnFish 需要裁切（超過畫面上限）時能正確判斷
+    spawnFish(fishIn, riseDur); // 魚開始從海裡游過來；這段期間魚還在路上，畫面數字先不要動
+    SoundFX.fishIn();
+
+    // 等魚真的游到石滬定位（跟海浪撞擊同一時間抵達）才更新魚獲數字，
+    // 不然數字比魚提早出現，會讓人覺得魚還在海裡就先算進魚獲了
+    state.fishArriveHandle = setTimeout(()=>{
+      if(!state || state.over) return;
+      document.getElementById('statFish').textContent = state.fishCaught;
+      showFishDelta(fishIn);
+    }, riseDur);
+  }, fishInDelay);
+
+  state.tideHandle = setTimeout(()=>{
+    tideStrike();
+    state.tideInterval = Math.max(TIDE_INTERVAL_MIN, state.tideInterval - 1); // 沖刷一次後間隔縮短1秒，最短6秒
+    if(state && !state.over && !isFullyRepaired()){
+      // 海浪撞擊後檢查是否切換日夜
+      updateTidePhase();
+      // 畫面震動播完之後，海水才開始往下退
+      state.shakeWaitHandle = setTimeout(()=>{
+        if(!state || state.over) return;
+        recedeOceanQuickly();
+        SoundFX.setAmbientLevel(0.12, RECEDE_MS / 1000); // 潮聲底噪跟著退潮變小聲
+        ebbFish(RECEDE_MS); // 海水開始後退的瞬間，依照當下的毀損比例讓魚群跟著缺口逃走，動畫時長跟退潮同步
+        state.recedeHandle = setTimeout(()=>{
+          if(state && !state.over && !isFullyRepaired()) scheduleTide();
+        }, RECEDE_MS);
+      }, SHAKE_MS);
+    }
+  }, delay);
+}
+
+function isFullyRepaired(){
+  return !!state && state.cells.every(v=>v===0);
+}
+
+function startGame(){
+  stopTimers();
+  // 「再玩一次」是從結算彈窗直接呼叫這個函式，彈窗本身要記得關掉，
+  // 不然畫面會變成遊戲畫面已經重新開始、上面卻還蓋著上一局的結算彈窗。
+  // 第一次開局呼叫這裡時，這兩個彈窗本來就沒有 active，移除一個不存在的
+  // class 不會有任何副作用，所以不用分「是不是第一次」，一律清乾淨最安全。
+  document.getElementById('winOverlay').classList.remove('active');
+  document.getElementById('loseOverlay').classList.remove('active');
+  state = {
+    cells: randomPuzzle(),
+    moves: 0,
+    seconds: 0,
+    fishCaught: 0,
+    fishList: [],
+    totalFishCollected: 0,  // 倉庫裡的魚
+    over: false,
+    toolBroken: false,
+    toolBreakSafeClicksLeft: 0,
+    timerHandle: null,
+    tideHandle: null,
+    tideInterval: undefined,
+    // 日夜模式
+    tidePhase: 'day',  // 遊戲開場一律先是白天
+    tideCount: 0,
+    toolBreakRateMultiplier: 1,
+    thiefHandle: null,
+    dayNightTransitioning: false
+  };
+  document.getElementById('statTime').textContent = '00:00';
+  document.getElementById('statMoves').textContent = '0';
+  document.getElementById('statFish').textContent = '0';
+  document.getElementById('statCollected').textContent = '0';
+  document.getElementById('statScore').textContent = String(BASE_SCORE);
+  document.getElementById('statScore').parentElement.classList.remove('danger');
+  document.getElementById('toolBrokenBanner').classList.remove('show');
+  resetOceanInstant();
+
+  const badgePopupEl = document.getElementById('badgePopup');
+  clearTimeout(showBadgePopup._hideTimer);
+  clearTimeout(showBadgePopup._cleanupTimer);
+  badgePopupEl.classList.remove('show','hide');
+  badgePopupEl.style.removeProperty('display');
+
+  renderBoard();
+  clearFish();
+  switchScreen('screen-game');
+  updateCollectedFishDisplay();
+  enterDayMode(); // 重來時把上一局可能殘留的夜間狀態（罩層、按鈕停用等）重設乾淨，並排好白天該有的鳥事件
+
+  state.timerHandle = setInterval(()=>{
+    state.seconds++;
+    const timeStat = document.getElementById('statTime');
+    timeStat.textContent = formatTime(state.seconds);
+    // 當潮汐間隔變短（緊張程度增加）時，添加視覺警告
+    if(state.tideInterval !== undefined && state.tideInterval <= 10){
+      timeStat.parentElement.classList.add('urgent');
+    } else {
+      timeStat.parentElement.classList.remove('urgent');
+    }
+    updateLiveScore();
+  }, 1000);
+
+  scheduleTide();
+}
+
+function formatTime(sec){
+  const m = String(Math.floor(sec/60)).padStart(2,'0');
+  const s = String(sec%60).padStart(2,'0');
+  return `${m}:${s}`;
+}
+
+const STONE_SYMBOL = ['#stoneOk', '#stoneCracked', '#stoneBad']; // state 0/1/2 對應圖示
+
+function renderBoard(){
+  const layer = document.getElementById('stoneLayer');
+  layer.innerHTML = '';
+  STONES.forEach(s=>{
+    const st = state.cells[s.id];
+    const isOuter = s.layer === 'outer';
+    const size = isOuter ? 76.5 : 51;
+    const half = size / 2;
+    const hitR = isOuter ? 46.5 : 31;
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','stone-cell');
+    g.setAttribute('transform', `translate(${s.x},${s.y})`);
+    g.dataset.id = s.id;
+    g.innerHTML = `
+      <g class="stone-visual">
+        <circle class="hit" r="${hitR}"></circle>
+        <use href="${STONE_SYMBOL[st]}" x="${-half}" y="${-half}" width="${size}" height="${size}"></use>
+      </g>
+    `;
+    g.addEventListener('click', ()=>onCellClick(s.id, g));
+    layer.appendChild(g);
+  });
+}
+
+/* 只更新單顆石塊的破損/完好圖示，不重建整個 DOM 節點；
+   點擊或海浪撞擊時，通常只有 2~4 顆石塊狀態改變，比起每次都整版重繪 22 顆，
+   這樣可以省掉大量不必要的 DOM 銷毀/建立，手機上會比較順 */
+function updateStoneVisual(sid){
+  const cell = document.querySelector(`.stone-cell[data-id="${sid}"]`);
+  if(!cell) return;
+  const use = cell.querySelector('.stone-visual use');
+  if(use) use.setAttribute('href', STONE_SYMBOL[state.cells[sid]]);
+}
+
+/* 修復特效：中心金色閃光 + 雙層擴散光環 + 星星火花四散 + 石塊本身彈跳一下
+   isRepair：true 代表這顆石頭是「毀損→修復」，false 代表「完好→毀損」，兩者音效不同 */
+function playRepairEffect(sid, isRepair){
+  const cell = document.querySelector(`.stone-cell[data-id="${sid}"]`);
+  if(!cell) return;
+  if(isRepair !== false) SoundFX.repair();
+  const isOuter = STONES[sid].layer === 'outer';
+  const startR = isOuter ? 40 : 27;
+
+  // 石塊本身彈跳（放大再回彈），比一般點擊縮放更明顯
+  const visual = cell.querySelector('.stone-visual');
+  if(visual){
+    visual.classList.remove('repair-pop');
+    void visual.getBoundingClientRect();
+    visual.classList.add('repair-pop');
+    setTimeout(()=>visual.classList.remove('repair-pop'), 600);
+  }
+
+  // 中心閃光：快速炸開又消失
+  const glow = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  glow.setAttribute('class','repair-glow');
+  glow.setAttribute('cx','0'); glow.setAttribute('cy','0');
+  glow.setAttribute('r', startR*0.3);
+  glow.innerHTML = `
+    <animate attributeName="r" from="${startR*0.3}" to="${startR*1.15}" dur="0.35s" fill="freeze"/>
+    <animate attributeName="opacity" from="0.9" to="0" dur="0.4s" fill="freeze"/>
+  `;
+  cell.appendChild(glow);
+  setTimeout(()=>{ if(glow.parentNode) glow.remove(); }, 450);
+
+  // 雙層擴散光環，時間稍微錯開
+  [0, 0.12].forEach(delay=>{
+    const ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    ring.setAttribute('class','repair-ring');
+    ring.setAttribute('cx','0'); ring.setAttribute('cy','0');
+    ring.setAttribute('r', startR);
+    ring.innerHTML = `
+      <animate attributeName="r" from="${startR}" to="${startR*2.1}" dur="0.7s" begin="${delay}s" fill="freeze"/>
+      <animate attributeName="opacity" from="0.95" to="0" dur="0.7s" begin="${delay}s" fill="freeze"/>
+      <animate attributeName="stroke-width" from="5" to="0.5" dur="0.7s" begin="${delay}s" fill="freeze"/>
+    `;
+    cell.appendChild(ring);
+    setTimeout(()=>{ if(ring.parentNode) ring.remove(); }, (0.7+delay)*1000 + 100);
+  });
+
+  // 星星火花向外飛散
+  const sparkleCount = 5;
+  for(let i=0;i<sparkleCount;i++){
+    const ang = (Math.PI*2/sparkleCount)*i + (Math.random()*0.5 - 0.25);
+    const dist = startR * (1.4 + Math.random()*0.6);
+    const dx = (Math.cos(ang)*dist).toFixed(1);
+    const dy = (Math.sin(ang)*dist).toFixed(1);
+    const spark = document.createElementNS('http://www.w3.org/2000/svg','path');
+    spark.setAttribute('class','repair-sparkle');
+    spark.setAttribute('d','M0,-5 L1.3,-1.3 L5,0 L1.3,1.3 L0,5 L-1.3,1.3 L-5,0 L-1.3,-1.3 Z');
+    spark.innerHTML = `
+      <animateTransform attributeName="transform" type="translate" from="0,0" to="${dx},${dy}" dur="0.55s" fill="freeze"/>
+      <animate attributeName="opacity" from="1" to="0" dur="0.55s" fill="freeze"/>
+    `;
+    cell.appendChild(spark);
+    setTimeout(()=>{ if(spark.parentNode) spark.remove(); }, 620);
+  }
+}
+
+function onCellClick(id, g){
+  if(!state || state.over) return;
+  if(state.toolBroken) return; // 工具維修中，暫時無法點擊修復
+  if(state.toolBreakSafeClicksLeft > 0){
+    state.toolBreakSafeClicksLeft--; // 保障期內，這次點擊不參與故障判定
+  } else {
+    const multiplier = state.toolBreakRateMultiplier || 1;
+    const breakChance = TOOL_BREAK_CHANCE * multiplier;
+    if(Math.random() < breakChance){
+      triggerToolBroken();
+      return; // 這次點擊沒有修復到，石塊狀態不變
+    }
+  }
+  const oldCells = state.cells.slice();
+  SoundFX.stoneTap();
+  applyMask(state.cells, id, -1); // 修復：影響到的格子各往完好方向推一階（0→2 代表原本完好的被連帶弄裂，是刻意的風險）
+  state.moves++;
+  document.getElementById('statMoves').textContent = state.moves;
+  updateLiveScore();
+  if(state.over) return; // 這一步就把分數扣到0了，失敗結算已觸發，不再翻面
+
+  // 只處理這次點擊實際翻動到的幾顆石塊（MASKS[id] 影響到的格子），不整版重繪
+  MASKS[id].forEach(sid=>{
+    updateStoneVisual(sid);
+    const improved = state.cells[sid] < oldCells[sid]; // 狀態數值變小＝往完好方向前進
+    playRepairEffect(sid, improved);
+  });
+
+  const fresh = document.querySelector(`.stone-cell[data-id="${id}"] .stone-visual`);
+  if(fresh){ fresh.classList.add('pulse'); setTimeout(()=>fresh.classList.remove('pulse'), 350); }
+
+  if(isFullyRepaired()) finishGame();
+}
+
+/* 漲潮的第二個撞擊點，位置限制在第一個撞擊點的 ±2 塊範圍內（同一角度位置、層別不拘），
+   讓兩波撞擊的受影響區域集中在同一段滬堤，而不是隨機散落在整個弧形上 */
+function pickNearbyIndex(idx1){
+  const pos1 = idx1 % N;
+  let idx2 = idx1;
+  let attempts = 0;
+  while(idx2 === idx1 && attempts < 20){
+    const offset = Math.floor(Math.random()*5) - 2; // -2 ~ +2
+    const pos2 = Math.max(0, Math.min(N-1, pos1 + offset));
+    const layerBase = Math.random() < 0.5 ? 0 : N;
+    idx2 = layerBase + pos2;
+    attempts++;
+  }
+  if(idx2 === idx1) idx2 = (idx1 + 1) % TOTAL; // 保險：極端情況下的備援
+  return idx2;
+}
+
+function tideStrike(){
+  if(!state || state.over || !state.cells) return;
+
+  // 漲潮等同「兩次點擊」疊加的效果（而非單顆石頭直接翻面），且第二個撞擊點
+  // 限制在第一個撞擊點 ±2 塊距離內，讓破壞範圍集中、更像單一波浪的衝擊。
+  // 這樣保證局面永遠停留在玩家點擊操作可到達的「可解子空間」內，
+  // 不會產生無論怎麼點都解不完的死局；同時因為疊加了兩處連動效果，
+  // 通常不會剛好等於任何單一顆石頭的點擊遮罩，玩家也無法一鍵抵銷。
+  const oldCells = state.cells.slice();
+  let idx1 = Math.floor(Math.random()*TOTAL);
+  let idx2 = pickNearbyIndex(idx1);
+  applyMask(state.cells, idx1, 1); // 損壞：影響到的格子各往毀損方向推一階
+  applyMask(state.cells, idx2, 1); // 兩點各自疊加，同一格被打到兩次就會直接跳兩階
+  updateLiveScore();
+
+  // 海浪衝擊音效：間隔越接近下限（TIDE_INTERVAL_MIN）代表節奏越急，聲音也跟著更尖銳急促
+  const urgency = state.tideInterval !== undefined
+    ? 1 - Math.max(0, Math.min(1, (state.tideInterval - TIDE_INTERVAL_MIN) / (15 - TIDE_INTERVAL_MIN)))
+    : 0;
+  SoundFX.tideCrash(urgency);
+  vibrate([40, 30, 80]); // 撞擊瞬間的手機震動回饋
+
+  // 只更新這次漲潮衝擊實際翻轉到的石塊，不整版重繪；
+  // 每顆都套用跟點擊修復一樣的特效，讓玩家清楚看到海浪具體沖到了哪些石塊。
+  const touched = new Set([...MASKS[idx1], ...MASKS[idx2]]);
+  touched.forEach(sid=>{
+    if(state.cells[sid] === oldCells[sid]) return; // 同一格被打兩次可能剛好繞回原狀，沒有變化就不用播特效
+    updateStoneVisual(sid);
+    const improved = state.cells[sid] < oldCells[sid];
+    playRepairEffect(sid, improved);
+  });
+
+  // 撞擊瞬間：水面波光加亮（水位本身已在倒數期間緩緩升到最高點）
+  const ocean = document.getElementById('ocean');
+  ocean.classList.add('impact-flash');
+  setTimeout(()=>ocean.classList.remove('impact-flash'), 500);
+
+  // 畫面閃光
+  const flash = document.getElementById('tideFlash');
+  flash.classList.remove('hit'); void flash.offsetWidth; flash.classList.add('hit');
+
+  // 棋盤震動
+  const boardWrap = document.querySelector('.board-wrap');
+  boardWrap.classList.remove('shake'); void boardWrap.offsetWidth; boardWrap.classList.add('shake');
+
+  if(isFullyRepaired()) finishGame();
+}
+
+/* 退潮時：滬堤缺口（直線+斜線連接的破損比率）越多，魚群就會跟著海水逃出去越多；escapeDurationMs跟退潮動畫時長同步 */
+function ebbFish(escapeDurationMs){
+  if(!state || state.over) return;
+  const escapeRatio = countGapRatio(state.cells);
+  const escaped = Math.round(state.fishCaught * escapeRatio);
+  if(escaped > 0){
+    state.fishCaught = Math.max(0, state.fishCaught - escaped);
+    document.getElementById('statFish').textContent = state.fishCaught;
+    despawnFish(escaped, escapeDurationMs);
+    updateLiveScore();
+    showFishDelta(-escaped);
+    SoundFX.fishOut();
+  }
+}
+
+/* ============ 海鳥偷魚事件（隨機 15%） ============ */
+const BIRD_CHECK_MIN_MS = 4000, BIRD_CHECK_MAX_MS = 8000;
+const BIRD_CHANCE = 0.15;
+
+function scheduleBirdCheck(){
+  if(!state || state.over) return;
+  const wait = BIRD_CHECK_MIN_MS + Math.random()*(BIRD_CHECK_MAX_MS - BIRD_CHECK_MIN_MS);
+  state.birdHandle = setTimeout(()=>{
+    if(!state || state.over) return;
+    if(state.fishList.length > 0 && Math.random() < BIRD_CHANCE){
+      triggerBirdEvent();
+    }
+    scheduleBirdCheck();
+  }, wait);
+}
+
+function triggerBirdEvent(){
+  const layer = document.getElementById('birdFlyLayer');
+  if(!layer || !state.fishList.length) return;
+  const idx = Math.floor(Math.random()*state.fishList.length);
+  const targetFish = state.fishList[idx];
+  const boardWrap = document.querySelector('.board-wrap');
+  const wrapH = boardWrap ? boardWrap.clientHeight : 200;
+  // 用目標魚在畫布中的縱向比例，換算飛鳥掠過的高度，讓牠看起來真的往那條魚俯衝
+  const svgH = BOARD_VIEW_H;
+  const topPct = Math.max(4, Math.min(80, (targetFish.y / svgH) * 100));
+
+  const reverse = Math.random() < 0.5;
+  const bird = document.createElement('div');
+  bird.className = 'bird-fly' + (reverse ? ' reverse' : '');
+  bird.style.top = topPct + '%';
+  bird.innerHTML = `
+    <svg viewBox="0 0 44 32">
+      <path d="M2,18 L11,13 L11,23 Z" fill="var(--rock-dark)" stroke="var(--outline)" stroke-width="1.3" stroke-linejoin="round"/>
+      <ellipse cx="21" cy="19" rx="10.5" ry="7.5" fill="var(--cream)" stroke="var(--outline)" stroke-width="1.6"/>
+      <circle cx="32" cy="12" r="6.4" fill="var(--cream)" stroke="var(--outline)" stroke-width="1.6"/>
+      <path d="M37,10 L44.5,8 L38,13.5 Z" fill="var(--gold)" stroke="var(--outline)" stroke-width="1.2" stroke-linejoin="round"/>
+      <circle cx="34.2" cy="10.2" r="1.3" fill="var(--outline)"/>
+      <g class="bird-wing"><path d="M17,17 Q2,4 -3,13 Q9,15 19,21 Z" fill="var(--rock-dark)" stroke="var(--outline)" stroke-width="1.3" stroke-linejoin="round"/></g>
+    </svg>`;
+  layer.appendChild(bird);
+  SoundFX.birdSwoop();
+  SoundFX.birdCall();
+
+  // 動畫飛行到約一半時，正好掠過畫面中央，此時判定魚被叼走
+  setTimeout(()=>{
+    if(!state || state.over) return;
+    const stillThere = state.fishList.find(f=>f.id === targetFish.id);
+    if(!stillThere) return; // 這條魚可能已經因退潮先逃走了
+    state.fishList = state.fishList.filter(f=>f.id !== targetFish.id);
+    state.fishCaught = Math.max(0, state.fishCaught - 1);
+    document.getElementById('statFish').textContent = state.fishCaught;
+    const el = document.getElementById(targetFish.id);
+    if(el){
+      el.style.transition = 'transform .25s ease, opacity .25s ease';
+      el.style.transform += ' scale(.2)';
+      el.style.opacity = '0';
+      setTimeout(()=>{ if(el.parentNode) el.remove(); }, 260);
+    }
+    updateLiveScore();
+    showFishDelta(-1);
+  }, 768); // 對應 birdSwoop 動畫 1.6s 的 48% 進度
+
+  setTimeout(()=>{ if(bird.parentNode) bird.remove(); }, 1650);
+}
+
+/* ============ 工具故障事件（隨機 5%） ============ */
+const TOOL_BREAK_CHANCE = 0.05;
+const TOOL_BREAK_MS = 3000;
+const TOOL_BREAK_SAFE_CLICKS = 2; // 工具修好後，至少保障接下來這麼多次點擊不會連續故障
+
+function triggerToolBroken(){
+  state.toolBroken = true;
+  state.toolBreakSafeClicksLeft = 0; // 故障中，安全次數歸零（等下次修好後才會重新給）
+  SoundFX.toolBreak();
+  vibrate(50); // 工具故障的短促震動提示
+  const banner = document.getElementById('toolBrokenBanner');
+  banner.classList.remove('show');
+  void banner.offsetWidth;
+  banner.classList.add('show');
+  state.toolBrokenHandle = setTimeout(()=>{
+    if(!state) return;
+    state.toolBroken = false;
+    state.toolBreakSafeClicksLeft = TOOL_BREAK_SAFE_CLICKS; // 修好後保障至少兩次點擊不會再故障
+    banner.classList.remove('show');
+  }, TOOL_BREAK_MS);
+}
+
+/* 星級門檻：三態石塊上線後，一顆龜裂的石頭常要連點兩次才能修好，
+   加上遊戲中海浪會持續疊加新損壞，實際所需步數/耗時都比原本二進位版本高一截，
+   門檻對應下修，讓 3★ 仍然要接近理想解法才拿得到、但不是理論上摸不到的天花板 */
+const STAR_THRESHOLDS = [720, 350, 120]; // 依序對應 3★ / 2★ / 1★ 的最低分數
+const BADGE_SCORE = 800; // 達到此分數可獲得徽章
+function computeStars(total){
+  if(total >= STAR_THRESHOLDS[0]) return 3;
+  if(total >= STAR_THRESHOLDS[1]) return 2;
+  if(total >= STAR_THRESHOLDS[2]) return 1;
+  return 0;
+}
+function renderStars(containerId, count){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  let html = '';
+  for(let i=0;i<3;i++){
+    const on = i < count;
+    const delay = (i*0.12).toFixed(2);
+    html += `<span class="${on?'star-on':'star-off'}" style="animation-delay:${delay}s">${on?'★':'☆'}</span>`;
+  }
+  el.innerHTML = html;
+}
+
+function finishGame(){
+  state.over = true;
+  stopTimers();
+  SoundFX.win();
+  SoundFX.setAmbientLevel(0, 1.2);
+  vibrate([30, 40, 30, 40, 60]); // 修復完成，輕快的慶祝震動
+  document.getElementById('finalTime').textContent = formatTime(state.seconds);
+  document.getElementById('finalMoves').textContent = state.moves;
+  document.getElementById('finalCollected').textContent = state.totalFishCollected || 0;
+  document.getElementById('platformAckNotice').style.display = 'none'; // 重玩時先清掉上一局可能殘留的拒絕提示
+
+  const { timePenalty, movePenalty, fishBonus, total } = computeScore(state.seconds, state.moves, state.fishCaught, state.totalFishCollected);
+  document.getElementById('finalScore').textContent = total;
+  renderStars('finalStars', computeStars(total));
+  
+  document.getElementById('scoreBreakdown').innerHTML = `
+    <div class="sb-row"><span>基礎分</span><span>${BASE_SCORE}</span></div>
+    <div class="sb-row"><span>耗時扣分 (${state.seconds}秒 × ${PENALTY_PER_SEC})</span><span>-${timePenalty}</span></div>
+    <div class="sb-row"><span>步數扣分 (${state.moves}步 × ${PENALTY_PER_MOVE})</span><span>-${movePenalty}</span></div>
+    <div class="sb-row"><span>魚獲加分 (${(state.fishCaught||0) + (state.totalFishCollected||0)}尾 × ${BONUS_PER_FISH})</span><span>+${fishBonus}</span></div>
+    <div class="sb-row sb-total"><span>總分</span><span>${total}</span></div>
+    ${reportResultToPlatform(total)}
+  `;
+
+  winTipCarousel.showRandom();
+  document.getElementById('winOverlay').classList.add('active');
+}
+
+// 整局結束時，把總分跟徽章上傳給平台，並回傳要注入 scoreBreakdown 的提示 HTML。
+// 徽章「石滬達人」的發放門檻是 BADGE_SCORE（800分），跟「還差X分」提示用的門檻是同一個，
+// 「歷史最佳/打破紀錄」跟「還差X分拿徽章」合併成同一個提示框，不再各自佔一塊版面。
+function reportResultToPlatform(total){
+  const earnsBadge = total >= BADGE_SCORE;
+  const alreadyHasBadge = platformBadges.includes(BADGE_ID);
+  const hasPreviousRecord = myBestScore !== null;
+  const previousBestValue = hasPreviousRecord ? myBestScore.scoreValue : null;
+  // 沒有舊紀錄（第一次玩）不算「破紀錄」，不給這 1 金幣，只有存在舊紀錄且這次分數更高才算
+  const isNewBestOnPlatform = hasPreviousRecord && total > previousBestValue;
+
+  let coins = 0;
+  if(earnsBadge && !alreadyHasBadge) coins += 20;
+  if(isNewBestOnPlatform) coins += 1;
+
+  // 只有「這次真的有新東西」才送 complete，理由同 fishmarket：
+  // 沒有新徽章、金幣也是 0 的話，送出去只是讓後台白處理一則什麼都不用做的訊息。
+  const hasNewBadge = earnsBadge && !alreadyHasBadge;
+  if (coins > 0 || hasNewBadge) {
+    sendToPlatform('complete', {
+      coins: coins,
+      badgeIds: earnsBadge ? [BADGE_ID] : []
+    });
+  }
+  // score 同理：第一次玩要送、之後只有真的破紀錄才送，不然平台那邊還是得先讀一次
+  // 現有分數來比較，比完發現「不用寫」也已經先耗掉一次讀取額度。
+  if (!hasPreviousRecord || isNewBestOnPlatform) {
+    sendToPlatform('score', { scoreLabel: `${total} 分`, scoreValue: total });
+  }
+
+  // 更新本地暫存狀態：避免同一次連線內重玩時重複請領「首次徽章」的 20 金幣，
+  // 也讓下一局結算能正確比較「這次連線內打過的最佳紀錄」
+  if(earnsBadge && !alreadyHasBadge){
+    platformBadges = platformBadges.concat([BADGE_ID]);
+    showBadgePopup();
+  }
+  if(!hasPreviousRecord || total > previousBestValue){
+    myBestScore = { scoreLabel: `${total} 分`, scoreValue: total };
+  }
+
+  const notices = [];
+  if(earnsBadge && !alreadyHasBadge){
+    notices.push('🏅 恭喜首次獲得「石滬達人」徽章！（+20 金幣）');
+  } else if(earnsBadge){
+    notices.push('🏅 再次達成「石滬達人」等級（徽章已持有）');
+  }
+  if(isNewBestOnPlatform){
+    notices.push(`🎉 打破個人紀錄！原紀錄 ${previousBestValue} 分（+1 金幣）`);
+  } else if(hasPreviousRecord){
+    notices.push(`歷史最佳：${previousBestValue} 分`);
+  }
+  // 還沒拿過徽章、這次也沒達標：合併顯示還差幾分，不再另外開一個框
+  if(!alreadyHasBadge && !earnsBadge){
+    const remain = BADGE_SCORE - total;
+    notices.push(`🏅 再努力 ${remain} 分就能拿到「石滬達人」徽章！`);
+  }
+
+  return notices.length ? `<div class="sb-row sb-notice" style="flex-direction:column;align-items:flex-start;">${notices.join('<br>')}</div>` : '';
+}
+
+function showBadgePopup(){
+  const el = document.getElementById('badgePopup');
+  el.classList.remove('hide');
+  el.classList.add('show');
+  clearTimeout(showBadgePopup._hideTimer);
+  clearTimeout(showBadgePopup._cleanupTimer);
+  showBadgePopup._hideTimer = setTimeout(()=>{
+    el.classList.remove('show');
+    el.classList.add('hide');
+    showBadgePopup._cleanupTimer = setTimeout(()=>{
+      el.classList.remove('hide');
+      el.style.removeProperty('display');
+    }, 1150);
+  }, 5000);
+}
+
+/* ============ Canvas 圖示（只畫一次，取代靜態 emoji：扳手／石頭獎牌／海浪徽章／燈泡） ============
+   喇叭開關跟浮動 +N 魚獲維持原本 emoji 不變，因為喇叭要頻繁切換、魚獲會重複生成很多次，
+   目前用 emoji 字元反而比較輕量；這裡只處理「畫一次、幾乎不變」的 4 個圖示。 */
+(function(){
+  const OUTLINE = '#241407';
+
+  function makeCanvas(size){
+    const dpr = window.devicePixelRatio || 1;
+    const c = document.createElement('canvas');
+    c.width = Math.round(size*dpr); c.height = Math.round(size*dpr);
+    c.style.width = size+'px'; c.style.height = size+'px';
+    const ctx = c.getContext('2d');
+    ctx.scale(dpr,dpr);
+    return {c, ctx};
+  }
+
+  function strokePath(ctx, path, width){
+    ctx.lineWidth = width; ctx.strokeStyle = OUTLINE;
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.stroke(path);
+  }
+
+  function drawPuck(ctx, cx, cy, r, colorTop, colorMid, colorBottom){
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.35)';
+    ctx.shadowBlur = r*0.18;
+    ctx.shadowOffsetY = r*0.16;
+    const grad = ctx.createLinearGradient(0, cy-r, 0, cy+r);
+    grad.addColorStop(0, colorTop); grad.addColorStop(.55, colorMid); grad.addColorStop(1, colorBottom);
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fillStyle = grad; ctx.fill();
+    ctx.restore();
+    ctx.lineWidth = Math.max(2, r*0.09); ctx.strokeStyle = OUTLINE;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+    const hi = ctx.createRadialGradient(cx-r*0.32, cy-r*0.4, r*0.05, cx-r*0.32, cy-r*0.4, r*0.85);
+    hi.addColorStop(0, 'rgba(255,255,255,.75)'); hi.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.beginPath(); ctx.arc(cx, cy, r*0.96, 0, Math.PI*2); ctx.fillStyle = hi; ctx.fill();
+  }
+
+  /* ---- 扳手（工具壞了） ---- */
+  function drawWrench(ctx, size){
+    ctx.save();
+    ctx.translate(size/2, size/2);
+    ctx.rotate(-38*Math.PI/180);
+    const s = size*0.019;
+    const path = new Path2D();
+    path.moveTo(-16*s,-6*s);
+    path.quadraticCurveTo(-20*s,-6*s,-20*s,-2*s);
+    path.lineTo(-20*s,2*s);
+    path.quadraticCurveTo(-20*s,6*s,-16*s,6*s);
+    path.lineTo(12*s,6*s);
+    path.quadraticCurveTo(20*s,6*s,20*s,2*s);
+    path.quadraticCurveTo(24*s,2*s,24*s,-2*s);
+    path.quadraticCurveTo(24*s,-6*s,20*s,-6*s);
+    path.quadraticCurveTo(20*s,-2*s,16*s,-2*s);
+    path.quadraticCurveTo(12*s,-2*s,12*s,-6*s);
+    path.lineTo(-16*s,-6*s);
+    path.closePath();
+    ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=size*0.05; ctx.shadowOffsetY=size*0.03;
+    const grad = ctx.createLinearGradient(0,-6*s,0,6*s);
+    grad.addColorStop(0,'#e7ecef'); grad.addColorStop(.5,'#c8d1d6'); grad.addColorStop(1,'#7d8c94');
+    ctx.fillStyle = grad; ctx.fill(path);
+    ctx.shadowColor='transparent';
+    strokePath(ctx, path, s*1.7);
+    ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.lineWidth=s*1.1; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-14*s,-3.2*s); ctx.lineTo(9*s,-3.2*s); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ---- 石頭獎牌（過關）：獎牌 + 明顯的雙尾緞帶，掛在獎牌上方 ---- */
+  function drawMedalStone(ctx, size){
+    const cx=size/2, cy=size*0.62, r=size*0.29;
+    const s = size*0.021;
+    ctx.save();
+    ctx.translate(cx, cy);
+    // 緞帶：從獎牌後方向上展開成 V 字，尾端剪出燕尾缺角，畫在獎牌之前 = 視覺上在後方
+    function ribbonTail(dir, colorA, colorB){
+      const p = new Path2D();
+      const topX = dir*4.5*s, topY = -r*0.55;
+      p.moveTo(topX-dir*5*s, topY);
+      p.lineTo(dir*17*s, -r*1.9);
+      p.lineTo(dir*22*s, -r*1.55);
+      p.lineTo(dir*11*s, -r*0.55 + 2*s);
+      p.lineTo(topX+dir*4*s, topY + 3*s);
+      p.closePath();
+      const g = ctx.createLinearGradient(0, -r*1.9, 0, -r*0.5);
+      g.addColorStop(0, colorA); g.addColorStop(1, colorB);
+      ctx.fillStyle = g; ctx.fill(p);
+      ctx.lineWidth = s*1.3; ctx.strokeStyle = OUTLINE; ctx.lineJoin='round'; ctx.stroke(p);
+    }
+    ribbonTail(-1, '#00e6d2', '#087a89');
+    ribbonTail(1, '#ff8a68', '#c2280f');
+    ctx.restore();
+
+    drawPuck(ctx, cx, cy, r, '#fff2a8', '#ffcd00', '#b8790a');
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.lineWidth = s*1.4; ctx.strokeStyle='rgba(138,75,22,.65)'; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-9*s,-1*s); ctx.quadraticCurveTo(-2*s,7*s, 6*s,-2*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-4*s,-8*s); ctx.quadraticCurveTo(-1*s,-1*s, 4*s,-7*s); ctx.stroke();
+    ctx.fillStyle='#fffaea'; ctx.strokeStyle=OUTLINE; ctx.lineWidth=s*0.6;
+    const star = new Path2D('M0,-6 L1.6,-1.8 L6,-1.8 L2.6,1 L4,5.6 L0,2.8 L-4,5.6 L-2.6,1 L-6,-1.8 L-1.6,-1.8 Z');
+    ctx.save(); ctx.translate(9*s,-8*s); ctx.scale(.85,.85); ctx.fill(star); ctx.stroke(star); ctx.restore();
+    ctx.restore();
+  }
+
+  /* ---- 決堤（失敗）：兩塊斷裂石塊中間裂開，海水從縫隙噴湧而出——
+     不用獎章式的圓形亮面底盤，故意讓形狀破碎、不對稱，才不會跟「過關」的獎牌搞混 ---- */
+  function drawBreach(ctx, size){
+    const cx=size/2, cy=size/2;
+    const s = size*0.021;
+    ctx.save();
+    ctx.translate(cx,cy);
+
+    // 背後噴出的水花（先畫，讓石塊疊在上面）
+    const splash = new Path2D();
+    splash.moveTo(-6*s,6*s);
+    splash.lineTo(-9*s,-4*s);
+    splash.lineTo(-4*s,-9*s);
+    splash.lineTo(-2*s,-17*s);
+    splash.lineTo(1.5*s,-8*s);
+    splash.lineTo(5*s,-15*s);
+    splash.lineTo(4.5*s,-4*s);
+    splash.lineTo(9*s,-6*s);
+    splash.lineTo(6*s,7*s);
+    splash.closePath();
+    ctx.shadowColor='rgba(0,0,0,.25)'; ctx.shadowBlur=size*0.04; ctx.shadowOffsetY=size*0.015;
+    const sg = ctx.createLinearGradient(0,-17*s,0,7*s);
+    sg.addColorStop(0,'#eafcff'); sg.addColorStop(.5,'#4ee0ff'); sg.addColorStop(1,'#0d70b0');
+    ctx.fillStyle = sg; ctx.fill(splash);
+    ctx.shadowColor='transparent';
+    strokePath(ctx, splash, s*1.3);
+    // 幾滴四散的水珠
+    [[-11*s,-11*s,1.6*s],[10*s,-13*s,1.3*s],[13*s,-2*s,1.1*s]].forEach(([x,y,rr])=>{
+      ctx.beginPath(); ctx.arc(x,y,rr,0,Math.PI*2);
+      ctx.fillStyle='#8fe0f2'; ctx.fill();
+      ctx.lineWidth=s*0.7; ctx.strokeStyle=OUTLINE; ctx.stroke();
+    });
+
+    // 左邊斷石
+    const leftRock = new Path2D();
+    leftRock.moveTo(-21*s,13*s);
+    leftRock.lineTo(-22*s,-4*s);
+    leftRock.lineTo(-15*s,-13*s);
+    leftRock.lineTo(-7*s,-10*s);
+    leftRock.lineTo(-4*s,-3*s);
+    leftRock.lineTo(-8*s,1*s);
+    leftRock.lineTo(-5*s,6*s);
+    leftRock.lineTo(-9*s,15*s);
+    leftRock.closePath();
+    ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=size*0.035; ctx.shadowOffsetY=size*0.02;
+    const lg = ctx.createLinearGradient(-22*s,-13*s,-4*s,15*s);
+    lg.addColorStop(0,'#c8d1d6'); lg.addColorStop(.55,'#9aa7ae'); lg.addColorStop(1,'#414c55');
+    ctx.fillStyle = lg; ctx.fill(leftRock);
+    ctx.shadowColor='transparent';
+    strokePath(ctx, leftRock, s*1.5);
+    // 裂痕
+    ctx.strokeStyle='rgba(26,41,66,.55)'; ctx.lineWidth=s*0.8; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-17*s,-7*s); ctx.lineTo(-12*s,-1*s); ctx.lineTo(-14*s,5*s); ctx.stroke();
+
+    // 右邊斷石（鏡射）
+    const rightRock = new Path2D();
+    rightRock.moveTo(21*s,13*s);
+    rightRock.lineTo(22*s,-4*s);
+    rightRock.lineTo(15*s,-13*s);
+    rightRock.lineTo(7*s,-10*s);
+    rightRock.lineTo(4*s,-3*s);
+    rightRock.lineTo(8*s,1*s);
+    rightRock.lineTo(5*s,6*s);
+    rightRock.lineTo(9*s,15*s);
+    rightRock.closePath();
+    ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=size*0.035; ctx.shadowOffsetY=size*0.02;
+    const rg = ctx.createLinearGradient(22*s,-13*s,4*s,15*s);
+    rg.addColorStop(0,'#c8d1d6'); rg.addColorStop(.55,'#9aa7ae'); rg.addColorStop(1,'#414c55');
+    ctx.fillStyle = rg; ctx.fill(rightRock);
+    ctx.shadowColor='transparent';
+    strokePath(ctx, rightRock, s*1.5);
+    ctx.strokeStyle='rgba(26,41,66,.55)'; ctx.lineWidth=s*0.8; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(17*s,-7*s); ctx.lineTo(12*s,-1*s); ctx.lineTo(14*s,5*s); ctx.stroke();
+
+    ctx.restore();
+  }
+
+  /* ---- 燈泡（提示）：中間用「！」取代原本的燈絲 X ---- */
+  function drawBulb(ctx, size){
+    ctx.save();
+    ctx.translate(size/2, size/2*0.94);
+    const s = size*0.021;
+    const glass = new Path2D();
+    glass.moveTo(-8*s,-2*s);
+    glass.bezierCurveTo(-11*s,-8*s,-7*s,-15*s,0,-15*s);
+    glass.bezierCurveTo(7*s,-15*s,11*s,-8*s,8*s,-2*s);
+    glass.bezierCurveTo(7*s,2*s,5*s,3*s,5*s,7*s);
+    glass.lineTo(-5*s,7*s);
+    glass.bezierCurveTo(-5*s,3*s,-7*s,2*s,-8*s,-2*s);
+    glass.closePath();
+    ctx.shadowColor='rgba(0,0,0,.3)'; ctx.shadowBlur=size*0.05; ctx.shadowOffsetY=size*0.02;
+    const gg = ctx.createRadialGradient(-3*s,-10*s,1*s,0,-6*s,16*s);
+    gg.addColorStop(0,'#fff9d6'); gg.addColorStop(.55,'#ffe066'); gg.addColorStop(1,'#e8a80a');
+    ctx.fillStyle = gg; ctx.fill(glass);
+    ctx.shadowColor='transparent';
+    strokePath(ctx, glass, s*1.6);
+    // 燈絲改成「！」：一段圓角粗豎線 + 底下一個圓點
+    ctx.fillStyle = 'rgba(138,75,22,.85)';
+    ctx.strokeStyle = OUTLINE; ctx.lineWidth = s*0.4;
+    const bar = new Path2D();
+    bar.moveTo(-1.5*s,-9.5*s); bar.lineTo(1.5*s,-9.5*s); bar.lineTo(1*s,-1.5*s); bar.lineTo(-1*s,-1.5*s); bar.closePath();
+    ctx.fill(bar); ctx.stroke(bar);
+    ctx.beginPath(); ctx.arc(0, 1.2*s, 1.5*s, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    // 高光
+    ctx.fillStyle='rgba(255,255,255,.7)';
+    ctx.beginPath(); ctx.ellipse(-3.5*s,-9*s,2*s,4.5*s,0.4,0,Math.PI*2); ctx.fill();
+    // 螺紋底座
+    const base = new Path2D();
+    base.rect(-5*s,7*s,10*s,7*s);
+    const bg = ctx.createLinearGradient(-5*s,7*s,5*s,7*s);
+    bg.addColorStop(0,'#c8d1d6'); bg.addColorStop(.5,'#f3f6f7'); bg.addColorStop(1,'#9aa7ae');
+    ctx.fillStyle = bg; ctx.fill(base);
+    strokePath(ctx, base, s*1.4);
+    [9.5,11.6,13.7].forEach(y=>{
+      ctx.beginPath(); ctx.moveTo(-5*s,y*s); ctx.lineTo(5*s,y*s);
+      ctx.lineWidth=s*0.9; ctx.strokeStyle=OUTLINE; ctx.globalAlpha=.5; ctx.stroke(); ctx.globalAlpha=1;
+    });
+    ctx.restore();
+  }
+
+  function place(slotId, size, drawFn){
+    const slot = document.getElementById(slotId);
+    if(!slot) return;
+    const {c, ctx} = makeCanvas(size);
+    drawFn(ctx, size);
+    slot.appendChild(c);
+  }
+
+  place('iconWrench', 22, drawWrench);
+  place('iconMedalWin', 62, drawMedalStone);
+  place('iconMedalLose', 48, drawBreach);
+  place('iconTipWin', 26, drawBulb);
+  place('iconTipLose', 26, drawBulb);
+})();
+
+// 页面加载时初始化统计显示
+updateIntroStats();
+
+// 說明頁的小偷圖示，直接重用遊戲本來畫小偷用的同一段函式，保證長得一模一樣
+(function(){
+  const box = document.querySelector('#helpThiefIcon .icon-box');
+  if(box) box.innerHTML = thiefFigureSVG();
+})();
+</script>
+</body>
+</html>
