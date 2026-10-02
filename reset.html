@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>重設安裝與快取</title>
+<link rel="icon" href="data:,">
+<style>
+    body { margin: 0; min-height: 100vh; background: #0c1230; color: #fff; font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif;
+        display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+    .card { width: 100%; max-width: 380px; background: #151d52; border-radius: 18px; padding: 22px 20px; border: 1px solid rgba(255,255,255,0.14); }
+    h1 { margin: 0 0 8px; font-size: 1.15rem; }
+    p { margin: 0 0 10px; font-size: 0.85rem; color: rgba(255,255,255,0.75); line-height: 1.6; }
+    ul { margin: 0 0 12px; padding-left: 1.2em; font-size: 0.85rem; color: rgba(255,255,255,0.85); line-height: 1.7; }
+    button, a.btn { display: block; width: 100%; box-sizing: border-box; padding: 12px; border-radius: 12px; border: none; font-weight: 800;
+        font-size: 0.95rem; cursor: pointer; font-family: inherit; text-align: center; text-decoration: none; margin-top: 8px; }
+    button { background: linear-gradient(135deg, #ffe37a, #f6b32d); color: #3a2a00; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    a.btn { background: rgba(255,255,255,0.12); color: #fff; }
+    #log { margin-top: 12px; font-size: 0.8rem; line-height: 1.7; white-space: pre-wrap; color: rgba(255,255,255,0.85); }
+</style>
+</head>
+<body>
+<div class="card">
+    <h1>🧹 重設安裝與快取</h1>
+    <p>重設「安裝到主畫面」與加速快取，讓網站回到第一次打開的狀態。只影響<b>這個網站</b>在<b>目前這個瀏覽器</b>。</p>
+    <p><b>會清除：</b></p>
+    <ul>
+        <li>「安裝到主畫面」的不再提示記錄（清除後會重新出現安裝畫面）</li>
+        <li>Service Worker 與圖片音樂快取（之後會自動重新下載）</li>
+        <li>排行榜、個人成績的暫存副本（會自動重新讀取）</li>
+    </ul>
+    <p><b>不會清除：</b>登入狀態、後台設定、尚未送出的金幣成績、各任務的進度與設定。</p>
+    <button id="clear-btn">重設</button>
+    <a class="btn" href="./">回到平台</a>
+    <div id="log"></div>
+</div>
+
+<script>
+const logEl = document.getElementById('log');
+const btn = document.getElementById('clear-btn');
+function log(msg) { logEl.textContent += msg + '\n'; }
+
+// 只清跟「安裝到主畫面／加速快取」有關的資料。刻意保留的：
+//   - 登入狀態（IndexedDB 裡的 Firebase 登入資料）：清掉只是多一次登入，要登出有登出按鈕
+//   - 後台的 GitHub 權杖 gh_admin_config、後台解鎖 admin_unlocked：跟 PWA 無關
+//   - pendingTaskWrites、taskEventLogs_fallback：網路不穩時還沒送出的金幣成績與記錄，清掉就真的遺失
+//   - 各任務的進度與設定（通行證、音效開關、機台編號等）：屬於玩家的資料
+const CLEAR_LOCAL_EXACT = ['gh_install_guide_dismissed'];   // 安裝引導「不再提示」
+const CLEAR_LOCAL_PREFIX = ['lb_cache_'];                    // 排行榜暫存（加速用副本）
+const CLEAR_SESSION_PREFIX = ['my_score_'];                  // 個人最佳成績暫存（加速用副本）
+
+function clearKeys(storage, exact, prefixes) {
+    const removed = [];
+    for (let i = storage.length - 1; i >= 0; i--) {
+        const k = storage.key(i);
+        if (exact.includes(k) || prefixes.some(p => k.startsWith(p))) { storage.removeItem(k); removed.push(k); }
+    }
+    return removed.length;
+}
+
+btn.addEventListener('click', async () => {
+    if (!confirm('確定要重設安裝記錄與快取嗎？')) return;
+    btn.disabled = true;
+    logEl.textContent = '';
+
+    // 1. Service Worker：先解除註冊，避免它在清快取的同時又把檔案存回去
+    try {
+        if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const r of regs) await r.unregister();
+            log(`✅ Service Worker：已移除 ${regs.length} 個`);
+        } else {
+            log('— Service Worker：此瀏覽器不支援，略過');
+        }
+    } catch (e) { log('⚠️ Service Worker 移除失敗：' + e.message); }
+
+    // 2. 圖片音樂快取
+    try {
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            for (const k of keys) await caches.delete(k);
+            log(`✅ 圖片音樂快取：已清除 ${keys.length} 個`);
+        }
+    } catch (e) { log('⚠️ 快取清除失敗：' + e.message); }
+
+    // 3. 安裝引導記錄、排行榜與成績暫存（只刪指定項目，其餘資料不動）
+    try {
+        const n = clearKeys(localStorage, CLEAR_LOCAL_EXACT, CLEAR_LOCAL_PREFIX);
+        log(`✅ 安裝記錄與排行榜暫存：已清除 ${n} 筆`);
+    } catch (e) { log('⚠️ 清除失敗：' + e.message); }
+    try {
+        const n = clearKeys(sessionStorage, [], CLEAR_SESSION_PREFIX);
+        log(`✅ 個人成績暫存：已清除 ${n} 筆`);
+    } catch (e) { log('⚠️ 清除失敗：' + e.message); }
+
+    log('\n完成！按「回到平台」重新開啟即可（登入狀態與其他資料都保留）。');
+    btn.disabled = false;
+});
+</script>
+</body>
+</html>
