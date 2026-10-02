@@ -1,12 +1,12 @@
 // =====================================================================
-// 安裝到主畫面的引導（平台一開啟就檢查）
+// 安裝到主畫面的引導（平台一打開就立刻顯示，不等載入或登入）
 // - 已經是從主畫面 App 打開的：完全不顯示
 // - Android（Chrome 等）：點「安裝」跳出系統安裝視窗，接受後顯示「安裝中…」，
 //   安裝完成顯示「安裝完成，請從主畫面圖示打開」
 // - iPhone／iPad：蘋果不允許網頁自己安裝，也無法得知安裝進度，只能圖文教學
 // - LINE、Facebook 等 App 內建瀏覽器：在裡面無法安裝，提示改用 Safari／Chrome 開啟
 // - 桌機展示模式（平台被 platform-desktop.html 包在框架裡）：不顯示
-// 玩家選「先用網頁版」下次開啟還會再提示；選「不再提示」就不再自動出現，
+// 玩家選「暫不安裝」下次開啟還會再提示；選「不再提示」就不再自動出現，
 // 但使用者選單的「安裝到主畫面」入口一直都在。
 // =====================================================================
 
@@ -43,7 +43,7 @@ function injectStyles() {
     const style = document.createElement('style');
     style.id = 'ig-style';
     style.textContent = `
-    .ig-overlay { position: fixed; inset: 0; z-index: 180; background: rgba(6,10,28,0.78);
+    .ig-overlay { position: fixed; inset: 0; z-index: 600; background: rgba(6,10,28,0.78);
         display: flex; align-items: center; justify-content: center; padding: 16px; }
     .ig-card { width: 100%; max-width: 380px; background: #151d52; color: #fff; border-radius: 18px;
         padding: 22px 20px 18px; box-shadow: 0 10px 40px rgba(0,0,0,0.45);
@@ -116,7 +116,7 @@ function buildContent({ isIOS, inApp }) {
 }
 
 // 顯示引導視窗，關閉時 resolve。auto＝平台開啟時自動跳出（多一個「不再提示」）
-function showGuide({ auto }) {
+function showGuide({ auto, waitForPrompt }) {
     return new Promise(resolve => {
         if (document.querySelector('.ig-overlay')) { resolve(); return; }
         injectStyles();
@@ -145,7 +145,7 @@ function showGuide({ auto }) {
                 try { localStorage.setItem(DISMISS_KEY, 'never'); } catch {}
                 close();
             });
-            addBtn(btns, content.primary === 'install' ? '先用網頁版' : (auto ? '先用網頁版' : '關閉'), 'ghost', close);
+            addBtn(btns, auto ? '暫不安裝' : '關閉', 'ghost', close);
             if (content.primary === 'install') addBtn(btns, '安裝', 'primary', startInstall);
         }
 
@@ -172,27 +172,41 @@ function showGuide({ auto }) {
             try { choice = await prompt.userChoice; } catch {}
             if (!choice || choice.outcome !== 'accepted') {
                 renderStatus('已取消安裝，之後可以從選單的「安裝到主畫面」再安裝', {
-                    spinner: false, buttons: [{ text: '先用網頁版', style: 'ghost', onClick: close }]
+                    spinner: false, buttons: [{ text: '關閉', style: 'ghost', onClick: close }]
                 });
                 return;
             }
-            renderStatus('安裝中，請稍候…', {
-                spinner: true, buttons: [{ text: '先用網頁版', style: 'ghost', onClick: close }]
-            });
+            renderStatus('安裝中，請稍候…', { spinner: true });
             // 等瀏覽器回報安裝完成（appinstalled）；一段時間沒回報也當作完成，
             // 有些瀏覽器安裝好了但不會發出這個事件
             const done = await new Promise(res => {
                 installedResolvers.push(res);
                 setTimeout(() => res(false), 20000);
             });
+            // 安裝完成就到此為止：已經裝好的人應該從主畫面 App 使用，不再提供回到網頁版的選項
             renderStatus(
-                (done ? '✅ 安裝完成！' : '安裝應已完成') +
-                '<br>請回到手機主畫面，點「在地文化平台」圖示打開',
-                { spinner: false, buttons: [{ text: '繼續用網頁版', style: 'ghost', onClick: close }] }
+                (done ? '✅ 安裝完成！' : '✅ 安裝應已完成') +
+                '<br>請回到手機主畫面，點「在地文化平台」圖示開啟',
+                { spinner: false }
             );
         }
 
-        renderGuide();
+        // Android（非 iPhone、非 App 內建瀏覽器）剛開頁面時，瀏覽器的安裝事件可能還沒發出：
+        // 先顯示「準備安裝…」，事件一出現就換成有「安裝」按鈕的畫面；最多等 3 秒，
+        // 等不到（例如瀏覽器不支援一鍵安裝、或其實已經安裝過）就改顯示手動步驟。
+        if (waitForPrompt && !deferredPrompt && !env.isIOS && !env.inApp) {
+            renderStatus('準備安裝…', { spinner: true });
+            const start = Date.now();
+            const timer = setInterval(() => {
+                if (deferredPrompt || Date.now() - start > 3000) {
+                    clearInterval(timer);
+                    Object.assign(content, buildContent(env));
+                    renderGuide();
+                }
+            }, 200);
+        } else {
+            renderGuide();
+        }
         document.body.appendChild(overlay);
     });
 }
@@ -205,25 +219,17 @@ function addBtn(container, text, style, onClick) {
     container.appendChild(b);
 }
 
-// 平台開啟時呼叫：沒有安裝就先引導安裝。回傳的 Promise 在引導視窗關閉（或不需要顯示）時完成，
-// 呼叫端等它完成才進行每日拉霸，避免兩個視窗疊在一起。同一次開啟只會檢查一次。
+// 平台一開啟就呼叫（不等內容載入或登入）：沒有安裝就立刻顯示安裝畫面。
+// 回傳的 Promise 在安裝畫面關閉（或不需要顯示）時完成，呼叫端等它完成才進行每日拉霸。
+// 安裝完成的人畫面不會關閉，所以不會在網頁版跳出拉霸，要到主畫面 App 裡使用。
+// 同一次開啟只會檢查一次。
 export function runStartupInstallCheck() {
     if (startupPromise) return startupPromise;
     startupPromise = (async () => {
         if (isStandalone()) return;                       // 已經是 App 模式
         if (window.self !== window.top) return;           // 桌機展示模式（被外框包住），不在這裡安裝
         try { if (localStorage.getItem(DISMISS_KEY) === 'never') return; } catch {}
-        const env = detectEnv();
-        // Android：瀏覽器判斷可安裝時才會發出安裝事件，頁面剛開時可能還沒發出，稍等一下
-        if (!env.isIOS && !env.inApp && !deferredPrompt) {
-            await new Promise(res => {
-                const start = Date.now();
-                const timer = setInterval(() => {
-                    if (deferredPrompt || Date.now() - start > 3000) { clearInterval(timer); res(); }
-                }, 200);
-            });
-        }
-        await showGuide({ auto: true });
+        await showGuide({ auto: true, waitForPrompt: true });
     })();
     return startupPromise;
 }

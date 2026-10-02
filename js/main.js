@@ -693,6 +693,10 @@ function hideLoadingScreen() {
 setTimeout(hideLoadingScreen, 10000);
 
 async function init() {
+    // PWA：程式一開始就立刻檢查有沒有安裝，沒有就馬上顯示安裝畫面（不等內容載入或登入），
+    // 平台在畫面背後照常載入。這裡不 await，下方每日拉霸之前才等它關閉。
+    runStartupInstallCheck();
+
     try {
         await loadAllContent();
     } catch (err) {
@@ -718,9 +722,8 @@ async function init() {
         renderNewsBadgeDot();
         document.getElementById('auth-modal').classList.toggle('hidden', !!user);
         hideLoadingScreen(); // 內容跟登入狀態都確認完了，這時候才收起「連線中」畫面
-        // PWA：平台一開啟就檢查有沒有安裝，沒有就先引導安裝（同一次開啟只檢查一次）。
-        // 等引導視窗關閉才進行每日拉霸，避免兩個視窗疊在一起；
-        // 引導視窗蓋在登入畫面上面，玩家可以先安裝、再從主畫面 App 登入。
+        // 等安裝畫面關閉才進行每日拉霸，避免兩個視窗疊在一起（安裝畫面在 init 一開始就已顯示，
+        // 這裡拿到的是同一個檢查結果）。安裝完成的人畫面不會關閉，拉霸要到主畫面 App 裡領。
         await runStartupInstallCheck();
         if (user) await maybeClaimDailyLogin();
     });
