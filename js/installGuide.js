@@ -33,9 +33,10 @@ export function isStandalone() {
 
 function detectEnv() {
     const ua = navigator.userAgent || '';
-    const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isIPad = /iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isIOS = /iPhone|iPad|iPod/.test(ua) || isIPad;
     const inApp = /FBAN|FBAV|FB_IAB|Instagram|Line\/|Messenger|MicroMessenger|KAKAOTALK|Twitter/i.test(ua);
-    return { isIOS, inApp };
+    return { isIOS, isIPad, inApp };
 }
 
 function injectStyles() {
@@ -75,7 +76,7 @@ function injectStyles() {
 const SHARE_ICON = `<svg class="ig-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7fb8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>`;
 const ADD_ICON = `<svg class="ig-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`;
 
-function buildContent({ isIOS, inApp }) {
+function buildContent({ isIOS, isIPad, inApp }) {
     if (inApp) {
         return {
             sub: '目前在 App 內建的瀏覽器中，無法安裝',
@@ -89,13 +90,13 @@ function buildContent({ isIOS, inApp }) {
         };
     }
     if (deferredPrompt) {
-        return { sub: '安裝到手機主畫面，像 App 一樣全螢幕使用，讀取也更快', steps: [], note: '', primary: 'install' };
+        return { sub: '安裝到主畫面，像 App 一樣全螢幕使用，讀取也更快', steps: [], note: '', primary: 'install' };
     }
     if (isIOS) {
         return {
-            sub: '安裝到手機主畫面，像 App 一樣全螢幕使用，讀取也更快',
+            sub: '安裝到主畫面，像 App 一樣全螢幕使用，讀取也更快',
             steps: [
-                `點瀏覽器的分享按鈕 ${SHARE_ICON}（Safari 在畫面下方，Chrome 在網址列右側）`,
+                `點瀏覽器的分享按鈕 ${SHARE_ICON}（${isIPad ? 'Safari、Chrome 都在畫面上方工具列右側' : 'Safari 在畫面下方，Chrome 在網址列右側'}）`,
                 `往下找到並點選「加入主畫面」${ADD_ICON}`,
                 '按右上角「新增」，再到主畫面點「在地文化平台」圖示打開'
             ],
@@ -104,7 +105,7 @@ function buildContent({ isIOS, inApp }) {
         };
     }
     return {
-        sub: '安裝到手機主畫面，像 App 一樣全螢幕使用，讀取也更快',
+        sub: '安裝到主畫面，像 App 一樣全螢幕使用，讀取也更快',
         steps: [
             '點瀏覽器右上角的選單「⋮」',
             '選「安裝應用程式」或「加到主畫面」',
@@ -186,7 +187,7 @@ function showGuide({ auto, waitForPrompt }) {
             // 安裝完成就到此為止：已經裝好的人應該從主畫面 App 使用，不再提供回到網頁版的選項
             renderStatus(
                 (done ? '✅ 安裝完成！' : '✅ 安裝應已完成') +
-                '<br>請回到手機主畫面，點「在地文化平台」圖示開啟',
+                '<br>請回到主畫面，點「在地文化平台」圖示開啟',
                 { spinner: false }
             );
         }

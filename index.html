@@ -28,15 +28,21 @@
 })();
 </script>
 <script>
-    /* 桌機/寬螢幕自動導向「手機外框」展示版（platform-desktop.html），
+    /* 電腦（寬螢幕、非觸控裝置）自動導向「手機外框」展示版（platform-desktop.html），
        手機直接開（寬度 <=700）完全不受影響、不會跳轉。
-       跟 4 支任務不同，平台本身是「開啟者」（呼叫 window.open() 開任務的那一方），
-       不是「被開啟者」，所以套上這層桌機外框後，任務視窗的 .opener 會直接、正確地
-       指向平台這個 iframe 本身，不需要像任務那樣額外做雙向轉發。 */
+       平板（iPad、Android 平板）也算觸控裝置、不導向外框：平板的畫面寬度通常超過 700，
+       如果被當成電腦導向外框，會看不到安裝畫面（安裝畫面只在最外層頁面才能運作）。
+       平板上平台本身有 480px 寬度上限會置中顯示，任務則在任務視窗裡被限制成手機寬度。
+       iPad 的瀏覽器預設回報成 Mac，所以另外用「Mac + 多點觸控」辨識；
+       真正的 Mac 沒有多點觸控，仍然算電腦。
+       跟 4 支任務不同，平台本身是「開啟者」（開任務的那一方），不是「被開啟者」。 */
     (function() {
         var params = new URLSearchParams(window.location.search);
         var inIframe = (window.self !== window.top);
-        if (window.innerWidth > 700 && !inIframe && !params.has('embedded')) {
+        var ua = navigator.userAgent || '';
+        var isTouchDevice = /Android|iPhone|iPad|iPod/.test(ua)
+            || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (window.innerWidth > 700 && !isTouchDevice && !inIframe && !params.has('embedded')) {
             window.location.replace('platform-desktop.html');
         }
     })();

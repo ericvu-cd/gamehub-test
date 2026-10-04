@@ -176,6 +176,10 @@ function injectTaskOverlayStyles() {
         font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;
         padding-right: 60px; }
     .task-overlay-body { position: relative; flex: 1 1 auto; min-height: 0; }
+    /* 平板、寬螢幕：上方列與任務都限制成手機寬度、置中，兩側留黑底。
+       任務頁面都是照手機直式設計的，很多沒有自己的寬度上限，直接撐滿平板會被拉得很寬。
+       480px 跟平台本身的寬度上限一致；手機（寬度不到 480）完全不受影響。 */
+    .task-overlay-bar, .task-overlay-body { box-sizing: border-box; width: 100%; max-width: 480px; margin-left: auto; margin-right: auto; }
     .task-overlay-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
     .task-overlay-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
         color: rgba(255,255,255,0.7); font-size: 14px; pointer-events: none; }
