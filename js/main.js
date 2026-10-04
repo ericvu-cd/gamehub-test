@@ -12,7 +12,7 @@ import { claimDailyLogin, redeemShopItem } from './coins.js';
 import { openTask, initTaskMessageListener } from './tasks.js';
 import { fetchLeaderboard } from './leaderboard.js';
 import { openDailySlot } from './dailySlot.js';
-import { openCrewCard, closeCrewCard } from './crewCard.js';
+import { openCrewCard, closeCrewCard, getCrewTitle } from './crewCard.js';
 import { openInstallGuide, runStartupInstallCheck, updateMenuEntry } from './installGuide.js';
 
 let currentUser = null;
@@ -326,6 +326,8 @@ function renderUserBar() {
     const progressWrap = document.getElementById('level-progress-wrap');
     if (!currentUser) {
         document.getElementById('user-name').innerText = '尚未報到的船員';
+        document.getElementById('user-crew-title').textContent = '';
+        document.getElementById('user-crew-title').classList.add('hidden');
         document.getElementById('user-level').innerText = 'Lv.0';
         document.getElementById('user-coins').innerText = '0';
         avatarEl.innerText = '🧭';
@@ -336,6 +338,8 @@ function renderUserBar() {
     const avatar = siteData.avatarPresets.find(a => a.id === currentUser.avatarId);
     const levelInfo = computeLevelInfo(currentUser);
     document.getElementById('user-name').innerText = currentUser.nickname;
+    document.getElementById('user-crew-title').textContent = getCrewTitle(levelInfo.level);
+    document.getElementById('user-crew-title').classList.remove('hidden');
     document.getElementById('user-level').innerText = `Lv.${levelInfo.level}`;
     document.getElementById('user-coins').innerText = currentUser.coins;
     avatarEl.innerText = avatar?.emoji || '🙂';
@@ -751,5 +755,6 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker 註冊失敗', err));
     });
 }
+
 
 
