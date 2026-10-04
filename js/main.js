@@ -12,6 +12,7 @@ import { claimDailyLogin, redeemShopItem } from './coins.js';
 import { openTask, initTaskMessageListener } from './tasks.js';
 import { fetchLeaderboard } from './leaderboard.js';
 import { openDailySlot } from './dailySlot.js';
+import { openCrewCard, closeCrewCard } from './crewCard.js';
 import { openInstallGuide, runStartupInstallCheck, updateMenuEntry } from './installGuide.js';
 
 let currentUser = null;
@@ -279,6 +280,16 @@ window.handleLogout = async function () {
     await logoutUser();
     document.getElementById('user-menu').classList.add('hidden');
     document.getElementById('auth-modal').classList.remove('hidden');
+};
+
+window.openMyCrewCard = function () {
+    document.getElementById('user-menu').classList.add('hidden');
+    if (!currentUser) {
+        document.getElementById('auth-modal').classList.remove('hidden');
+        return;
+    }
+    const avatar = siteData.avatarPresets.find(a => a.id === currentUser.avatarId);
+    openCrewCard({ user: currentUser, avatar: avatar?.emoji || '🙂', level: computeLevel(currentUser) });
 };
 
 window.toggleUserMenu = function () {
@@ -716,6 +727,7 @@ async function init() {
     updateMenuEntry();
 
     watchAuthState(async (user) => {
+        closeCrewCard();
         currentUser = user;
         renderUserBar();
         renderTasks();
@@ -739,4 +751,5 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker 註冊失敗', err));
     });
 }
+
 
