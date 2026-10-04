@@ -1145,6 +1145,22 @@
 	   不在這裡呼叫 bgm.play()，由遊戲開始後的 initGame 處理。
 	*/
 	var _sfxOn = sessionStorage.getItem('sfxEnabled') !== 'false';
+    // 啟航音效：在點擊事件內播放，符合手機音訊限制。
+    var _departureHorn = new Audio('harbor-departure-horn.mp3');
+    _departureHorn.preload = 'auto';
+    _departureHorn.volume = 0.65;
+    var _departurePending = false;
+    function stopDepartureHorn(){
+        _departureHorn.pause();
+        _departureHorn.currentTime = 0;
+    }
+    function playDepartureHorn(){
+        if(!_sfxOn) return;
+        _departureHorn.currentTime = 0;
+        var playing = _departureHorn.play();
+        if(playing && playing.catch) playing.catch(function(){});
+    }
+
 	(function(){
 		var btn = document.getElementById('ws-sfx-btn');
 		if(!btn) return;
@@ -1161,6 +1177,7 @@
 		sessionStorage.setItem('sfxEnabled', _sfxOn ? 'true' : 'false');
 		/* 歡迎頁不播放 bgm，僅確保關閉時停掉（若遊戲音樂還在響） */
 		if(!_sfxOn){
+            stopDepartureHorn();
 			var bgm = document.getElementById('bgm');
 			if(bgm) bgm.pause();
 		}
@@ -1208,6 +1225,7 @@
 	 *   4. 轉場動畫結束（3.05 秒）後才呼叫 main.js 的 initGame() 正式開局
 	 */
 	window.wsStartGame = function(){
+        if(_departurePending) return;
 		if(!window.selectedLocationId){
 			wsShowToast('⚠️ 請先選擇出發漁港');
 			return;
@@ -1247,6 +1265,8 @@
 		var mapBg   = document.getElementById('ws-map-bg');
 		var wsEl    = document.getElementById('welcome-screen');
 		if(harbDot && mapBg && wsEl){
+            _departurePending = true;
+            playDepartureHorn();
 			var dotX = parseFloat(harbDot.style.left);
 			var dotY = parseFloat(harbDot.style.top);
 			var cW   = window.innerWidth;
@@ -1267,7 +1287,9 @@
 			wsEl.style.transformOrigin   = ox + ' ' + oy;
 			wsEl.style.transform         = 'scale(5)';
 			setTimeout(function(){
-				wsEl.style.animation       = 'none';  /* 解除 welcomeFadeIn(forwards)對opacity的鎖定 */
+				stopDepartureHorn();
+                _departurePending = false;
+                wsEl.style.animation       = 'none';  /* 解除 welcomeFadeIn(forwards)對opacity的鎖定 */
 				wsEl.style.transition      = '';
 				wsEl.style.opacity         = '0';   /* 先藏起來，避免歸位瞬間被看到 */
 				wsEl.style.transform       = '';
@@ -1430,3 +1452,4 @@
 	setTimeout(renderDiffButtons, 400);
 
 })();
+
