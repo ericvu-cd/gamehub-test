@@ -1,12 +1,13 @@
 <!DOCTYPE html>
+
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 <title>平台介紹｜在地文化知識型互動平台</title>
-<meta name="theme-color" content="#0c1230">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<meta content="#0c1230" name="theme-color"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&amp;family=Noto+Sans+TC:wght@500;700;900&amp;display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0} :root{--bg:#0c1230;--card:#151d52;--line:rgba(255,255,255,.18);--dim:rgba(255,255,255,.7);--gold:#ffe37a;--gold2:#f6b32d;--green:#9bf07f}
 html,body{min-height:100%;font-family:'Baloo 2','Noto Sans TC',-apple-system,sans-serif;color:#fff;background:var(--bg);-webkit-tap-highlight-color:transparent}
@@ -35,48 +36,54 @@ body:after{content:"";position:fixed;left:-80px;top:260px;width:240px;height:240
         font-weight: 800;
     }
 
+
+/* 平台五大功能：統一資訊層級 */
+.feature-grid { display:grid; gap:12px; margin-top:12px; }
+.feature-item {
+    display:flex; align-items:flex-start; gap:13px;
+    padding:15px; border-radius:16px;
+    background:rgba(255,255,255,.075);
+    border:1px solid rgba(255,255,255,.13);
+}
+.feature-icon {
+    flex:0 0 42px; width:42px; height:42px; border-radius:13px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,227,122,.12);
+    font-size:22px;
+}
+.feature-body { min-width:0; }
+.feature-body h3 { margin:0 0 4px; color:#fff; }
+.feature-body p { margin:0; color:rgba(255,255,255,.76); }
 </style>
 </head>
 <body>
 <div class="portrait-warning"><div>📱↻</div><h2>請將手機轉為直式</h2><p>本平台專為直式螢幕設計，以提供最佳體驗。</p></div>
 <main class="wrap">
-  <div class="top"><a class="back" href="./" aria-label="返回平台">‹</a><h1>平台介紹</h1></div>
-  <section class="hero"><span class="hero-badge">關於平台</span><h2>在地文化知識型<br>互動平台</h2><p>把地方文化、環境知識與在地故事，變成一個個可以親自挑戰的互動任務。從閱讀、探索到遊戲，不只「知道」，更透過參與累積自己的地方文化探索紀錄。</p></section>
-  <section class="card"><h3>🧭 這個平台可以做什麼？</h3><p>平台會持續加入不同主題的文化任務。完成任務後，可依任務內容取得通行金幣、徽章或證書，並查看個人成果與任務排行榜，讓每一次探索都留下紀錄。</p><div class="feature-grid"><div class="feature"><b>🎮</b>互動任務</div><div class="feature"><b>🏅</b>徽章・證書</div><div class="feature"><b>🏆</b>任務排行榜</div><div class="feature"><b>🎒</b>探索背包</div></div></section>
-  <section class="card"><h3>🚀 怎麼開始？</h3><div class="steps"><div class="step"><div class="num">1</div><div><strong>申請或登入船員證</strong><span>建立自己的平台身分，保存金幣、徽章、證書與任務成果。</span></div></div><div class="step"><div class="num">2</div><div><strong>前往任務大廳</strong><span>選擇想挑戰的任務，依任務條件進入體驗。</span></div></div><div class="step"><div class="num">3</div><div><strong>完成文化挑戰</strong><span>依不同任務進行探索、判斷、遊戲或現地體驗。</span></div></div><div class="step"><div class="num">4</div><div><strong>累積你的探索成果</strong><span>收集徽章與證書、獲得通行金幣，並挑戰排行榜。</span></div></div></div></section>
-  <section class="card"><h3>💡 不只是一款遊戲</h3><p>這是一個可以持續擴充的地方文化互動平台。不同地點、主題與文化內容，都能轉化成新的任務加入平台，讓地方知識不只存在於文字裡，也成為可以體驗、挑戰與分享的內容。</p></section>
-  <section class="card"><h3>📬 聯絡我們</h3><p>平台使用、文化教育合作或相關問題，可透過以下方式聯絡。</p><div class="contact"><a href="tel:+886953118143"><span class="contact-icon">☎</span><span><small>電話｜點擊直接撥號</small><strong>0953-118143</strong></span></a><a href="mailto:cnhuansia30@gmail.com"><span class="contact-icon">✉</span><span><small>Email｜點擊直接寄信</small><strong>cnhuansia30@gmail.com</strong></span></a>
-                <a class="contact-link" href="https://www.facebook.com/huansia/" target="_blank" rel="noopener noreferrer">
-                    <span class="contact-icon">f</span>
-                    <span><small>Facebook</small>番社30</span>
-                </a>
-                <a class="contact-link" href="https://hs30.org.tw/" target="_blank" rel="noopener noreferrer">
-                    <span class="contact-icon">⌂</span>
-                    <span><small>官方網站</small>hs30.org.tw</span>
-                </a></div><div class="operator">營運單位｜苗栗縣在地文化推廣協會</div></section>
-  <div class="copyright">© 苗栗縣在地文化推廣協會<br>平台內容與圖像之著作權依各內容原始權利歸屬為準。</div>
+<div class="top"><a aria-label="返回平台" class="back" href="./">‹</a><h1>平台介紹</h1></div>
+<section class="hero"><span class="hero-badge">關於平台</span><h2>在地文化知識型<br/>互動平台</h2><p>把地方文化、環境知識與在地故事，變成一個個可以親自挑戰的互動任務。從閱讀、探索到遊戲，不只「知道」，更透過參與累積自己的地方文化探索紀錄。</p></section>
+<section class="card"><h2>平台功能</h2><div class="feature-grid"><div class="feature-item"><div class="feature-icon">🎯</div><div class="feature-body"><h3>任務大廳</h3><p>瀏覽目前開放的在地文化互動任務，依任務條件進入挑戰，完成後可取得對應獎勵與紀錄。</p></div></div><div class="feature-item"><div class="feature-icon">🔔</div><div class="feature-body"><h3>公告</h3><p>查看平台最新消息、活動通知與任務相關資訊。</p></div></div><div class="feature-item"><div class="feature-icon">🏆</div><div class="feature-body"><h3>排行榜</h3><p>依不同任務查看玩家成績與排行，記錄每項挑戰的成果。</p></div></div><div class="feature-item"><div class="feature-icon">🎒</div><div class="feature-body"><h3>探索背包</h3><p>集中查看已取得的徽章與證書，累積探索成果並提升平台等級。</p></div></div><div class="feature-item"><div class="feature-icon">🎁</div><div class="feature-body"><h3>通行商店</h3><p>使用任務與每日活動取得的通行金幣兌換商店品項；兌換完成後依畫面提示出示兌換資訊進行核銷。</p></div></div></div></section>
+<section class="card"><h3>🚀 怎麼開始？</h3><div class="steps"><div class="step"><div class="num">1</div><div><strong>申請或登入船員證</strong><span>建立自己的平台身分，保存金幣、徽章、證書與任務成果。</span></div></div><div class="step"><div class="num">2</div><div><strong>前往任務大廳</strong><span>選擇想挑戰的任務，依任務條件進入體驗。</span></div></div><div class="step"><div class="num">3</div><div><strong>完成文化挑戰</strong><span>依不同任務進行探索、判斷、遊戲或現地體驗。</span></div></div><div class="step"><div class="num">4</div><div><strong>累積你的探索成果</strong><span>收集徽章與證書、獲得通行金幣，並挑戰排行榜。</span></div></div></div></section>
+<section class="card"><h3>💡 不只是一款遊戲</h3><p>這是一個可以持續擴充的地方文化互動平台。不同地點、主題與文化內容，都能轉化成新的任務加入平台，讓地方知識不只存在於文字裡，也成為可以體驗、挑戰與分享的內容。</p></section>
+<section class="card"><h3>📬 聯絡我們</h3><p>平台使用、文化教育合作或相關問題，可透過以下方式聯絡。</p><div class="contact"><a href="tel:+886953118143"><span class="contact-icon">☎</span><span><small>電話｜點擊直接撥號</small><strong>0953-118143</strong></span></a><a href="mailto:cnhuansia30@gmail.com"><span class="contact-icon">✉</span><span><small>Email｜點擊直接寄信</small><strong>cnhuansia30@gmail.com</strong></span></a>
+<a class="contact-link" href="https://www.facebook.com/huansia/" rel="noopener noreferrer" target="_blank">
+<span class="contact-icon">f</span>
+<span><small>Facebook</small>番社30</span>
+</a>
+<a class="contact-link" href="https://hs30.org.tw/" rel="noopener noreferrer" target="_blank">
+<span class="contact-icon">⌂</span>
+<span><small>官方網站</small>hs30.org.tw</span>
+</a></div><div class="operator">營運單位｜苗栗縣在地文化推廣協會</div></section>
+<div class="copyright">© 苗栗縣在地文化推廣協會<br/>平台內容與圖像之著作權依各內容原始權利歸屬為準。</div>
 
-        <section class="about-card">
-            <h2>商店</h2>
-            <div class="guide-item">
-                <div class="guide-icon">🎁</div>
-                <div>
-                    <h3>通行商店</h3>
-                    <p>使用任務與每日活動取得的通行金幣兌換商店品項；兌換完成後，依畫面提示出示兌換資訊進行核銷。</p>
-                </div>
-            </div>
-        </section>
-
-
-        <section class="about-card">
-            <h2>營運與版權資訊</h2>
-            <div class="copyright-lines">
-                <p><strong>營運單位：</strong>苗栗縣在地文化推廣協會</p>
-                <p>本互動平台之整體架構、介面設計與平台內容，由苗栗縣在地文化推廣協會建置及營運。</p>
-                <p>平台所收錄之各項互動任務，其文字、圖像、程式、影音及相關創作內容，著作權分別屬於各任務原始創作者或合法權利人；未經權利人同意，不得擅自重製、改作或作其他未經授權之使用。</p>
-                <p class="copyright-mark">© 2026 苗栗縣在地文化推廣協會</p>
-            </div>
-        </section>
-    </main>
+<section class="about-card">
+<h2>營運與版權資訊</h2>
+<div class="copyright-lines">
+<p><strong>營運單位：</strong>苗栗縣在地文化推廣協會</p>
+<p>本互動平台之整體架構、介面設計與平台內容，由苗栗縣在地文化推廣協會建置及營運。</p>
+<p>平台所收錄之各項互動任務，其文字、圖像、程式、影音及相關創作內容，著作權分別屬於各任務原始創作者或合法權利人；未經權利人同意，不得擅自重製、改作或作其他未經授權之使用。</p>
+<p class="copyright-mark">© 2026 苗栗縣在地文化推廣協會</p>
+</div>
+</section>
+</main>
 </body>
 </html>
