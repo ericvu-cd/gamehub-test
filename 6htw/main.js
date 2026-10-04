@@ -1,3 +1,24 @@
+// 介面簡圖：直接嵌入 SVG，無外部圖片依賴。
+const GAME_UI_SVG = {
+ eco: '<path d="M3 19c3-3 5 3 8 0s5 3 10 0" fill="none"/><path d="M12 15C5 14 5 6 5 4c8 0 13 4 12 9-1 3-3 4-5 2Z" fill="#39c9ad"/><path d="m8 7 6 9" fill="none"/>',
+ collection: '<rect x="4" y="6" width="16" height="15" rx="3" fill="#163d59"/><path d="M8 6V3h8v3" fill="none"/><path d="M8 13c3-4 6-4 9 0-3 4-6 4-9 0Zm0 0-3-3v6Z" fill="#68e0cc"/><circle cx="15" cy="12.5" r=".6" fill="#12324b" stroke="none"/>',
+ achievement: '<path d="m9 3 3 5 3-5 3 2-3 6H9L6 5Z" fill="#65d5c5"/><circle cx="12" cy="15" r="6" fill="#ffd56a"/><path d="m12 11 1.2 2.5 2.8.4-2 2 .5 2.7-2.5-1.3-2.5 1.3.5-2.7-2-2 2.8-.4Z" fill="#a76513" stroke="none"/>'
+};
+function gameUiIcon(kind, size = 18) {
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" aria-hidden="true" focusable="false" style="display:inline-block;vertical-align:-.22em;margin-right:.25em;flex-shrink:0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+GAME_UI_SVG[kind]+'</svg>';
+}
+function behaviorBadgeImage(key) {
+    return 'image/' + encodeURIComponent(key) + '.png';
+}
+async function drawGameUiIcon(ctx, kind, x, y, size) {
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+        img.onload = resolve; img.onerror = reject;
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(gameUiIcon(kind, size).replace('currentColor', '#ffe082'));
+    });
+    ctx.drawImage(img, x, y, size, size);
+}
+
 ﻿/* ═══════════════════════════════════════════════════════════════════════
    main.js — 遊戲核心邏輯
    《友魚守護團：台灣海線任務》卡牌遊戲主程式
@@ -508,7 +529,7 @@ function openCollection() {
             ${list.map(b => {
                 const isUnlocked = unlocked.includes(b.key);
                 const clickable = isUnlocked
-                    ? `onclick="showCollectionZoom('image/${b.key}.png','${b.key}')" style="cursor:pointer;"`
+                    ? `onclick="showCollectionZoom('${behaviorBadgeImage(b.key)}','${b.key}')" style="cursor:pointer;"`
                     : '';
                 return `
                 <div style="display:flex;flex-direction:column;align-items:center;gap:4px;" ${clickable}>
@@ -519,7 +540,7 @@ function openCollection() {
                     }
                     display:flex;align-items:center;justify-content:center;">
                     ${isUnlocked
-                        ? `<img src="image/${b.key}.png" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">`
+                        ? `<img src="${behaviorBadgeImage(b.key)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">`
                         : `<span style="font-size:42px;font-weight:900;color:#e02020;line-height:1;text-shadow:0 2px 8px rgba(0,0,0,0.5);">？</span>`
                     }
                   </div>
@@ -2330,7 +2351,7 @@ function showRoundSummary() {
     const ecoHtml  = currentS.why ? `
         <div style="${sharedCard}padding:7px 11px;margin-bottom:10px;
                     animation:rsSlideUp .26s ${ecoDelay}s ease both;">
-            <div style="font-size:12px;color:#60c8f0;font-weight:bold;margin-bottom:3px;">🌊 生態小知識</div>
+            <div style="font-size:12px;color:#60c8f0;font-weight:bold;margin-bottom:3px;">${gameUiIcon("eco", 18)}生態小知識</div>
             <div style="font-size:16px;color:rgba(190,235,255,0.88);line-height:1.6;">${currentS.why}</div>
         </div>` : '';
 
@@ -3056,3 +3077,4 @@ function closeContact() {
     window.addEventListener('pagehide', pauseForBackground);
 
 })();
+

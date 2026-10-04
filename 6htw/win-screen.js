@@ -308,7 +308,7 @@ function showWinScreen(winner) {
         // 新成就標籤
         const newLabel = document.createElement("div");
         newLabel.style.cssText = `font-size:11px;font-weight:700;letter-spacing:3px;color:rgba(255,230,100,.75);`;
-        newLabel.textContent = newlyUnlockedBadges.length > 1 ? `✨ 解鎖了 ${newlyUnlockedBadges.length} 枚新成就` : "✨ 新成就解鎖";
+        newLabel.innerHTML = gameUiIcon("achievement", 20) + (newlyUnlockedBadges.length > 1 ? `解鎖了 ${newlyUnlockedBadges.length} 枚新成就` : "新成就解鎖");
         card.appendChild(newLabel);
 
         // 大圖示
@@ -349,16 +349,10 @@ function showWinScreen(winner) {
         content.appendChild(carouselWrap);
 
         // ── 切換邏輯 ──
-        const BADGE_META = {
-            "綠燈先鋒":"🟢","一支釣達人":"🎣","完美永續局":"🏆",
-            "紅燈護送員":"🔴","養殖支持者":"🌾","深海傳說":"🐋",
-            "浴火重生":"🔄","百發百中":"💯","海紋守護王":"👑",
-            "珊瑚守護者":"🪸","漁法通":"🎯","近海英雄":"🌏"
-        };
 
         function showBadge(idx, animate) {
             const key = newlyUnlockedBadges[idx];
-            const icon = BADGE_META[key] || "⭐";
+            const icon = behaviorBadgeImage(key);
             if (animate) {
                 iconEl.style.animation = "none";
                 nameEl.style.animation = "none";
@@ -366,7 +360,11 @@ function showWinScreen(winner) {
                 iconEl.style.animation = "winBadgeSlide .4s cubic-bezier(.34,1.56,.64,1) both, winIconFloat 2.6s .4s ease-in-out infinite";
                 nameEl.style.animation = "winBadgeSlide .4s .05s ease both";
             }
-            iconEl.textContent = icon;
+            iconEl.replaceChildren();
+            const badgeImg = document.createElement("img");
+            badgeImg.src = icon; badgeImg.alt = key;
+            badgeImg.style.cssText = "width:112px;height:112px;object-fit:contain;display:block;";
+            iconEl.appendChild(badgeImg);
             nameEl.textContent = key;
             if (dotsEl) {
                 [...dotsEl.children].forEach((d, i) => {
@@ -462,7 +460,7 @@ function showWinScreen(winner) {
         openLog();
         const orig = window.closeLog;
         window.closeLog = () => { orig(); overlay.style.transition="opacity .4s ease"; overlay.style.opacity="1"; overlay.style.pointerEvents=""; window.closeLog=orig; };
-    }], ["🐠 我的收集", () => { if (typeof openCollection==='function') openCollection(); }]
+    }], [gameUiIcon("collection", 20) + "我的收集", () => { if (typeof openCollection==='function') openCollection(); }]
     ].forEach(([label, fn]) => {
         const link = document.createElement("button");
         link.style.cssText = `
@@ -473,7 +471,7 @@ function showWinScreen(winner) {
             text-decoration:underline;text-underline-offset:3px;
             text-decoration-color:rgba(255,255,255,.2);
         `;
-        link.textContent = label;
+        link.innerHTML = label;
         link.onclick = fn;
         linkRow.appendChild(link);
     });
@@ -523,14 +521,9 @@ function _restartGame(winBgm, gameBgm, particleTimer) {
 
 // 依勳章 key 查 db.js BEHAVIOR_BADGE_DB 的 icon（原本這裡另外寫死一份 BADGE_META_SHARE，
 // 跟 main.js openCollection() 用的圖示是同一份資料，現在統一從 db.js 查，不用維護兩份）
-function _badgeIcon(badgeKey) {
-    if (typeof BEHAVIOR_BADGE_DB === "undefined") return "⭐";
-    const b = BEHAVIOR_BADGE_DB.find(function (x) { return x.key === badgeKey; });
-    return (b && b.icon) ? b.icon : "⭐";
-}
 
 async function shareAchievementCard(isPlayer, winner, badgeKey) {
-    const icon = _badgeIcon(badgeKey);
+    const badgeImg = await loadImageAsBlob(behaviorBadgeImage(badgeKey));
     const diffLabel = getDifficultyInfo(gameDifficulty).label;
 
     const W = 390, H = 693;
@@ -596,12 +589,13 @@ async function shareAchievementCard(isPlayer, winner, badgeKey) {
     ctx.font = "500 12px 'PingFang TC','Microsoft JhengHei',sans-serif";
     ctx.fillStyle = "rgba(255,225,100,.72)";
     ctx.letterSpacing = "3px";
-    ctx.fillText("✨  新成就解鎖  ✨", cx, cy - 100);
+    await drawGameUiIcon(ctx, "achievement", cx - 70, cy - 110, 20);
+    ctx.fillText("新成就解鎖", cx + 10, cy - 100);
     ctx.letterSpacing = "0px";
 
     // 大圖示
     ctx.font = "88px serif";
-    ctx.fillText(icon, cx, cy - 18);
+    ctx.drawImage(badgeImg, cx - 60, cy - 78, 120, 120);
 
     // 勳章名
     ctx.font = "900 32px 'PingFang TC','Microsoft JhengHei',sans-serif";
@@ -627,7 +621,7 @@ async function shareAchievementCard(isPlayer, winner, badgeKey) {
     canvas.toBlob(async (blob) => {
         if (!blob) { alert("卡片產生失敗"); return; }
         const file = new File([blob], `友魚守護團_${badgeKey}.png`, { type:"image/png" });
-        const text = `我在《友魚守護團》解鎖了「${badgeKey}」成就！${icon} 你也來挑戰看看 🌊`;
+        const text = `我在《友魚守護團》解鎖了「${badgeKey}」成就！你也來挑戰看看 🌊`;
         if (navigator.canShare && navigator.canShare({ files:[file] })) {
             try { await navigator.share({ files:[file], text }); }
             catch(e) { if (e.name !== "AbortError") fallbackDownload(canvas, `友魚守護團_${badgeKey}`); }
@@ -843,7 +837,7 @@ function openLeaderboard() {
     const list = document.getElementById("leaderboard-list");
     const s = computeCollectionStats(window.playerName);
     const rowsHtml = [
-        ["🐟 魚類圖鑑", s.fishScore], ["✨ 行為勳章", s.behaviorScore],
+        ["🐟 魚類圖鑑", s.fishScore], [gameUiIcon("achievement", 18) + "行為勳章", s.behaviorScore],
         ["⚓ 漁港章", s.harborScore]
     ].map(function (row) {
         return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08);">' +
@@ -865,3 +859,4 @@ function closeLeaderboard() {
 window.computeCollectionStats = computeCollectionStats;
 window.openLeaderboard        = openLeaderboard;
 window.closeLeaderboard       = closeLeaderboard;
+

@@ -788,7 +788,7 @@ function tutorShowSummary(summon, playerFish, tableCards, onClose) {
         <div style="background:linear-gradient(135deg,rgba(0,55,95,0.72),rgba(0,32,72,0.72));
                     border:1.5px solid rgba(60,170,255,0.22);border-radius:11px;
                     padding:8px 11px;margin-bottom:10px;">
-            <div style="font-size:.7rem;color:#60c8f0;font-weight:bold;margin-bottom:2px;">🌊 生態小知識</div>
+            <div style="font-size:.7rem;color:#60c8f0;font-weight:bold;margin-bottom:2px;">${gameUiIcon("eco", 17)}生態小知識</div>
             <div style="font-size:.83rem;color:rgba(190,235,255,0.85);line-height:1.55;">${summon.why}</div>
         </div>` : "";
 
@@ -995,3 +995,4 @@ function tutorFinish() {
         return _orig ? _orig.call(this, idx, fish, isHand) : undefined;
     };
 })();
+
