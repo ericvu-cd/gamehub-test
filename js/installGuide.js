@@ -134,7 +134,7 @@ function showGuide({ auto, waitForPrompt }) {
             const stepsHtml = content.steps.map((s, i) => `<li><span class="ig-num">${i + 1}</span><span>${s}</span></li>`).join('');
             card.innerHTML = `
                 <div class="ig-head">
-                    <img src="icons/icon-192.png" alt="">
+                    <img src="icons/icon-192-edu-v1.png" alt="">
                     <div><div class="ig-title">安裝到主畫面</div><div class="ig-sub">${content.sub}</div></div>
                 </div>
                 ${stepsHtml ? `<ul class="ig-steps">${stepsHtml}</ul>` : ''}
@@ -153,7 +153,7 @@ function showGuide({ auto, waitForPrompt }) {
         function renderStatus(html, { spinner, buttons }) {
             card.innerHTML = `
                 <div class="ig-head">
-                    <img src="icons/icon-192.png" alt="">
+                    <img src="icons/icon-192-edu-v1.png" alt="">
                     <div><div class="ig-title">安裝到主畫面</div></div>
                 </div>
                 <div class="ig-status">${spinner ? '<div class="ig-spinner"></div>' : ''}<div>${html}</div></div>
@@ -249,3 +249,4 @@ export function updateMenuEntry() {
     const btn = document.getElementById('menu-install-btn');
     if (btn) btn.style.display = isStandalone() ? 'none' : '';
 }
+
