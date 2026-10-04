@@ -54,6 +54,63 @@ body:after{content:"";position:fixed;left:-80px;top:260px;width:240px;height:240
 .feature-body { min-width:0; }
 .feature-body h3 { margin:0 0 4px; color:#fff; }
 .feature-body p { margin:0; color:rgba(255,255,255,.76); }
+
+/* v5：平台功能手機版固定單欄，避免大字在雙欄中被擠成直排 */
+.feature-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    gap: 12px !important;
+    width: 100% !important;
+}
+.feature-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    gap: 14px !important;
+    padding: 16px !important;
+    border-radius: 16px !important;
+    background: rgba(255,255,255,.075) !important;
+    border: 1px solid rgba(255,255,255,.13) !important;
+}
+.feature-icon {
+    flex: 0 0 46px !important;
+    width: 46px !important;
+    height: 46px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 13px !important;
+    font-size: 23px !important;
+}
+.feature-body {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+}
+.feature-body h3 {
+    margin: 0 0 5px !important;
+    font-size: 19px !important;
+    line-height: 1.4 !important;
+    white-space: normal !important;
+    word-break: keep-all !important;
+}
+.feature-body p {
+    margin: 0 !important;
+    font-size: 16px !important;
+    line-height: 1.65 !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+}
+@media (max-width: 380px) {
+    .feature-item { gap: 12px !important; padding: 14px !important; }
+    .feature-icon { flex-basis: 42px !important; width: 42px !important; height: 42px !important; }
+    .feature-body h3 { font-size: 18px !important; }
+    .feature-body p { font-size: 15.5px !important; }
+}
 </style>
 </head>
 <body>
@@ -61,7 +118,7 @@ body:after{content:"";position:fixed;left:-80px;top:260px;width:240px;height:240
 <main class="wrap">
 <div class="top"><a aria-label="返回平台" class="back" href="./">‹</a><h1>平台介紹</h1></div>
 <section class="hero"><span class="hero-badge">關於平台</span><h2>在地文化知識型<br/>互動平台</h2><p>把地方文化、環境知識與在地故事，變成一個個可以親自挑戰的互動任務。從閱讀、探索到遊戲，不只「知道」，更透過參與累積自己的地方文化探索紀錄。</p></section>
-<section class="card"><h2>平台功能</h2><div class="feature-grid"><div class="feature-item"><div class="feature-icon">🎯</div><div class="feature-body"><h3>任務大廳</h3><p>瀏覽目前開放的在地文化互動任務，依任務條件進入挑戰，完成後可取得對應獎勵與紀錄。</p></div></div><div class="feature-item"><div class="feature-icon">🔔</div><div class="feature-body"><h3>公告</h3><p>查看平台最新消息、活動通知與任務相關資訊。</p></div></div><div class="feature-item"><div class="feature-icon">🏆</div><div class="feature-body"><h3>排行榜</h3><p>依不同任務查看玩家成績與排行，記錄每項挑戰的成果。</p></div></div><div class="feature-item"><div class="feature-icon">🎒</div><div class="feature-body"><h3>探索背包</h3><p>集中查看已取得的徽章與證書，累積探索成果並提升平台等級。</p></div></div><div class="feature-item"><div class="feature-icon">🎁</div><div class="feature-body"><h3>通行商店</h3><p>使用任務與每日活動取得的通行金幣兌換商店品項；兌換完成後依畫面提示出示兌換資訊進行核銷。</p></div></div></div></section>
+<section class="card"><h2>平台功能</h2><div class="feature-grid"><div class="feature-item"><div class="feature-icon">🎯</div><div class="feature-body"><h3>任務大廳</h3><p>瀏覽目前開放的在地文化互動任務，依任務條件進入挑戰。</p></div></div><div class="feature-item"><div class="feature-icon">🔔</div><div class="feature-body"><h3>公告</h3><p>查看平台最新消息、活動通知與任務相關資訊。</p></div></div><div class="feature-item"><div class="feature-icon">🏆</div><div class="feature-body"><h3>排行榜</h3><p>查看各項任務的玩家成績與排行。</p></div></div><div class="feature-item"><div class="feature-icon">🎒</div><div class="feature-body"><h3>探索背包</h3><p>查看已取得的徽章、證書與探索成果。</p></div></div><div class="feature-item"><div class="feature-icon">🎁</div><div class="feature-body"><h3>通行商店</h3><p>使用通行金幣兌換平台提供的品項。</p></div></div></div></section>
 <section class="card"><h3>🚀 怎麼開始？</h3><div class="steps"><div class="step"><div class="num">1</div><div><strong>申請或登入船員證</strong><span>建立自己的平台身分，保存金幣、徽章、證書與任務成果。</span></div></div><div class="step"><div class="num">2</div><div><strong>前往任務大廳</strong><span>選擇想挑戰的任務，依任務條件進入體驗。</span></div></div><div class="step"><div class="num">3</div><div><strong>完成文化挑戰</strong><span>依不同任務進行探索、判斷、遊戲或現地體驗。</span></div></div><div class="step"><div class="num">4</div><div><strong>累積你的探索成果</strong><span>收集徽章與證書、獲得通行金幣，並挑戰排行榜。</span></div></div></div></section>
 <section class="card"><h3>💡 不只是一款遊戲</h3><p>這是一個可以持續擴充的地方文化互動平台。不同地點、主題與文化內容，都能轉化成新的任務加入平台，讓地方知識不只存在於文字裡，也成為可以體驗、挑戰與分享的內容。</p></section>
 <section class="card"><h3>📬 聯絡我們</h3><p>平台使用、文化教育合作或相關問題，可透過以下方式聯絡。</p><div class="contact"><a href="tel:+886953118143"><span class="contact-icon">☎</span><span><small>電話｜點擊直接撥號</small><strong>0953-118143</strong></span></a><a href="mailto:cnhuansia30@gmail.com"><span class="contact-icon">✉</span><span><small>Email｜點擊直接寄信</small><strong>cnhuansia30@gmail.com</strong></span></a>
@@ -74,7 +131,6 @@ body:after{content:"";position:fixed;left:-80px;top:260px;width:240px;height:240
 <span><small>官方網站</small>hs30.org.tw</span>
 </a></div><div class="operator">營運單位｜苗栗縣在地文化推廣協會</div></section>
 <div class="copyright">© 苗栗縣在地文化推廣協會<br/>平台內容與圖像之著作權依各內容原始權利歸屬為準。</div>
-
 <section class="about-card">
 <h2>營運與版權資訊</h2>
 <div class="copyright-lines">
