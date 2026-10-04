@@ -235,7 +235,7 @@ export function closeTaskOverlay(taskId) {
 // 開啟任務：先蓋上任務視窗（顯示載入中），扣款成功才真正載入任務網址
 export async function openTask(task, currentUser, onCoinsChanged) {
     if (!currentUser) {
-        alert('請先登記通行證');
+        alert('請先持船員證報到');
         return { ok: false };
     }
     if (activeTaskOverlay) return { ok: false }; // 已經有任務開著（理論上任務視窗會蓋住大廳，點不到）
@@ -390,3 +390,4 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
         }
     });
 }
+

@@ -72,8 +72,8 @@
         <div id="auth-modal-card" class="modal-card auth-mode-login">
             <div class="modal-header">
                 <span id="auth-mode-badge" class="auth-mode-badge">🔑 登入模式</span>
-                <h2 id="auth-title">通行證登記</h2>
-                <p id="auth-sub" class="modal-sub">已有帳號的隊員，請在這裡登入</p>
+                <h2 id="auth-title">船員報到</h2>
+                <p id="auth-sub" class="modal-sub">已有船員證的船員，請在這裡登入</p>
             </div>
 
             <div id="auth-avatar-wrap" class="hidden">
@@ -82,7 +82,7 @@
             </div>
 
             <div class="field-group">
-                <input id="auth-username" type="text" placeholder="使用者名稱（中英文數字，最長20字）" class="text-input">
+                <input id="auth-username" type="text" placeholder="船員名稱（中英文數字，最長20字）" class="text-input">
                 <div class="password-field-wrap">
                     <input id="auth-password" type="password" placeholder="密碼（至少6碼）" class="text-input">
                     <button type="button" id="auth-password-toggle" class="password-toggle-btn hidden" onclick="window.togglePasswordVisibility()">顯示</button>
@@ -98,10 +98,10 @@
 
             <p id="auth-error" class="error-text hidden"></p>
             <button id="auth-submit-btn" onclick="handleAuthSubmit()" class="btn-primary">
-                <span id="auth-submit-text">登記</span>
+                <span id="auth-submit-text">報到</span>
                 <span id="auth-submit-spinner" class="spinner hidden"></span>
             </button>
-            <p id="auth-toggle-link" class="link-text" onclick="toggleAuthMode()">還沒有通行證？點此申請加入</p>
+            <p id="auth-toggle-link" class="link-text" onclick="toggleAuthMode()">還沒有船員證？點此申請加入</p>
         </div>
     </div>
 
@@ -136,7 +136,7 @@
         <div class="user-brief" onclick="toggleUserMenu()">
             <div id="user-avatar" class="avatar-circle">🧭</div>
             <div class="user-text">
-                <h1 id="user-name">未登記隊員</h1>
+                <h1 id="user-name">尚未報到的船員</h1>
                 <div id="level-progress-wrap" class="level-progress-wrap hidden">
                     <span id="user-level" class="level-badge">Lv.0</span>
                     <div class="level-progress-track">
@@ -231,3 +231,4 @@
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
+

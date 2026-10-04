@@ -64,7 +64,7 @@ function computeLevel(user) {
 function computeUnlockStatus(task, user) {
     const conditions = task.unlockConditions || [];
     if (conditions.length === 0) return { canPlay: true, reason: '自由參加' };
-    if (!user) return { canPlay: false, reason: '請先登記通行證' };
+    if (!user) return { canPlay: false, reason: '請先持船員證報到' };
 
     const today = Date.now();
     const reasons = [];
@@ -168,14 +168,14 @@ function showToast(text) {
 window.toggleAuthMode = function () {
     isRegisterMode = !isRegisterMode;
 
-    document.getElementById('auth-title').innerText = isRegisterMode ? '申請加入探索隊' : '通行證登記';
+    document.getElementById('auth-title').innerText = isRegisterMode ? '申請船員證' : '船員報到';
     document.getElementById('auth-sub').innerText = isRegisterMode
-        ? '第一次來嗎？建立你自己的通行證'
-        : '已有帳號的隊員，請在這裡登入';
-    document.getElementById('auth-submit-text').innerText = isRegisterMode ? '核發通行證' : '登記';
+        ? '第一次來嗎？申請你的船員證'
+        : '已有船員證的船員，請在這裡登入';
+    document.getElementById('auth-submit-text').innerText = isRegisterMode ? '核發船員證' : '報到';
     document.getElementById('auth-toggle-link').innerText = isRegisterMode
-        ? '已經有通行證了？點此登入'
-        : '還沒有通行證？點此申請加入';
+        ? '已經有船員證了？點此報到'
+        : '還沒有船員證？點此申請加入';
 
     // 模式標籤+卡片強調色一起換，兩個畫面外觀不能靠仔細看文字才分得出來
     document.getElementById('auth-mode-badge').innerText = isRegisterMode ? '📝 註冊模式' : '🔑 登入模式';
@@ -314,7 +314,7 @@ function renderUserBar() {
     const avatarEl = document.getElementById('user-avatar');
     const progressWrap = document.getElementById('level-progress-wrap');
     if (!currentUser) {
-        document.getElementById('user-name').innerText = '未登記隊員';
+        document.getElementById('user-name').innerText = '尚未報到的船員';
         document.getElementById('user-level').innerText = 'Lv.0';
         document.getElementById('user-coins').innerText = '0';
         avatarEl.innerText = '🧭';
@@ -739,3 +739,4 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker 註冊失敗', err));
     });
 }
+
