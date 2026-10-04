@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>苗栗漁港一日遊 - 桌面版</title>
+<link rel="icon" href="data:,">
+<style>
+    html, body {
+        margin: 0;
+        height: 100%;
+        background: #0a0a0a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+    }
+    /* 外框：純裝飾用的邊框，跟縮放計算完全分開，不會裁切到內容 */
+    #frame-border {
+        padding: 6px;
+        background: #1a1a1a;
+        border-radius: 32px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+    /* 真正裁切內容的容器：大小 = 設計尺寸 × 縮放倍率（由 JS 算出來寫進這裡） */
+    #frame-outer {
+        position: relative;
+        overflow: hidden;
+        border-radius: 26px;
+        background: #000;
+    }
+    /* iframe 本身永遠鎖定在設計尺寸 436x892，內部看到的 CSS 像素永遠一致，
+       不會因為畫面縮放而擠壓變形，排版永遠正確；縮放交給 transform 處理，
+       transform 只是「視覺上」把整個畫面等比例縮小/放大，不影響內部佈局計算。
+       跟平台及其他任務用同一組設計尺寸，整個平台的桌機展示外觀一致。 */
+    #frame-outer iframe {
+        display: block;
+        width: 436px;
+        height: 892px;
+        border: 0;
+        transform-origin: top left;
+    }
+</style>
+</head>
+<body>
+    <div id="frame-border">
+        <div id="frame-outer">
+            <iframe id="frame-iframe" src="mlhbtrip.html?embedded=1" title="苗栗漁港一日遊"></iframe>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        var DESIGN_W = 436;
+        var DESIGN_H = 892;
+        var outer = document.getElementById('frame-outer');
+        var iframe = document.getElementById('frame-iframe');
+
+        function fit() {
+            var availW = window.innerWidth * 0.94;
+            var availH = window.innerHeight * 0.94;
+            var scale = Math.min(availW / DESIGN_W, availH / DESIGN_H);
+
+            iframe.style.transform = 'scale(' + scale + ')';
+            outer.style.width = (DESIGN_W * scale) + 'px';
+            outer.style.height = (DESIGN_H * scale) + 'px';
+        }
+
+        fit();
+        window.addEventListener('resize', fit);
+
+        /* ── 訊息轉發：這一層才是平台用 window.open() 真正開出來的視窗，
+           平台的 player_info／ack 訊息只會送到這裡，不會自動穿透進下面
+           的 iframe。反過來，iframe 裡的 mlhbtrip.html 送出的 ready／
+           complete／score／exit，也要從這裡轉發給平台，不能指望 iframe
+           自己直接跟平台對話（iframe 的 window.opener 永遠是 null）。 */
+        window.addEventListener('message', function (event) {
+            const data = event.data;
+            if (!data) return;
+            if (data.source === 'culture-platform') {
+                iframe.contentWindow.postMessage(data, '*');
+            } else if (data.source === 'culture-task' && window.opener) {
+                window.opener.postMessage(data, '*');
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
