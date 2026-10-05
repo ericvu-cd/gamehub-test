@@ -185,8 +185,29 @@
         @keyframes bubblePop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         .ai-chip.out { filter: grayscale(80%) brightness(0.75); }
         .ai-chip.out .ai-name { text-decoration: line-through; }
-        .ai-chip.bid { border-color: #ff9d5c; transform: scale(1.03); z-index: 2; box-shadow: 0 3px 10px rgba(255,157,92,0.5); }
-        .ai-chip.bid .ai-status { background: rgba(255,141,58,0.92); color: #3A1400; font-weight: bold; }
+        .ai-chip.bid { border-color: #FFD500; z-index: 6; animation: aiBidJump 0.58s cubic-bezier(.2,1.45,.35,1); box-shadow: 0 0 0 3px rgba(255,213,0,.34), 0 7px 18px rgba(227,0,11,.42); }
+        .ai-chip.bid .ai-status { background: rgba(255,213,0,0.96); color: #3A2600; font-weight: 900; }
+        @keyframes aiBidJump {
+            0% { transform: scale(1) translateY(0); filter: brightness(1); }
+            30% { transform: scale(1.12) translateY(-7px); filter: brightness(1.2); }
+            58% { transform: scale(1.06) translateY(-3px); }
+            100% { transform: scale(1.03) translateY(0); filter: brightness(1); }
+        }
+        .ai-bid-paddle {
+            position:absolute; left:50%; top:50%; z-index:8;
+            transform:translate(-50%,-58%) rotate(-4deg);
+            min-width:58px; padding:6px 8px;
+            background:#FFD500; color:#3A2600; border:3px solid #A3000A;
+            border-radius:7px; font-size:clamp(.72rem,2vh,.95rem); font-weight:900;
+            text-align:center; white-space:nowrap;
+            box-shadow:0 4px 0 #A3000A,0 7px 12px rgba(0,0,0,.3);
+            animation:paddleRaise .58s cubic-bezier(.2,1.45,.35,1);
+        }
+        @keyframes paddleRaise {
+            0% { opacity:0; transform:translate(-50%,20%) rotate(-8deg) scale(.55); }
+            42% { opacity:1; transform:translate(-50%,-72%) rotate(3deg) scale(1.13); }
+            100% { opacity:1; transform:translate(-50%,-58%) rotate(-4deg) scale(1); }
+        }
         .ai-chip.leader { border-color: #B9791F; transform: scale(1.05); z-index: 2; box-shadow: 0 3px 12px rgba(185,121,31,0.65); }
         .ai-chip.leader .ai-name, .ai-chip.leader .ai-status { background: rgba(242,193,78,0.95); color: #4A2E00; }
         .ai-chip.leader .ai-status { font-weight: 900; }
@@ -206,6 +227,23 @@
         #arena-sold-overlay.show.win .stamp { animation: stampBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
         #arena-sold-overlay.show.other { color: #B9C9C4; }
         #arena-sold-overlay.show.unsold { color: #7A8F89; }
+        #overbid-flash {
+            position:absolute; inset:0; z-index:25; display:none; align-items:center; justify-content:center;
+            pointer-events:none; background:rgba(227,0,11,.16);
+        }
+        #overbid-flash.show { display:flex; animation:overbidScreen .72s ease-out; }
+        #overbid-flash span {
+            padding:10px 20px; border-radius:12px; background:#E3000B; color:#fff;
+            border:3px solid #fff; box-shadow:0 5px 0 #A3000A,0 9px 20px rgba(0,0,0,.3);
+            font-size:clamp(1.25rem,4.6vh,2rem); font-weight:900; letter-spacing:2px;
+            animation:overbidPop .72s cubic-bezier(.2,1.45,.35,1);
+        }
+        @keyframes overbidScreen { 0%{opacity:0} 18%{opacity:1} 100%{opacity:0} }
+        @keyframes overbidPop {
+            0%{transform:scale(.55) rotate(-7deg)}
+            35%{transform:scale(1.14) rotate(3deg)}
+            100%{transform:scale(1) rotate(-2deg)}
+        }
 
         #history-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; transition: transform 0.08s ease, background 0.08s ease; }
         #history-fab:active { transform: scale(0.90); background: rgba(255,255,255,0.32); }
@@ -506,6 +544,7 @@
             </div>
 
             <div id="arena-sold-overlay"></div>
+            <div id="overbid-flash"><span>被超標！</span></div>
         </div>
 
     </div>
@@ -963,13 +1002,14 @@
             return avgBasePrice * avgQtyPerBox * avgBoxesPerRound * TOTAL_ROUNDS;
         }
 
-        function calcInitialBudget() {
-            // 玩家整局只發一次的起始資金：抓「4回合預期總市值」的 60%，上限 3500 元
-            const expectedTotalValue = calcExpectedGameValue();
-            let amount = expectedTotalValue * 0.6;
-            amount = Math.round(amount / 50) * 50;
-            amount = Math.min(amount, 3500);
-            return amount;
+        function calcInitialBudget(firstRoundValue) {
+            // 玩家整局只發一次起始資金，但不再固定卡在 3500 元。
+            // 第一季採「本局實際抽到的魚貨總市值」，其餘三季採資料庫平均預估，
+            // 因此每一局會隨第一季魚貨組合自然浮動，同時又不會因單季極端手氣讓整局資金失衡。
+            const expectedPerRound = calcExpectedGameValue() / TOTAL_ROUNDS;
+            const projectedGameValue = firstRoundValue + expectedPerRound * (TOTAL_ROUNDS - 1);
+            let amount = projectedGameValue * 0.6;
+            return Math.max(500, Math.round(amount / 50) * 50);
         }
 
         function calcAIBudgets(totalValue) {
@@ -991,7 +1031,7 @@
             gameState.aiBudgets = calcAIBudgets(totalValue);
 
             if (gameState.round === 1) {
-                gameState.budget = calcInitialBudget();
+                gameState.budget = calcInitialBudget(totalValue);
                 gameState.lastTopUp = gameState.budget;
             } else {
                 gameState.lastTopUp = 0;
@@ -1426,7 +1466,7 @@
                 const nameDisplay = parts.label;
                 const bidMatch = ai.status.match(/加價\s*\+?(\d+)/);
                 const statusDisplay = bidMatch ? '出價中' : ai.status;
-                const bubbleHTML = bidMatch ? `<div class="ai-bubble">加價+${bidMatch[1]}</div>` : '';
+                const bubbleHTML = bidMatch ? `<div class="ai-bid-paddle">＋$${bidMatch[1]}</div>` : '';
                 aiGrid.innerHTML += `<div class="${cls}"><div class="ai-chip-clip"><img class="ai-chip-avatar" src="image/${nameDisplay}.png" alt="${nameDisplay}" onerror="this.outerHTML='<div class=\\'ai-chip-avatar-fallback\\'>${parts.emoji}</div>'"></div>${bubbleHTML}<span class="ai-name">${nameDisplay}</span><span class="ai-status">${statusDisplay}</span></div>`;
             });
         }
@@ -1463,6 +1503,17 @@
             }
         }
 
+        function showOverbidFlash() {
+            const el = document.getElementById('overbid-flash');
+            if (!el) return;
+            clearTimeout(showOverbidFlash._timer);
+            el.classList.remove('show');
+            void el.offsetWidth;
+            el.classList.add('show');
+            hapticTap([18, 35, 18]);
+            showOverbidFlash._timer = setTimeout(() => el.classList.remove('show'), 720);
+        }
+
         function aiBiddingStep() {
             if (auctionState.phase === 'observe') return false;
             if (auctionState.aiBidCount >= auctionState.maxBidRounds) return false; // AI出價已達上限，不再出價（但拍賣不會因此立即結束）
@@ -1481,6 +1532,7 @@
                 let bidder = willingAIs[Math.floor(Math.random() * willingAIs.length)];
                 let bidAmount = bidder.type === 'wholesale' ? auctionState.bidStep : (Math.random() > 0.5 ? auctionState.bidStep : auctionState.bidStep * 2);
 
+                const playerWasLeading = auctionState.highestBidderId === 'player';
                 SFX.bidAI(bidder.id);
                 auctionState.currentPrice += bidAmount;
                 auctionState.highestBidderId = bidder.id;
@@ -1509,6 +1561,7 @@
                 auctionState.aiBidCount++;
                 auctionState.lastBidBy = 'ai';
                 pushBidLog(splitAiName(bidder.name).label, auctionState.currentPrice);
+                if (playerWasLeading) showOverbidFlash();
                 return true;
             }
             return false;
