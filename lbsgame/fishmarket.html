@@ -217,7 +217,7 @@
         .btn-giveup { background-color: #7C93A0; border-color: #4F6672; box-shadow: 0 4px 0 #4F6672; }
         .btn-giveup:disabled { background-color: #C9C6BC; border-color: #A6A39A; box-shadow: 0 4px 0 #A6A39A; }
 
-        #arena-sold-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(1.6rem, 6vh, 2.6rem); font-weight: 900; letter-spacing: 2px; background: rgba(1,47,114,0); color: transparent; pointer-events: none; transition: background 0.25s ease, color 0.25s ease; }
+        #arena-sold-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(1.6rem, 6vh, 2.6rem); font-weight: 900; letter-spacing: 2px; background: rgba(1,47,114,0); color: transparent; pointer-events: none; transition: background 0.25s ease, color 0.25s ease; }
         #arena-sold-overlay .stamp { display: inline-block; padding: 10px 26px; border: 3px solid currentColor; outline: 1.5px solid currentColor; outline-offset: 5px; border-radius: 8px; transform: rotate(-6deg); }
         #arena-sold-overlay .sold-sub { font-size: 0.5em; font-weight: 700; margin-top: 6px; letter-spacing: 0; }
         @keyframes soldFlash { 0%,100% { background: rgba(1,47,114,0); } 20% { background: rgba(242,193,78,0.35); } 40% { background: rgba(1,47,114,0.72); } }
