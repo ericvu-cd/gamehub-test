@@ -126,6 +126,68 @@
         #arena-idle { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
         #arena-idle-content { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; max-width: 380px; padding: 0 12px; }
         .idle-emoji { font-size: clamp(2rem, 6vh, 3rem); }
+        .summary-icon-badge {
+            width: 88px; height: 88px; margin: 0 auto 10px;
+            border-radius: 24px; position: relative; overflow: hidden;
+            background: linear-gradient(180deg, #FFF4B2 0%, #F2C14E 55%, #E39B2D 100%);
+            box-shadow: 0 8px 20px rgba(1,47,114,.18), inset 0 2px 0 rgba(255,255,255,.65);
+        }
+        .summary-icon-badge::after{
+            content:""; position:absolute; inset:auto -10% -30% -10%; height:60%;
+            background: radial-gradient(circle at 50% 0, rgba(255,255,255,.45), transparent 70%);
+            pointer-events:none;
+        }
+        .summary-icon-badge svg{ width:100%; height:100%; display:block; }
+        .summary-icon-badge .board{ fill:#FFF8E2; stroke:#8A5700; stroke-width:2.5; }
+        .summary-icon-badge .clip{ fill:#012F72; }
+        .summary-icon-badge .bar1,.summary-icon-badge .bar2,.summary-icon-badge .bar3,
+        .summary-icon-badge .line,.summary-icon-badge .coin,.summary-icon-badge .tick{
+            transform-box: fill-box; transform-origin: center;
+        }
+        .summary-icon-badge .bar1{ fill:#3C8577; animation: summaryBar1 1.4s ease-in-out infinite alternate; }
+        .summary-icon-badge .bar2{ fill:#2E6BB8; animation: summaryBar2 1.4s ease-in-out .12s infinite alternate; }
+        .summary-icon-badge .bar3{ fill:#E39B2D; animation: summaryBar3 1.4s ease-in-out .22s infinite alternate; }
+        .summary-icon-badge .line{ stroke:#C96A12; stroke-width:3; fill:none; stroke-linecap:round; stroke-linejoin:round; animation: summaryLine 1.6s ease-in-out infinite alternate; }
+        .summary-icon-badge .coin{ fill:#F6B32D; stroke:#8A5700; stroke-width:2; animation: summaryCoin 1.8s ease-in-out infinite; }
+        .summary-icon-badge .coin-mark{ fill:#8A5700; font-size:11px; font-weight:900; }
+        .summary-icon-badge .tick{ stroke:#3C8577; stroke-width:3.2; fill:none; stroke-linecap:round; stroke-linejoin:round; animation: summaryTick 1.6s ease-in-out infinite alternate; }
+        .summary-icon-badge.final .medal{ fill:#012F72; }
+        .summary-icon-badge.final .ribbon{ fill:#E3553E; }
+        .summary-icon-badge.final .star{ fill:#FFF8E2; animation: summaryStar 1.4s ease-in-out infinite alternate; }
+        @keyframes summaryBar1{from{transform:scaleY(.82)}to{transform:scaleY(1.03)}}
+        @keyframes summaryBar2{from{transform:scaleY(.72)}to{transform:scaleY(1.08)}}
+        @keyframes summaryBar3{from{transform:scaleY(.88)}to{transform:scaleY(1.02)}}
+        @keyframes summaryLine{from{transform:translateY(1px)}to{transform:translateY(-1px)}}
+        @keyframes summaryCoin{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+        @keyframes summaryTick{from{transform:scale(.95)}to{transform:scale(1.04)}}
+        @keyframes summaryStar{from{transform:scale(.94)}to{transform:scale(1.06)}}
+
+        .ai-chip.thinking { border-color:#F2C14E; box-shadow:0 0 0 2px rgba(242,193,78,.28), 0 6px 16px rgba(1,47,114,.16); }
+        .ai-chip.thinking .ai-status{
+            background:rgba(242,193,78,.16); color:#7A4B00; font-weight:900;
+        }
+        .ai-chip.thinking .ai-status::after{
+            content:'';
+            display:inline-block; width:16px; margin-left:4px;
+            animation: thinkingDots 1.1s steps(4,end) infinite;
+            overflow:hidden; vertical-align:bottom;
+        }
+        @keyframes thinkingDots{
+            0%{content:''}
+            25%{content:'.'}
+            50%{content:'..'}
+            75%{content:'...'}
+            100%{content:''}
+        }
+        .ai-chip.thinking .ai-chip-avatar,
+        .ai-chip.thinking .ai-chip-avatar-fallback{
+            animation: aiThinkBob 0.95s ease-in-out infinite alternate;
+        }
+        @keyframes aiThinkBob{
+            from{transform:translateY(0)}
+            to{transform:translateY(-4px)}
+        }
+
         .idle-title { font-size: clamp(1.1rem, 3.2vh, 1.4rem); font-weight: bold; color: #012F72; }
         .idle-sub { font-size: clamp(0.85rem, 2.4vh, 1.02rem); color: #1B3B52; line-height: 1.5; background: rgba(255,255,255,0.62); padding: 8px 14px; border-radius: 12px; }
         .idle-btn { margin-top: 6px; padding: 14px 26px; }
@@ -165,6 +227,40 @@
         @keyframes pricePulseGreen { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #4FD1A8; } 100% { transform: scale(1); color: #F2B84D; } }
         @keyframes pricePulseOrange { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #ff9d5c; } 100% { transform: scale(1); color: #F2B84D; } }
         .arena-price-unit { font-size: 0.58em; margin-left: 3px; color: #52758D; }
+        .box-enter {
+            animation: boxEnterSlide .56s cubic-bezier(.2,.95,.25,1), boxEnterGlow .68s ease-out;
+            will-change: transform, opacity;
+        }
+        .box-enter-name { animation: boxNamePop .5s cubic-bezier(.2,1.25,.35,1); }
+        @keyframes boxEnterSlide {
+            0% { opacity: 0; transform: translateX(34px) scale(.92); }
+            65% { opacity: 1; transform: translateX(-4px) scale(1.02); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @keyframes boxEnterGlow {
+            0% { box-shadow: 0 0 0 rgba(242,193,78,0); }
+            45% { box-shadow: 0 0 0 4px rgba(242,193,78,.16), 0 0 18px rgba(242,193,78,.26); }
+            100% { box-shadow: 0 0 0 rgba(242,193,78,0); }
+        }
+        @keyframes boxNamePop {
+            0% { opacity: 0; transform: translateY(8px) scale(.92); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .countup-spot {
+            display:inline-block;
+            min-width:1.2em;
+            transition: transform .15s ease;
+        }
+        .countup-spot.animating {
+            animation: countBump .24s ease;
+        }
+        @keyframes countBump {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
+
 
         .arena-ai-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); gap: clamp(9px,2vh,14px); align-content: stretch; padding: 8px; }
 
@@ -392,7 +488,7 @@
     <div id="help-overlay">
         <div id="help-inner">
             <h2>📖 永續魚市拍賣：苗栗龍鳳漁港</h2>
-            <div class="help-version">版本 260915</div>
+            <div class="help-version">版本 261005</div>
 
             <h3>🎮 遊戲介紹</h3>
             <p>你來到苗栗竹南龍鳳漁港，要跟另外 6 位買家一起競標剛進港的漁獲，用有限的現金標到魚貨，最終依照你的採購內容決定是不是一個懂得永續海鮮觀念的守護者。</p>
@@ -842,7 +938,8 @@
             queue: [], currentIndex: 0, currentBox: null, currentPrice: 0,
             timeLeft: OBSERVE_SECONDS, phase: 'observe', bidStep: 5, aiBidCount: 0, maxBidRounds: 10,
             highestBidderId: null, highestBidderName: '無', lastBidBy: null, giveUp: false,
-            aiStatus: [], mainTimer: null, aiTimer: null, nextBoxTimer: null, bidLog: []
+            aiStatus: [], mainTimer: null, aiTimer: null, nextBoxTimer: null, bidLog: [],
+            pendingAiBid: null, pendingAiAt: 0
         };
 
         function pushBidLog(name, price) {
@@ -1089,6 +1186,8 @@
             auctionState.giveUp = false;
             auctionState.bidLog = [];
             auctionState._lastTickSec = null;
+            auctionState.pendingAiBid = null;
+            auctionState.pendingAiAt = 0;
 
             auctionState.aiStatus = AI_PLAYERS.map(ai => {
                 const remainingBudget = gameState.aiBudgets[ai.id] ?? 0;
@@ -1111,10 +1210,11 @@
 
             renderBoard();
             updateAuctionUI();
+            animateCurrentBoxEntrance();
             clearInterval(auctionState.mainTimer);
             clearInterval(auctionState.aiTimer);
             auctionState.mainTimer = setInterval(countdownTimer, 100);
-            auctionState.aiTimer = setInterval(aiThinkLoop, 800);
+            auctionState.aiTimer = setInterval(aiThinkLoop, 150);
         }
 
         function calcAIMaxPrice(type, box, baseValue) {
@@ -1247,6 +1347,142 @@
             }).join('');
         }
 
+
+        function getSettlementIcon(kind = 'round') {
+            if (kind === 'final') {
+                return `
+                    <div class="summary-icon-badge final" aria-hidden="true">
+                        <svg viewBox="0 0 88 88">
+                            <rect class="board" x="18" y="10" width="52" height="50" rx="10"/>
+                            <rect class="clip" x="33" y="5" width="22" height="10" rx="4"/>
+                            <rect class="bar1" x="27" y="36" width="8" height="14" rx="2"/>
+                            <rect class="bar2" x="40" y="28" width="8" height="22" rx="2"/>
+                            <rect class="bar3" x="53" y="21" width="8" height="29" rx="2"/>
+                            <path class="line" d="M27 31 L40 25 L53 18 L61 21"/>
+                            <circle class="medal" cx="44" cy="66" r="12"/>
+                            <path class="ribbon" d="M38 76 L34 85 L44 80 L54 85 L50 76 Z"/>
+                            <path class="star" d="M44 58.5l2.4 4.7 5.1.8-3.7 3.7.9 5.1-4.7-2.4-4.7 2.4.9-5.1-3.7-3.7 5.1-.8z"/>
+                        </svg>
+                    </div>`;
+            }
+            return `
+                <div class="summary-icon-badge" aria-hidden="true">
+                    <svg viewBox="0 0 88 88">
+                        <rect class="board" x="18" y="10" width="52" height="50" rx="10"/>
+                        <rect class="clip" x="33" y="5" width="22" height="10" rx="4"/>
+                        <rect class="bar1" x="27" y="36" width="8" height="14" rx="2"/>
+                        <rect class="bar2" x="40" y="28" width="8" height="22" rx="2"/>
+                        <rect class="bar3" x="53" y="21" width="8" height="29" rx="2"/>
+                        <path class="line" d="M27 31 L40 25 L53 18 L61 21"/>
+                        <circle class="coin" cx="62" cy="58" r="10"/>
+                        <text class="coin-mark" x="62" y="62" text-anchor="middle">$</text>
+                        <path class="tick" d="M27 62 l7 7 l12 -15"/>
+                    </svg>
+                </div>`;
+        }
+
+        function scheduleNextAiBid() {
+            auctionState.pendingAiBid = null;
+            auctionState.pendingAiAt = 0;
+            if (auctionState.phase !== 'bidding' || auctionState.giveUp) return;
+
+            let activeAIs = auctionState.aiStatus.filter(ai => !ai.out && ai.id !== auctionState.highestBidderId);
+            activeAIs.forEach(ai => {
+                if (auctionState.currentPrice >= ai.maxPrice || (ai.type === 'uncle' && ai.bidCount >= 2)) {
+                    ai.out = true;
+                    ai.status = '放棄';
+                }
+            });
+
+            const willingAIs = activeAIs.filter(ai => !ai.out);
+            if (willingAIs.length === 0 || Math.random() <= 0.4) {
+                auctionState.aiStatus.forEach(ai => {
+                    if (ai.out) return;
+                    if (ai.id === auctionState.highestBidderId) ai.status = '領先中';
+                    else if (!String(ai.status).includes('加價')) ai.status = '觀望';
+                });
+                return;
+            }
+
+            const bidder = willingAIs[Math.floor(Math.random() * willingAIs.length)];
+            const bidAmount = bidder.type === 'wholesale'
+                ? auctionState.bidStep
+                : (Math.random() > 0.5 ? auctionState.bidStep : auctionState.bidStep * 2);
+
+            auctionState.pendingAiBid = { bidderId: bidder.id, bidAmount };
+            auctionState.pendingAiAt = Date.now() + 650 + Math.random() * 850;
+
+            auctionState.aiStatus.forEach(ai => {
+                if (ai.out) return;
+                if (ai.id === bidder.id) ai.status = '思考中';
+                else if (ai.id === auctionState.highestBidderId) ai.status = '領先中';
+                else if (!String(ai.status).includes('加價')) ai.status = '觀望';
+            });
+        }
+
+
+        function animateCurrentBoxEntrance() {
+            const targets = [
+                document.querySelector('.arena-fish-info'),
+                document.querySelector('.arena-price-block'),
+                document.querySelector('.arena-timer-wrap')
+            ].filter(Boolean);
+            targets.forEach(el => {
+                el.classList.remove('box-enter');
+                void el.offsetWidth;
+                el.classList.add('box-enter');
+            });
+
+            const nameEl = document.getElementById('arena-fish-name-text');
+            if (nameEl) {
+                nameEl.classList.remove('box-enter-name');
+                void nameEl.offsetWidth;
+                nameEl.classList.add('box-enter-name');
+            }
+        }
+
+        function animateCountUp(el, target, {
+            prefix = '',
+            suffix = '',
+            duration = 900,
+            signed = false,
+            easing = t => 1 - Math.pow(1 - t, 3)
+        } = {}) {
+            if (!el) return;
+            const start = 0;
+            const startTime = performance.now();
+
+            function format(v) {
+                const rounded = Math.round(v);
+                const sign = signed && rounded > 0 ? '+' : '';
+                return `${prefix}${sign}${rounded}${suffix}`;
+            }
+
+            function step(now) {
+                const p = Math.min(1, (now - startTime) / duration);
+                const value = start + (target - start) * easing(p);
+                el.textContent = format(value);
+                el.classList.remove('animating');
+                void el.offsetWidth;
+                el.classList.add('animating');
+                if (p < 1) requestAnimationFrame(step);
+                else el.textContent = format(target);
+            }
+            requestAnimationFrame(step);
+        }
+
+        function animateRoundSettlement(record) {
+            animateCountUp(document.getElementById('round-box-count'), record.boxCount, { suffix: ' 箱', duration: 560 });
+            animateCountUp(document.getElementById('round-spent'), record.spent, { suffix: ' 元', duration: 880 });
+            animateCountUp(document.getElementById('round-score'), record.totalScore, { suffix: ' 分', duration: 980, signed: true });
+        }
+
+        function animateFinalSettlement(totalSpent, budget, totalScore) {
+            animateCountUp(document.getElementById('final-spent'), totalSpent, { suffix: ' 元', duration: 1000 });
+            animateCountUp(document.getElementById('final-budget'), budget, { suffix: ' 元', duration: 1000 });
+            animateCountUp(document.getElementById('final-score'), totalScore, { suffix: ' 分', duration: 1100 });
+        }
+
         function finishAuctionRound() {
             const record = settleRound();
             setStageLabel('📊 本季結算完成');
@@ -1258,17 +1494,18 @@
                 : `<button class="btn-bid" style="background:#3C8577;" onclick="nextRound()">前往下一季</button>`;
 
             showArenaIdle(`
-                <div class="idle-emoji">📊</div>
+                ${getSettlementIcon('round')}
                 <div class="idle-title">第${record.round}回合（${record.season}）結算</div>
                 <div class="idle-sub">
-                    本季購入 ${record.boxCount} 箱，共花費 ${record.spent} 元<br>
-                    永續積分：<strong style="color:#012F72;">${record.totalScore >= 0 ? '+' : ''}${record.totalScore} 分</strong>
+                    本季購入 <strong id="round-box-count" class="countup-spot" style="color:#012F72;">0 箱</strong>，共花費 <strong id="round-spent" class="countup-spot" style="color:#012F72;">0 元</strong><br>
+                    永續積分：<strong id="round-score" class="countup-spot" style="color:#012F72;">0 分</strong>
                 </div>
                 <div class="idle-btn-row">
                     <button class="btn-bid" onclick="openHistoryDrawer()">詳細紀錄</button>
                     ${nextBtnHtml}
                 </div>
             `);
+            animateRoundSettlement(record);
         }
 
         function nextRound() {
@@ -1300,17 +1537,18 @@
             const reportHtml = reportResultToPlatform(totalScore, gradeInfo, hasEndangered);
 
             document.getElementById('final-result-body').innerHTML = `
-                <div class="idle-emoji">🏆</div>
+                ${getSettlementIcon('final')}
                 <div class="idle-title">${platformNickname ? platformNickname + ' 的' : ''}整局最終結算</div>
                 <div class="final-round-list">${roundLines}</div>
                 <div class="final-summary">
-                    總花費：<strong style="color:#012F72;">${totalSpent} 元</strong>　｜　剩餘現金：<strong style="color:#012F72;">${gameState.budget} 元</strong><br>
-                    永續總積分：<strong style="color:#012F72; font-size:1.2em;">${totalScore} 分</strong>
+                    總花費：<strong id="final-spent" class="countup-spot" style="color:#012F72;">0 元</strong>　｜　剩餘現金：<strong id="final-budget" class="countup-spot" style="color:#012F72;">0 元</strong><br>
+                    永續總積分：<strong id="final-score" class="countup-spot" style="color:#012F72; font-size:1.2em;">0 分</strong>
                 </div>
                 <div class="final-grade">最終評級：<strong style="color:${gradeInfo.color};">${gradeInfo.grade}級【${gradeInfo.comment}】</strong></div>
                 ${reportHtml}
             `;
             document.getElementById('final-result-screen').classList.add('show');
+            animateFinalSettlement(totalSpent, gameState.budget, totalScore);
         }
 
         // 整局結束時，把總分跟徽章上傳給平台，並回傳要顯示在結算畫面的提示文字。
@@ -1461,6 +1699,7 @@
                 if (ai.out) cls += ' out';
                 else if (ai.id === auctionState.highestBidderId) cls += ' leader';
                 else if (ai.status.includes('加價')) cls += ' bid';
+                else if (ai.status.includes('思考中')) cls += ' thinking';
 
                 const parts = splitAiName(ai.name);
                 const nameDisplay = parts.label;
@@ -1480,6 +1719,7 @@
                     auctionState.timeLeft = BIDDING_SECONDS;
                     auctionState.aiStatus.forEach(ai => ai.status = '觀望');
                     auctionState._lastTickSec = null;
+                    scheduleNextAiBid();
                     updateAuctionUI();
                     SFX.boxStart();
                 } else {
@@ -1527,50 +1767,72 @@
             });
 
             let willingAIs = activeAIs.filter(ai => !ai.out);
-
-            if (willingAIs.length > 0 && Math.random() > 0.4) {
-                let bidder = willingAIs[Math.floor(Math.random() * willingAIs.length)];
-                let bidAmount = bidder.type === 'wholesale' ? auctionState.bidStep : (Math.random() > 0.5 ? auctionState.bidStep : auctionState.bidStep * 2);
-
-                const playerWasLeading = auctionState.highestBidderId === 'player';
-                SFX.bidAI(bidder.id);
-                auctionState.currentPrice += bidAmount;
-                auctionState.highestBidderId = bidder.id;
-                auctionState.highestBidderName = bidder.name;
-                auctionState.timeLeft = BIDDING_SECONDS;
-                bidder.bidCount++;
-                bidder.status = `加價 +${bidAmount}`;
-
-                // 出價泡泡最長只顯示 3 秒：畫面重繪只會在「有其他出價事件」時才觸發，
-                // 如果接下來一段時間都沒人再出價，氣泡在沒有這個計時器的情況下會
-                // 一直停在畫面上不會消失。這裡另外排一個 3 秒後的強制重繪，
-                // 到時間就把狀態文字換掉（讓 bidMatch 比對不到，氣泡自然不會再畫出來）。
-                clearTimeout(bidder._bubbleTimer);
-                bidder._bubbleTimer = setTimeout(() => {
-                    // 這 3 秒內如果又出價了，status 早就被換成新的內容，這裡就不要誤蓋掉
-                    if (bidder.status === `加價 +${bidAmount}`) {
-                        bidder.status = (auctionState.highestBidderId === bidder.id) ? '領先中' : '觀望';
-                        updateAuctionUI();
-                    }
-                }, 3000);
-
-                auctionState.aiStatus.forEach(ai => {
-                    if (!ai.out && ai.id !== bidder.id) ai.status = '觀望';
-                });
-
-                auctionState.aiBidCount++;
-                auctionState.lastBidBy = 'ai';
-                pushBidLog(splitAiName(bidder.name).label, auctionState.currentPrice);
-                if (playerWasLeading) showOverbidFlash();
-                return true;
+            if (willingAIs.length <= 0) {
+                auctionState.pendingAiBid = null;
+                auctionState.pendingAiAt = 0;
+                return false;
             }
-            return false;
+
+            let bidder = null;
+            let bidAmount = 0;
+
+            if (auctionState.pendingAiBid) {
+                bidder = auctionState.aiStatus.find(ai => ai.id === auctionState.pendingAiBid.bidderId && !ai.out && ai.id !== auctionState.highestBidderId);
+                bidAmount = auctionState.pendingAiBid.bidAmount;
+            }
+            auctionState.pendingAiBid = null;
+            auctionState.pendingAiAt = 0;
+
+            if (!bidder) {
+                if (Math.random() <= 0.4) return false;
+                bidder = willingAIs[Math.floor(Math.random() * willingAIs.length)];
+                bidAmount = bidder.type === 'wholesale' ? auctionState.bidStep : (Math.random() > 0.5 ? auctionState.bidStep : auctionState.bidStep * 2);
+            }
+
+            const playerWasLeading = auctionState.highestBidderId === 'player';
+            SFX.bidAI(bidder.id);
+            auctionState.currentPrice += bidAmount;
+            auctionState.highestBidderId = bidder.id;
+            auctionState.highestBidderName = bidder.name;
+            auctionState.timeLeft = BIDDING_SECONDS;
+            bidder.bidCount++;
+            bidder.status = `加價 +${bidAmount}`;
+
+            clearTimeout(bidder._bubbleTimer);
+            bidder._bubbleTimer = setTimeout(() => {
+                if (bidder.status === `加價 +${bidAmount}`) {
+                    bidder.status = (auctionState.highestBidderId === bidder.id) ? '領先中' : '觀望';
+                    updateAuctionUI();
+                }
+            }, 3000);
+
+            auctionState.aiStatus.forEach(ai => {
+                if (!ai.out && ai.id !== bidder.id && !String(ai.status).includes('思考中')) ai.status = '觀望';
+            });
+
+            auctionState.aiBidCount++;
+            auctionState.lastBidBy = 'ai';
+            pushBidLog(splitAiName(bidder.name).label, auctionState.currentPrice);
+            if (playerWasLeading) showOverbidFlash();
+            return true;
         }
 
         function aiThinkLoop() {
+            if (auctionState.phase !== 'bidding' || auctionState.giveUp) return;
+            if (!auctionState.pendingAiBid) {
+                scheduleNextAiBid();
+                if (!auctionState.pendingAiBid) {
+                    updateAuctionUI();
+                    return;
+                }
+                updateAuctionUI();
+            }
+            if (Date.now() < auctionState.pendingAiAt) return;
+
             const bid = aiBiddingStep();
-            if (!bid) return;
             updateAuctionUI();
+            if (!bid) return;
+            scheduleNextAiBid();
             // AI出價達上限後不再主動出價，但拍賣繼續倒數，直到時間到（或玩家繼續加價後時間會重置）才結束
         }
 
@@ -1583,6 +1845,8 @@
             hapticTap([12, 30, 12]);
             clearInterval(auctionState.mainTimer);
             clearInterval(auctionState.aiTimer);
+            auctionState.pendingAiBid = null;
+            auctionState.pendingAiAt = 0;
             auctionState.giveUp = true;
             auctionState.phase = 'bidding';
 
@@ -1617,7 +1881,10 @@
             auctionState.timeLeft = BIDDING_SECONDS;
             auctionState.lastBidBy = 'player';
             auctionState.aiStatus.forEach(ai => { if (!ai.out) ai.status = '觀望'; });
+            auctionState.pendingAiBid = null;
+            auctionState.pendingAiAt = 0;
             pushBidLog('⭐ 你', auctionState.currentPrice);
+            scheduleNextAiBid();
             updateAuctionUI();
             // 玩家出價不計入10次上限，只有AI出價次數會觸發自動截標
         }
@@ -1741,7 +2008,7 @@
             if (wasBgmPlaying) { wasBgmPlaying = false; bgm.play().catch(()=>{}); }
             if (pausedContext === 'bidding') {
                 auctionState.mainTimer = setInterval(countdownTimer, 100);
-                auctionState.aiTimer = setInterval(aiThinkLoop, 800);
+                auctionState.aiTimer = setInterval(aiThinkLoop, 150);
             } else if (pausedContext === 'nextBox') {
                 startNextBoxCountdown(); // 5秒倒數重新開始算，不強求精準保留剩餘秒數
             }
