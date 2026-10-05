@@ -142,8 +142,9 @@ function showGuide({ auto, waitForPrompt }) {
                 ${stepsHtml ? `<ul class="ig-steps">${stepsHtml}</ul>` : ''}
                 ${content.note ? `<p class="ig-note">${content.note}</p>` : ''}<div class="ig-btns"></div>`;
             const btns = card.querySelector('.ig-btns');
-            if (auto) addBtn(btns,'不再提示','ghost',()=>{ try{localStorage.setItem(DISMISS_KEY,'never')}catch{} close(); });
-            addBtn(btns,auto?'暫不安裝':'關閉','ghost',close);
+            // 自動安裝引導不提供略過選項；玩家必須完成安裝。
+            // 從使用者選單手動開啟時，仍保留「關閉」，避免選單視窗無法退出。
+            if (!auto) addBtn(btns,'關閉','ghost',close);
             if (content.primary === 'install') addBtn(btns,'安裝','primary',startInstall);
         }
 
@@ -163,9 +164,9 @@ function showGuide({ auto, waitForPrompt }) {
             let choice=null;
             try{choice=await prompt.userChoice}catch{}
             if(!choice || choice.outcome!=='accepted'){
-                renderStatus('已取消安裝，之後可以從選單的「安裝到主畫面」再安裝',{
-                    spinner:false,buttons:[{text:'關閉',style:'ghost',onClick:close}]
-                });
+                // 系統安裝視窗被取消後，回到安裝引導；不提供略過平台安裝的入口。
+                Object.assign(content,buildContent(env));
+                renderGuide();
                 return;
             }
             renderStatus('安裝中，請稍候…',{spinner:true});
