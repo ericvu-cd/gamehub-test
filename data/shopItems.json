@@ -23,7 +23,7 @@
   },
   {
     "id": "stoneweir_assistant",
-    "name": "助手券",
+    "name": "石滬修復助手券",
     "description": "石滬開局時使用，本局魚群抵達後自動收進安全魚獲，白天夜晚都有效，避免鳥、小偷及退潮造成魚獲損失。正式成績與獎勵照常計算。最多持有一張，使用後可再購買。",
     "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/shopItems/1791534398349_stoneweir_assistant.png",
     "cost": 100,
