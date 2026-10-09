@@ -13,10 +13,11 @@
   {
     "id": "fishmarket_rich",
     "name": "富翁券",
+    "description": "魚市開局時使用，本局起始資金加倍，跨四回合使用。正式成績與獎勵照常計算。最多持有一張，使用後可再購買。",
+    "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/shopItems/1791534380510_fishmarket_rich.png",
+    "cost": 200,
     "type": "item_ticket",
     "taskId": "fishmarket",
-    "cost": 200,
-    "description": "魚市開局時使用，本局起始資金加倍，跨四回合使用。正式成績與獎勵照常計算。最多持有一張，使用後可再購買。",
     "sortOrder": 1,
     "isActive": true
   },
