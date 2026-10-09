@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "fishball_revive",
+    "name": "魚丸追追樂復活券",
+    "type": "item_ticket",
+    "taskId": "fishball",
+    "cost": 300,
+    "description": "魚丸追追樂失敗時，可使用本券重試目前關卡，保留前面已完成關卡的累計分數。復活後的成績照常計入正式紀錄。每種最多持有一張，使用後消耗。",
+    "sortOrder": 0,
+    "isActive": true
+  }
+]

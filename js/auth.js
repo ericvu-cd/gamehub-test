@@ -16,7 +16,7 @@ import {
     doc, getDoc, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const DEFAULT_PROFILE = { level: 1, coins: 0, badges: [], certificates: [] };
+const DEFAULT_PROFILE = { level: 1, coins: 0, badges: [], certificates: [], itemTickets: [] };
 
 const USERNAME_RULE = /^[A-Za-z0-9\u4e00-\u9fa5]{1,20}$/; // 中英文數字，最長20字
 

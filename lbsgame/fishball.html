@@ -939,6 +939,16 @@
   const TASK_ID = 'fishball';
   const BADGE_ID = 'fishball_guardian'; // 徽章「魚丸守護神」
   let platformNickname = null;     // 收到 player_info 後才會有值
+  let platformItemTickets = [];
+  let revivePending = null;
+  let reviveTimer = null;
+  let roundFinalized = false;
+  const reviveOverlay = document.createElement('div');
+  reviveOverlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;padding:20px';
+  reviveOverlay.innerHTML = '<div style="max-width:340px;background:#172a3a;color:white;padding:24px;border-radius:20px;text-align:center;line-height:1.7"><h2>使用復活券？</h2><p>重試目前關卡，保留前面已完成關卡的累計分數。成績照常計入正式紀錄。</p><p id="revive-status" role="status"></p><button id="revive-use" class="btn" style="padding:12px;margin:6px">使用復活券</button><button id="revive-finish" class="btn btn-outline" style="padding:12px;margin:6px">不使用，結算</button></div>';
+  document.body.appendChild(reviveOverlay);
+  const reviveUseButton = document.getElementById('revive-use');
+  const reviveFinishButton = document.getElementById('revive-finish');
   let platformBadges = [];         // 玩家目前已擁有的徽章清單
   let myBestScore = null;          // 這個任務的個人最佳成績 { scoreLabel, scoreValue } | null
 
@@ -988,11 +998,29 @@
   // 收平台送來的訊息：ready 之後回傳的 player_info；complete 之後回傳的 ack（可能帶拒絕原因）
   window.addEventListener('message', function(event){
     const msg = event.data;
-    if(!msg || msg.source !== 'culture-platform') return;
+    const platformWindow = window.self !== window.top ? window.parent : window.opener;
+    if(!msg || msg.source !== 'culture-platform' || event.source !== platformWindow) return;
+    if (msg.type === 'item_ticket_result' && revivePending && msg.taskId === TASK_ID &&
+        msg.requestId === revivePending.requestId && msg.itemId === 'fishball_revive') {
+      clearTimeout(reviveTimer);
+      if (Array.isArray(msg.itemTickets)) platformItemTickets = msg.itemTickets;
+      if (msg.ok) {
+        revivePending = null;
+        reviveOverlay.style.display = 'none';
+        startGame(true);
+      } else {
+        reviveUseButton.disabled = false;
+        reviveFinishButton.disabled = !!msg.uncertain;
+        document.getElementById('revive-status').textContent = msg.reason || '使用失敗';
+        if (!msg.uncertain) revivePending.requestId = null;
+      }
+      return;
+    }
 
     if(msg.type === 'player_info'){
       platformNickname = (msg.payload && msg.payload.nickname) || null;
       platformBadges = (msg.payload && msg.payload.badges) || [];
+      platformItemTickets = (msg.payload && msg.payload.itemTickets) || [];
       myBestScore = (msg.payload && msg.payload.myScore) || null;
     }
 
@@ -2583,7 +2611,47 @@
 
   // 任一關失敗（撞到自己／潮水淹過／永續歸零／被地圖困住）＝整輪遊戲結束。
   // 分數是累計制，所以失敗不能重試本關，只能從 Lv1 整輪重新開始。
+  reviveUseButton.addEventListener('click', () => {
+    if (!revivePending || reviveUseButton.disabled) return;
+    revivePending.requestId ||= crypto.randomUUID();
+    reviveUseButton.disabled = true;
+    reviveFinishButton.disabled = true;
+    document.getElementById('revive-status').textContent = '確認道具券使用結果中…';
+    sendToPlatform('use_item_ticket', { itemId: 'fishball_revive', requestId: revivePending.requestId });
+    clearTimeout(reviveTimer);
+    reviveTimer = setTimeout(() => {
+      if (!revivePending) return;
+      reviveUseButton.disabled = false;
+      reviveUseButton.textContent = '重試確認';
+      document.getElementById('revive-status').textContent = '尚未收到結果，請重試確認。確認期間不可結算，以免已扣券卻未復活。';
+    }, 12000);
+  });
+  reviveFinishButton.addEventListener('click', () => {
+    if (!revivePending || reviveFinishButton.disabled) return;
+    const reason = revivePending.reason;
+    revivePending = null;
+    reviveOverlay.style.display = 'none';
+    finalizeGameOver(reason);
+  });
   function gameOver(reason){
+    if (revivePending || roundFinalized) return;
+    running = false;
+    stopIntervals();
+    SFX.ambientStop();
+    if (platformItemTickets.includes('fishball_revive')) {
+      revivePending = { reason, requestId: null };
+      reviveUseButton.disabled = false;
+      reviveFinishButton.disabled = false;
+      reviveUseButton.textContent = '使用復活券';
+      document.getElementById('revive-status').textContent = '';
+      reviveOverlay.style.display = 'flex';
+      return;
+    }
+    finalizeGameOver(reason);
+  }
+  function finalizeGameOver(reason){
+    if (roundFinalized) return;
+    roundFinalized = true;
     running = false;
     cancelAnimationFrame(rafId);
     clearInterval(timerId);
@@ -3294,6 +3362,7 @@
 
   // ---------- START / RESTART ----------
   function startGame(withCountdown){
+    roundFinalized = false;
     SFX.unlock();
     SFX.start();
     SFX.ambientStart();

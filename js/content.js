@@ -56,11 +56,10 @@ export async function loadAvatarPresets() {
     return fetchJson('./data/avatarPresets.json');
 }
 
-// 商店品項：跟任務清單一樣的慣例（isActive 篩選、sortOrder 排序）
+// 保留下架品項的字典供已持有道具券顯示；商城畫面自行篩選 isActive。
 export async function loadShopItems() {
     const items = await fetchJson('./data/shopItems.json');
     return items
-        .filter(i => i.isActive !== false)
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 }
 

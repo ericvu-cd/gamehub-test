@@ -1,3 +1,4 @@
+import { useItemTicket } from './itemTickets.js';
 // =====================================================
 // 任務視窗溝通：開新視窗 + postMessage
 // 對應「任務頁面通訊介面規格.md」
@@ -305,10 +306,21 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                         nickname: currentUser.nickname,
                         badges: currentUser.badges || [],
                         certificates: currentUser.certificates || [],
+                        itemTickets: currentUser.itemTickets || [],
                         myScore: entry.myScore ?? null
                     }
                 }, entry.origin);
                 break;
+
+            case 'use_item_ticket': {
+                const { itemId, requestId } = msg.payload || {};
+                const result = await useItemTicket(uid, msg.taskId, itemId, requestId);
+                if (getCurrentUser()?.uid !== uid || openTaskWindows.get(msg.taskId) !== entry) break;
+                if (result.itemTickets) onUserProfileChanged({ ...getCurrentUser(), itemTickets: result.itemTickets, dailyGuard: result.guard ?? getCurrentUser().dailyGuard });
+                entry.win.postMessage({ source: 'culture-platform', version: 1, taskId: msg.taskId,
+                    type: 'item_ticket_result', requestId, itemId, ...result }, entry.origin);
+                break;
+            }
 
             case 'complete': {
                 const detail = { coinsAwarded: 0, badgesAwarded: [], certificatesAwarded: [] };

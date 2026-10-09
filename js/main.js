@@ -1,3 +1,4 @@
+import { buyItemTicket } from './itemTickets.js';
 // =====================================================================
 // 在地文化知識型互動平台 — 主程式
 // =====================================================================
@@ -516,6 +517,12 @@ async function markNewsAsRead() {
 
 /* ---------------- 探索背包 ---------------- */
 function renderBag() {
+    if (!currentUser) return;
+    const ownedTickets = currentUser.itemTickets || [];
+    document.getElementById('item-ticket-grid').innerHTML = ownedTickets.map(id => {
+        const item = (siteData.shopItems || []).find(it => it.id === id);
+        return `<button class="collectible" onclick="window.showItemTicketDetail('${id}')"><span class="collectible-icon">${item?.iconUrl ? `<img src="${escapeHtml(item.iconUrl)}" alt="">` : '🎟️'}</span><span class="collectible-name">${escapeHtml(item?.name || id)}</span></button>`;
+    }).join('') || '<p class="empty-hint">尚未持有道具券，可至商城購買</p>';
     const badgeGrid = document.getElementById('badge-grid');
     badgeGrid.innerHTML = Object.entries(siteData.badges).map(([id, b]) => {
         const owned = currentUser.badges.includes(id);
@@ -556,39 +563,56 @@ window.closeDetailModal = function () {
 };
 
 /* ---------------- 商店 ---------------- */
+let redeemBusy = false;
+window.showItemTicketDetail = function(id) {
+    const item = (siteData.shopItems || []).find(it => it.id === id);
+    document.getElementById('detail-modal-title').innerText = item?.name || id;
+    document.getElementById('detail-modal-body').innerHTML = `<p>${escapeHtml(item?.description || '在指定任務中使用，使用後消耗。')}</p><p class="detail-meta">已持有一張・使用後可重新購買</p>`;
+    document.getElementById('detail-modal').classList.remove('hidden');
+};
 function renderShop() {
-    const listEl = document.getElementById('shop-list');
-    const items = siteData.shopItems || [];
-    if (!items.length) { listEl.innerHTML = `<p class="empty-hint">目前沒有可兌換的品項</p>`; return; }
-
-    listEl.innerHTML = items.map(it => {
-        const canAfford = currentUser.coins >= (it.cost || 0);
-        return `
-        <div class="shop-card">
-            <div class="shop-thumb">${it.iconUrl ? `<img src="${it.iconUrl}" alt="">` : '🎁'}</div>
-            <div class="shop-info">
-                <h4 class="shop-title">${it.name}</h4>
-                <p class="shop-desc">${it.description || ''}</p>
-            </div>
-            <button class="task-btn" ${canAfford ? '' : 'disabled'} onclick="window.handleRedeem('${it.id}')">
-                <span class="coin-icon-wrap">🪙${it.cost || 0}</span>
-            </button>
-        </div>`;
+    if (!currentUser) return;
+    const items = (siteData.shopItems || []).filter(it => it.isActive !== false);
+    document.getElementById('shop-list').innerHTML = [
+        { ticket: false, name: '店家商品', text: '兌換成功後，請將收據畫面截圖給店家核銷。' },
+        { ticket: true, name: '道具券', text: '購買後存入背包，在指定任務中使用。每種最多持有一張，使用後消耗。' }
+    ].map(group => {
+        const rows = items.filter(it => (it.type === 'item_ticket') === group.ticket);
+        return `<h3 class="section-label">${group.name}</h3><p class="shop-category-note">${group.text}</p>` + (rows.map(it => {
+            const owned = group.ticket && (currentUser.itemTickets || []).includes(it.id);
+            const disabled = redeemBusy || owned || currentUser.coins < it.cost;
+            return `<div class="shop-card ${group.ticket ? 'item-ticket' : ''}"><div class="shop-thumb">${it.iconUrl ? `<img src="${it.iconUrl}" alt="">` : group.ticket ? '🎟️' : '🎁'}</div><div class="shop-info"><h4 class="shop-title">${escapeHtml(it.name)}</h4><p class="shop-desc">${escapeHtml(it.description || '')}</p></div><button class="task-btn" ${disabled ? 'disabled' : ''} onclick="window.handleRedeem('${it.id}')">${owned ? '已持有' : '🪙' + it.cost}</button></div>`;
+        }).join('') || '<p class="empty-hint">目前沒有上架品項</p>');
     }).join('');
 }
 
 window.handleRedeem = async function (itemId) {
     const item = (siteData.shopItems || []).find(i => i.id === itemId);
-    if (!item || !currentUser) return;
+    if (!item || item.isActive === false || !currentUser || redeemBusy) return;
+    const buyerUid = currentUser.uid;
+    const ticket = item.type === 'item_ticket';
+    if (ticket && (currentUser.itemTickets || []).includes(item.id)) return;
     if (!confirm(`確定要用 ${item.cost} 金幣兌換「${item.name}」嗎？`)) return;
 
-    const r = await redeemShopItem(currentUser.uid, item);
+    redeemBusy = true;
+    renderShop();
+    let r;
+    try { r = await (ticket ? buyItemTicket(buyerUid, item) : redeemShopItem(buyerUid, item)); }
+    finally { redeemBusy = false; renderShop(); }
+    if (currentUser?.uid !== buyerUid) return;
     if (!r.ok) { alert(r.reason || '兌換失敗，請稍後再試'); return; }
 
-    currentUser = { ...currentUser, coins: r.newCoins, dailyGuard: r.guard };
+    currentUser = { ...currentUser, coins: r.newCoins, dailyGuard: r.guard, ...(ticket ? { itemTickets: r.itemTickets } : {}) };
     renderUserBar();
     renderShop();
 
+    renderTasks();
+    renderBag();
+    if (ticket) {
+        window.showItemTicketDetail(item.id);
+        document.getElementById('detail-modal-title').innerText = '購買成功，已存入背包！';
+        return;
+    }
     // 兌換成功後，把這張「收據」用詳情彈窗顯示出來，玩家截圖給店家看即可核銷
     document.getElementById('detail-modal-title').innerText = '兌換成功！';
     document.getElementById('detail-modal-body').innerHTML = `
@@ -723,7 +747,7 @@ async function init() {
 
     initTaskMessageListener(
         () => currentUser,
-        (updatedUser) => { currentUser = updatedUser; renderUserBar(); renderTasks(); }
+        (updatedUser) => { if (currentUser?.uid !== updatedUser.uid) return; currentUser = { ...currentUser, ...updatedUser }; renderUserBar(); renderTasks(); renderBag(); renderShop(); }
     );
 
     // PWA：使用者選單的「安裝到主畫面」入口（已經是 App 模式時自動隱藏）

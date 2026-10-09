@@ -488,3 +488,6 @@ body::after {
     font-size: 13px; font-weight: 700; z-index: 300; animation: toast-in 0.25s ease;
 }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+.shop-category-note{font-size:12px;color:var(--text-dim);line-height:1.6;margin:0 0 12px;}
+.shop-card.item-ticket .shop-desc{white-space:normal;overflow:visible;display:block;-webkit-line-clamp:unset;line-height:1.6;}

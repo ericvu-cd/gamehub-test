@@ -304,10 +304,10 @@
                             <div id="shopItems-upload-progress" class="upload-progress"></div>
                         </div>
                         <div class="field"><label>品項 ID（英數，建立後不可更改）</label><input id="shopItems-id" required></div>
-                        <div class="field"><label>名稱</label><input id="shopItems-name" required></div>
+                        <div class="field"><label>商品分類</label><select id="shopItems-type"><option value="merchant">店家商品</option><option value="item_ticket">道具券</option></select></div><div class="field"><label>適用任務 ID（道具券必填）</label><input id="shopItems-taskId" placeholder="fishball"></div><p>商城上限 300 金幣。目前支援 fishball_revive 道具券，售價固定 300、任務 fishball；新增券種需同步程式與規則。</p><div class="field"><label>名稱</label><input id="shopItems-name" required></div>
                         <div class="field"><label>說明</label><textarea id="shopItems-description"></textarea></div>
                         <div class="two-col">
-                            <div class="field"><label>兌換金幣數</label><input id="shopItems-cost" type="number" min="1" required></div>
+                            <div class="field"><label>兌換金幣數</label><input id="shopItems-cost" type="number" min="1" max="300" step="1" required></div>
                             <div class="field"><label>排序</label><input id="shopItems-sortOrder" type="number" value="0"></div>
                         </div>
                         <div class="form-actions">
