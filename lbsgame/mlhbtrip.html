@@ -450,9 +450,9 @@
 
 <script>
 var HARBORS = [
-  { id:'longfeng', short:'龍鳳', name:'竹南龍鳳漁港', lat:24.699778, lng:120.85831, stamp:'image/lfhb.jpg' },
-  { id:'waipu',    short:'外埔', name:'後龍外埔漁港', lat:24.65002,  lng:120.77310, stamp:'image/wphb.jpg' },
-  { id:'yuangang', short:'苑港', name:'苑港觀光漁港', lat:24.4591,   lng:120.64726, stamp:'image/yghb.jpg' }
+  { id:'longfeng', short:'龍鳳', name:'竹南龍鳳漁港', lat:24.700333333333, lng:120.859083333333, stamp:'image/lfhb.jpg' },
+  { id:'waipu',    short:'外埔', name:'後龍外埔漁港', lat:24.651388888889, lng:120.774444444444, stamp:'image/wphb.jpg' },
+  { id:'yuangang', short:'苑港', name:'苑港觀光漁港', lat:24.459111111111, lng:120.64725, stamp:'image/yghb.jpg' }
 ];
 
 // 手繪地圖上三個漁港圖釘的位置（相對圖片寬高的百分比），由標定工具產生
@@ -462,7 +462,7 @@ var PIN_POSITIONS = {
   yuangang: { xPct: 18.27, yPct: 63.44 } // 苑港觀光漁港
 };
 
-var UNLOCK_RADIUS_M = 500; // 解鎖半徑（公尺）
+var UNLOCK_RADIUS_M = 1500; // 解鎖半徑（公尺）
 var KEY_PASSES = 'miaoliHarborPasses';
 var TASK_ID = 'mlhbtrip'; // 對應 data/tasks.json 的任務 id
 
