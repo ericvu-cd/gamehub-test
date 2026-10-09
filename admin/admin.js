@@ -636,8 +636,9 @@ window.submitShopItem = async function (e) {
         const taskId = document.getElementById('shopItems-taskId').value.trim();
         const cost = Number(document.getElementById('shopItems-cost').value);
         if (!Number.isInteger(cost) || cost < 1 || cost > 300) throw new Error('價格必須是 1～300 的整數。');
-        if (type === 'item_ticket' && (id !== 'fishball_revive' || taskId !== 'fishball' || cost !== 300)) throw new Error('目前復活券須使用 ID fishball_revive、任務 fishball、價格 300。');
-        if (id === 'fishball_revive' && type !== 'item_ticket') throw new Error('復活券不可改為店家商品。');
+        if (!/^[A-Za-z0-9_-]{1,80}$/.test(id)) throw new Error('商品 ID 需為 1～80 個英數字、底線或連字號。');
+        if (type === 'item_ticket' && !/^[A-Za-z0-9_-]{1,80}$/.test(taskId)) throw new Error('請填寫有效的適用任務 ID。');
+        if (existing?.type === 'item_ticket' && (type !== 'item_ticket' || taskId !== existing.taskId)) throw new Error('既有道具券請保留分類及適用任務；如需不同用途，請新增商品 ID。');
         const iconUrl = await uploadPendingImage('shopItems', existing?.iconUrl);
         const data = {
             id,
@@ -1014,9 +1015,11 @@ window.userPickerSearch = function (coll, query) {
 function renderUserEditForm(uid, u) {
     const area = document.getElementById('user-edit-area');
     window.__userEditPicked = { badges: [...(u.badges || [])], certificates: [...(u.certificates || [])] };
+    const ticketItems = (editState.shopItems.items || []).filter(item => item.type === 'item_ticket');
+    const ticketIds = [...new Set([...ticketItems.map(item => item.id), ...(u.itemTickets || [])])];
     area.innerHTML = `
         <form class="entity-form" onsubmit="return window.submitUserEdit(event, '${uid}')">
-            <div class="field"><label>道具券（勾選持有，取消可移除）</label><label><input name="fishballRevive" type="checkbox" ${(u.itemTickets || []).includes('fishball_revive') ? 'checked' : ''}>魚丸追追樂復活券</label></div>
+            <div class="field"><label>道具券（勾選持有，取消可移除）</label>${ticketIds.map(id => `<label><input name="itemTicket" type="checkbox" value="${escapeHtml(id)}" ${(u.itemTickets || []).includes(id) ? 'checked' : ''}>${escapeHtml(ticketItems.find(item => item.id === id)?.name || id)}</label>`).join('') || '目前沒有道具券商品'}</div>
             <div class="field"><label>暱稱</label><input name="nickname" value="${escapeHtml(u.nickname || '')}"></div>
             <div class="two-col">
                 <div class="field"><label>等級（自動計算，不可手動改）</label><input value="Lv.${computeLevelAdmin(u)}" disabled style="opacity:0.7;"></div>
@@ -1212,8 +1215,8 @@ window.submitUserEdit = async function (e, uid) {
     const certificates = [...window.__userEditPicked.certificates];
     try {
         const userSnap = await getDoc(doc(db, 'users', uid));
-        const itemTickets = (userSnap.data()?.itemTickets || []).filter(id => id !== 'fishball_revive');
-        if (e.target.elements.fishballRevive.checked) itemTickets.push('fishball_revive');
+        const shownIds = [...e.target.querySelectorAll('input[name="itemTicket"]')].map(input => input.value);
+        const itemTickets = [...new Set([...(userSnap.data()?.itemTickets || []).filter(id => !shownIds.includes(id)), ...f.getAll('itemTicket')])];
         await updateDoc(doc(db, 'users', uid), { nickname, coins, badges, certificates, itemTickets });
         showMsg('users', '已儲存');
         const level = computeLevelAdmin({ badges, certificates });

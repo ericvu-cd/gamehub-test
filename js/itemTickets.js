@@ -1,10 +1,10 @@
 import { db } from './firebase-config.js';
 import { doc, collection, runTransaction, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-// 售價與適用任務須同步 firestore.rules；商品文案、圖片仍由 GitHub 管理。
-export const TICKET_DEFINITIONS = {
-    fishball_revive: { taskId: 'fishball', cost: 300 }
-};
+import { loadShopItems } from './content.js';
+
+// 商品定義只讀取後台管理的 GitHub 目錄，不在程式或規則列舉券種。
+const validId = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(value);
 
 export function ticketGuard(previous, delta) {
     const day = Math.floor((Date.now() + 28800000) / 86400000);
@@ -21,9 +21,14 @@ function failure(err) {
 }
 
 export async function buyItemTicket(uid, item) {
-    const definition = TICKET_DEFINITIONS[item.id];
-    if (!definition || item.cost !== definition.cost || item.taskId !== definition.taskId)
-        return { ok: false, reason: '道具券設定與規則不一致，暫時無法購買。' };
+    let definition;
+    try { definition = (await loadShopItems()).find(entry => entry.id === item.id); }
+    catch { return { ok: false, reason: '無法讀取商品設定，請稍後再試。' }; }
+    if (!definition || definition.type !== 'item_ticket' || definition.isActive === false ||
+        !validId(definition.id) || !validId(definition.taskId) ||
+        !Number.isInteger(definition.cost) || definition.cost < 1 || definition.cost > 300 ||
+        item.cost !== definition.cost || item.taskId !== definition.taskId)
+        return { ok: false, reason: '商品設定已更新或已下架，請重新整理商城。' };
     const userRef = doc(db, 'users', uid);
     const receiptRef = doc(collection(db, 'shopRedemptions', uid, 'entries'));
     const ledgerRef = doc(collection(db, 'coinLedger', uid, 'entries'));
@@ -34,18 +39,18 @@ export async function buyItemTicket(uid, item) {
             if (!user) return { ok: false, reason: '找不到玩家資料。' };
             const tickets = user.itemTickets || [];
             if (tickets.includes(item.id)) return { ok: false, reason: '已持有此道具券，每種最多一張。' };
-            if (user.coins < definition.cost) return { ok: false, reason: '金幣不足，需要 300 金幣。' };
+            if (user.coins < definition.cost) return { ok: false, reason: `金幣不足，需要 ${definition.cost} 金幣。` };
             const at = Date.now(), coins = user.coins - definition.cost;
             const itemTickets = [...tickets, item.id];
             const dailyGuard = ticketGuard(user.dailyGuard, -definition.cost);
             tx.update(userRef, { coins, itemTickets, dailyGuard,
                 lastTransaction: { type: 'item_ticket_purchase', itemId: item.id,
                     amount: definition.cost, requestId: receiptRef.id, at } });
-            tx.set(receiptRef, { itemId: item.id, itemName: item.name, cost: definition.cost,
+            tx.set(receiptRef, { itemId: item.id, itemName: definition.name, cost: definition.cost,
                 type: 'item_ticket', redeemedAt: at });
             tx.set(ledgerRef, { type: 'shop_redemption', amount: -definition.cost,
                 balanceAfter: coins, relatedTaskId: definition.taskId,
-                note: `購買道具券：${item.name}`, createdAt: at });
+                note: `購買道具券：${definition.name}`, createdAt: at });
             return { ok: true, newCoins: coins, itemTickets, guard: dailyGuard,
                 redemption: { redeemedAt: at } };
         });
@@ -53,8 +58,7 @@ export async function buyItemTicket(uid, item) {
 }
 
 export async function useItemTicket(uid, taskId, itemId, requestId) {
-    if (TICKET_DEFINITIONS[itemId]?.taskId !== taskId ||
-        typeof requestId !== 'string' || !/^[A-Za-z0-9_-]{1,80}$/.test(requestId))
+    if (!validId(itemId) || !validId(taskId) || !validId(requestId))
         return { ok: false, uncertain: false, reason: '道具券使用請求不正確。' };
     const userRef = doc(db, 'users', uid);
     const usageRef = doc(db, 'itemTicketUses', uid, 'entries', requestId);
@@ -70,6 +74,12 @@ export async function useItemTicket(uid, taskId, itemId, requestId) {
                     return { ok: false, uncertain: false, reason: '請求編號已被其他操作使用。' };
                 return { ok: true, alreadyUsed: true, itemTickets: user.itemTickets || [], guard: user.dailyGuard };
             }
+            // 已完成請求優先回覆成功；下架或刪除不會破壞重試的冪等性。
+            let definition;
+            try { definition = (await loadShopItems()).find(entry => entry.id === itemId); }
+            catch { return { ok: false, uncertain: false, reason: '無法讀取商品設定，尚未扣券，請重試。' }; }
+            if (!definition || definition.type !== 'item_ticket' || definition.taskId !== taskId)
+                return { ok: false, uncertain: false, reason: '道具券不適用於這個任務，或設定已移除。' };
             if (!(user.itemTickets || []).includes(itemId))
                 return { ok: false, uncertain: false, reason: '目前沒有這張道具券。', itemTickets: user.itemTickets || [] };
             const itemTickets = user.itemTickets.filter(id => id !== itemId);

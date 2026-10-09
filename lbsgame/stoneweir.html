@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<script src="start-ticket.js"></script>
 <script>
     /* 桌機/寬螢幕自動導向「手機外框」展示版（stoneweir-desktop.html），
        手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
@@ -1438,14 +1439,14 @@ document.getElementById('restartBtn').addEventListener('click', ()=>{
   exitAndClosePlatform();
 });
 document.getElementById('collectFishBtn').addEventListener('click', ()=>{
-  if(!state || state.over || state.tidePhase !== 'day') return;
+  if(!state || state.over || state.tidePhase !== 'day' || assistantTicketActive) return;
   SoundFX.uiClick?.();
   collectFish();
 });
 document.getElementById('collectFishBtn').addEventListener('keydown', (e)=>{
   if(e.key !== 'Enter' && e.key !== ' ') return;
   e.preventDefault();
-  if(!state || state.over || state.tidePhase !== 'day') return;
+  if(!state || state.over || state.tidePhase !== 'day' || assistantTicketActive) return;
   SoundFX.uiClick?.();
   collectFish();
 });
@@ -1631,6 +1632,7 @@ function scheduleThiefCheck(){
 }
 
 function triggerThiefEvent(){
+  if(assistantTicketActive) return;
   if(!state || state.fishCaught <= 0) return;
   
   const toSteal = Math.min(state.fishCaught, 1 + Math.floor(Math.random()*3));
@@ -1721,7 +1723,7 @@ function playThiefEffect(){
 }
 
 function collectFish(){
-  if(!state || state.over || state.tidePhase !== 'day') return;
+  if(!state || state.over || state.tidePhase !== 'day' || assistantTicketActive) return;
   
   const toCollect = state.fishCaught;
   if(toCollect <= 0) return;
@@ -1842,6 +1844,7 @@ function scheduleTide(){
       if(!state || state.over) return;
       document.getElementById('statFish').textContent = state.fishCaught;
       showFishDelta(fishIn);
+      autoCollectFish();
     }, riseDur);
   }, fishInDelay);
 
@@ -1869,7 +1872,25 @@ function isFullyRepaired(){
   return !!state && state.cells.every(v=>v===0);
 }
 
-function startGame(){
+let assistantTicketActive = false, startingGame = false;
+async function startGame(){
+  if(startingGame) return;
+  startingGame = true;
+  try {
+    assistantTicketActive = await chooseStartTicket(TASK_ID, 'stoneweir_assistant', '助手券', '本局魚群抵達後自動收魚，白天夜晚都有效，保護魚獲不被鳥、小偷或退潮帶走。');
+    startGameWithTicket();
+  } finally { startingGame = false; }
+}
+function autoCollectFish(){
+  if(!assistantTicketActive || !state || state.over || state.fishCaught <= 0) return;
+  state.totalFishCollected += state.fishCaught;
+  state.fishCaught = 0;
+  clearFish();
+  document.getElementById('statFish').textContent = '0';
+  updateCollectedFishDisplay();
+  updateLiveScore();
+}
+function startGameWithTicket(){
   stopTimers();
   // 「再玩一次」是從結算彈窗直接呼叫這個函式，彈窗本身要記得關掉，
   // 不然畫面會變成遊戲畫面已經重新開始、上面卻還蓋著上一局的結算彈窗。
@@ -1901,6 +1922,7 @@ function startGame(){
   document.getElementById('statMoves').textContent = '0';
   document.getElementById('statFish').textContent = '0';
   document.getElementById('statCollected').textContent = '0';
+  document.getElementById('statCollected').nextElementSibling.textContent = assistantTicketActive ? '助手收魚' : '已收';
   document.getElementById('statScore').textContent = String(BASE_SCORE);
   document.getElementById('statScore').parentElement.classList.remove('danger');
   document.getElementById('toolBrokenBanner').classList.remove('show');
@@ -2141,6 +2163,7 @@ function tideStrike(){
 
 /* 退潮時：滬堤缺口（直線+斜線連接的破損比率）越多，魚群就會跟著海水逃出去越多；escapeDurationMs跟退潮動畫時長同步 */
 function ebbFish(escapeDurationMs){
+  if(assistantTicketActive) return;
   if(!state || state.over) return;
   const escapeRatio = countGapRatio(state.cells);
   const escaped = Math.round(state.fishCaught * escapeRatio);
@@ -2171,6 +2194,7 @@ function scheduleBirdCheck(){
 }
 
 function triggerBirdEvent(){
+  if(assistantTicketActive) return;
   const layer = document.getElementById('birdFlyLayer');
   if(!layer || !state.fishList.length) return;
   const idx = Math.floor(Math.random()*state.fishList.length);

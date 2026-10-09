@@ -10,4 +10,24 @@
     "sortOrder": 0,
     "isActive": true
   }
+  {
+    "id": "fishmarket_rich",
+    "name": "富翁券",
+    "type": "item_ticket",
+    "taskId": "fishmarket",
+    "cost": 200,
+    "description": "魚市開局時使用，本局起始資金加倍，跨四回合使用。正式成績與獎勵照常計算。最多持有一張，使用後可再購買。",
+    "sortOrder": 1,
+    "isActive": true
+  },
+  {
+    "id": "stoneweir_assistant",
+    "name": "助手券",
+    "type": "item_ticket",
+    "taskId": "stoneweir",
+    "cost": 100,
+    "description": "石滬開局時使用，本局魚群抵達後自動收進安全魚獲，白天夜晚都有效，避免鳥、小偷及退潮造成魚獲損失。正式成績與獎勵照常計算。最多持有一張，使用後可再購買。",
+    "sortOrder": 2,
+    "isActive": true
+  }
 ]

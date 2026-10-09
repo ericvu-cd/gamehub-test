@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <script>
+    <script src="start-ticket.js"></script>
+<script>
         /* 桌機/寬螢幕自動導向「手機外框」展示版（fishmarket-desktop.html），
            手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
         (function() {
@@ -1128,13 +1129,13 @@
             gameState.aiBudgets = calcAIBudgets(totalValue);
 
             if (gameState.round === 1) {
-                gameState.budget = calcInitialBudget(totalValue);
+                gameState.budget = calcInitialBudget(totalValue) * (richTicketActive ? 2 : 1);
                 gameState.lastTopUp = gameState.budget;
             } else {
                 gameState.lastTopUp = 0;
             }
 
-            document.getElementById('ui-budget').innerText = `💰 現金: ${gameState.budget}元`;
+            document.getElementById('ui-budget').innerText = `💰 現金: ${gameState.budget}元${richTicketActive ? "・富翁券" : ""}`;
 
             document.getElementById('today-box-count').innerText = gameState.todayBoxes.length;
 
@@ -1924,7 +1925,7 @@
             overlay.className = `show ${overlayCls}`;
             setTimeout(() => { overlay.className = ''; }, 900);
 
-            document.getElementById('ui-budget').innerText = `💰 現金: ${gameState.budget}元`;
+            document.getElementById('ui-budget').innerText = `💰 現金: ${gameState.budget}元${richTicketActive ? "・富翁券" : ""}`;
             updateInventorySummary();
             renderBoard();
 
@@ -2022,7 +2023,16 @@
             setupNextBox();
         }
 
-        function startGame() {
+        let richTicketActive = false, startingGame = false;
+        async function startGame() {
+            if (startingGame) return;
+            startingGame = true;
+            try {
+                richTicketActive = await chooseStartTicket(TASK_ID, 'fishmarket_rich', '富翁券', '本局起始資金加倍，跨四回合使用。');
+                startGameWithTicket();
+            } finally { startingGame = false; }
+        }
+        function startGameWithTicket() {
             SFX.unlock();
             bgm.currentTime = 0;
             bgm.play().catch(()=>{}); // 用 catch 保險，避免拋出未處理的例外
@@ -2045,9 +2055,7 @@
             gameState.lastTopUp = 0;
             gameState.aiBudgets = {};
             document.getElementById('final-result-screen').style.display = 'none';
-            bgm.currentTime = 0;
-            bgm.play().catch(()=>{});
-            initRound();
+            startGame();
         }
     </script>
 </body>
