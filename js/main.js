@@ -519,10 +519,11 @@ async function markNewsAsRead() {
 function renderBag() {
     if (!currentUser) return;
     const ownedTickets = currentUser.itemTickets || [];
+    document.getElementById('item-ticket-section').classList.toggle('hidden', ownedTickets.length === 0);
     document.getElementById('item-ticket-grid').innerHTML = ownedTickets.map(id => {
         const item = (siteData.shopItems || []).find(it => it.id === id);
         return `<button class="collectible" onclick="window.showItemTicketDetail('${id}')"><span class="collectible-icon">${item?.iconUrl ? `<img src="${escapeHtml(item.iconUrl)}" alt="">` : '🎟️'}</span><span class="collectible-name">${escapeHtml(item?.name || id)}</span></button>`;
-    }).join('') || '<p class="empty-hint">尚未持有道具券，可至商城購買</p>';
+    }).join('');
     const badgeGrid = document.getElementById('badge-grid');
     badgeGrid.innerHTML = Object.entries(siteData.badges).map(([id, b]) => {
         const owned = currentUser.badges.includes(id);
