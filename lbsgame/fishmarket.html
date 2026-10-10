@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+<script src="task-dialogs.js"></script>
 <script>
         /* 桌機/寬螢幕自動導向「手機外框」展示版（fishmarket-desktop.html），
            手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
@@ -989,9 +990,9 @@
         // 這時候把假紀錄補回去、跳確認視窗；確定要走才真的送 exit + 關閉分頁。
         if (window.history && window.history.pushState) {
             history.pushState(null, '', location.href);
-            window.addEventListener('popstate', function () {
+            window.addEventListener('popstate', async function () {
                 history.pushState(null, '', location.href);
-                if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+                if (!(await taskConfirm('確定要返回平台嗎？這局進度不會被保留。'))) return;
                 exitAndClosePlatform();
             });
         }
@@ -1623,8 +1624,8 @@
         }
 
         // 頂部列的「返回」按鈕：遊戲進行中隨時可以按，會中斷這一局，先跳確認框避免誤觸。
-        function exitAndReturnToPlatform() {
-            if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+        async function exitAndReturnToPlatform() {
+            if (!(await taskConfirm('確定要返回平台嗎？這局進度不會被保留。'))) return;
             exitAndClosePlatform();
         }
 
@@ -1871,7 +1872,7 @@
             if (gameState.budget < (auctionState.currentPrice + amount)) {
                 SFX.denied();
                 hapticTap([10, 20, 10]);
-                alert('現金不足！無法加價。');
+                void taskAlert('現金不足！無法加價。');
                 return;
             }
 

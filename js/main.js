@@ -1,3 +1,4 @@
+import { platformConfirm, platformAlert } from './platformDialogs.js';
 import { buyItemTicket } from './itemTickets.js';
 // =====================================================================
 // 在地文化知識型互動平台 — 主程式
@@ -31,7 +32,7 @@ let selectedAvatarId = null;
         if (ua.indexOf('Android') > -1) {
             window.location.href = `intent://${currentUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
         } else if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) {
-            alert('為了確保平台體驗，請點擊右下角『...』並選擇『以預設瀏覽器開啟』！');
+            void platformAlert('為了確保平台體驗，請點擊右下角『...』並選擇『以預設瀏覽器開啟』！', '開啟方式提醒');
         }
     }
 })();
@@ -593,15 +594,15 @@ window.handleRedeem = async function (itemId) {
     const buyerUid = currentUser.uid;
     const ticket = item.type === 'item_ticket';
     if (ticket && (currentUser.itemTickets || []).includes(item.id)) return;
-    if (!confirm(`確定要用 ${item.cost} 金幣兌換「${item.name}」嗎？`)) return;
-
     redeemBusy = true;
+    const agreed = await platformConfirm(`確定要用 ${item.cost} 金幣${ticket ? '購買' : '兌換'}「${item.name}」嗎？`, ticket ? '購買道具券' : '兌換商品', ticket ? '確認購買' : '確認兌換');
+    if (!agreed || currentUser?.uid !== buyerUid) { redeemBusy = false; renderShop(); return; }
     renderShop();
     let r;
     try { r = await (ticket ? buyItemTicket(buyerUid, item) : redeemShopItem(buyerUid, item)); }
     finally { redeemBusy = false; renderShop(); }
     if (currentUser?.uid !== buyerUid) return;
-    if (!r.ok) { alert(r.reason || '兌換失敗，請稍後再試'); return; }
+    if (!r.ok) { await platformAlert(r.reason || '兌換失敗，請稍後再試', '交易未完成'); return; }
 
     currentUser = { ...currentUser, coins: r.newCoins, dailyGuard: r.guard, ...(ticket ? { itemTickets: r.itemTickets } : {}) };
     renderUserBar();

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
+<script src="task-dialogs.js"></script>
 <script>
     /* 桌機/寬螢幕自動導向「手機外框」展示版（stoneweir-desktop.html），
        手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
@@ -799,9 +800,9 @@ function exitAndClosePlatform(){
 // 這時候把假紀錄補回去、跳確認視窗；確定要走才真的送 exit + 關閉分頁。
 if (window.history && window.history.pushState) {
   history.pushState(null, '', location.href);
-  window.addEventListener('popstate', function () {
+  window.addEventListener('popstate', async function () {
     history.pushState(null, '', location.href);
-    if (!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+    if (!(await taskConfirm('確定要返回平台嗎？這局進度不會被保留。'))) return;
     exitAndClosePlatform();
   });
 }
@@ -1434,9 +1435,9 @@ function updateIntroStats(){
 document.getElementById('startBtn').addEventListener('click', ()=>{ SoundFX.unlock(); SoundFX.uiClick(); startGame(); });
 // 長按畫面時（尤其是石塊、竹簍）避免跳出系統的右鍵/長按選單
 document.addEventListener('contextmenu', (e)=>{ e.preventDefault(); });
-document.getElementById('restartBtn').addEventListener('click', ()=>{
+document.getElementById('restartBtn').addEventListener('click', async ()=>{
   SoundFX.uiClick();
-  if(!confirm('確定要返回平台嗎？這局進度不會被保留。')) return;
+  if(!(await taskConfirm('確定要返回平台嗎？這局進度不會被保留。'))) return;
   exitAndClosePlatform();
 });
 document.getElementById('collectFishBtn').addEventListener('click', ()=>{

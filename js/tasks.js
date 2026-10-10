@@ -1,3 +1,4 @@
+import { platformConfirm, platformAlert } from './platformDialogs.js';
 import { useItemTicket } from './itemTickets.js';
 // =====================================================
 // 任務視窗溝通：開新視窗 + postMessage
@@ -210,10 +211,15 @@ function createTaskOverlay(task) {
         if (loading && iframe.getAttribute('src')) loading.remove();
     });
     // 平台自己的返回按鈕：不需要任務配合，任何任務（包含不跟平台溝通的）都能用它離開
-    el.querySelector('.task-overlay-back').addEventListener('click', () => {
-        if (window.confirm('確定要離開任務、返回平台嗎？\n目前這一局的進度不會被保留。')) {
-            closeTaskOverlay(task.id);
-        }
+    el.querySelector('.task-overlay-back').addEventListener('click', async event => {
+        const button = event.currentTarget;
+        if (button.disabled) return;
+        button.disabled = true;
+        try {
+            if (await platformConfirm('確定要離開任務、返回平台嗎？\n目前這一局的進度不會被保留。', '返回平台', '返回平台')) {
+                if (activeTaskOverlay?.el === el) closeTaskOverlay(task.id);
+            }
+        } finally { button.disabled = false; }
     });
     document.body.appendChild(el);
     document.documentElement.classList.add('task-overlay-open');
@@ -287,7 +293,7 @@ function confirmTaskCost(task) {
 // 付費任務先確認並預載；同意後扣款成功才載入任務。
 export async function openTask(task, currentUser, onCoinsChanged) {
     if (!currentUser) {
-        alert('請先持船員證報到');
+        await platformAlert('請先持船員證報到');
         return { ok: false };
     }
     if (activeTaskOverlay || taskOpening) return { ok: false }; // 已經有任務開著（理論上任務視窗會蓋住大廳，點不到）
@@ -306,7 +312,7 @@ export async function openTask(task, currentUser, onCoinsChanged) {
         ]);
         if (!costResult.ok) {
             closeTaskOverlay(task.id); // 扣款失敗，收掉還沒載入任務的視窗
-            alert(costResult.reason);
+            await platformAlert(costResult.reason);
             return { ok: false };
         }
         if (costResult.newCoins !== undefined) onCoinsChanged(costResult.newCoins, costResult.guard);
