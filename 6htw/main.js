@@ -1177,16 +1177,33 @@ function copyLog() {
     });
 }
 
+// 啟航點擊時直接呼叫，避免延遲轉場後才播放而失去手機的音訊授權。
+// initGame 再呼叫時沿用正在播放的音樂，不重設進度。
+function startGameMusic() {
+    const music = document.getElementById("bgm");
+    const btn = document.getElementById("music-control");
+    if (!music || !sfxEnabled) return;
+    music.loop = true;
+    music.volume = 0.1;
+    const playing = music.paused ? music.play() : Promise.resolve();
+    playing.then(() => {
+        if (!sfxEnabled || music.paused) return;
+        btn.innerText = "🔊";
+        btn.style.filter = "";
+        btn.style.opacity = "1";
+    }).catch(() => {
+        btn.innerText = "🔇";
+        btn.style.opacity = "0.4";
+    });
+}
+
 // 切換背景音樂播放／暫停，同時更新 sfxEnabled 旗標與音樂按鈕的圖示樣式。
 function toggleMusic() {
     const music = document.getElementById("bgm");
     const btn = document.getElementById("music-control");
     if (music.paused) {
-        music.play();
         sfxEnabled = true;
-        btn.innerText = "🔊";
-        btn.style.filter = "";
-        btn.style.opacity = "1";
+        startGameMusic();
     } else {
         music.pause();
         sfxEnabled = false;
@@ -1334,15 +1351,7 @@ function initGame(lockedLocationId) {
     const music = document.getElementById("bgm");
     const btn = document.getElementById("music-control");
     if (sfxEnabled) {
-        music.play().then(() => {
-            music.volume = 0.1;
-            btn.style.filter = "";
-            btn.innerText = "🔊";
-            btn.style.opacity = "1";
-        }).catch(() => {
-            btn.innerText = "🔇";
-            btn.style.opacity = "0.4";
-        });
+        startGameMusic();
     } else {
         music.pause();
         btn.innerText = "🔇";
@@ -2316,7 +2325,7 @@ function showRoundSummary() {
             <div style="${bg}${span}border-radius:13px;padding:8px 10px;min-width:0;overflow:hidden;
                         animation:rsSlideUp .26s ${delay}s ease both;">
                 <div style="display:flex;align-items:center;gap:14px;">
-                    <div style="flex:0 0 auto;">
+                    <div style="flex:1;min-width:0;overflow-wrap:anywhere;">
                         <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
                             <span style="font-size:11px;color:rgba(255,255,255,0.42);">${r.name}</span>
                             ${badge}
@@ -2334,10 +2343,10 @@ function showRoundSummary() {
         <div style="${bg}border-radius:13px;padding:8px 9px;min-width:0;overflow:hidden;
                     animation:rsSlideUp .26s ${delay}s ease both;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-                <span style="font-size:18px;color:rgba(255,255,255,0.42);">${r.name}</span>
+                <span style="font-size:14px;color:rgba(255,255,255,0.42);min-width:0;overflow-wrap:anywhere;">${r.name}</span>
                 ${badge}
             </div>
-            <div style="font-size:20px;font-weight:bold;color:${nameC};margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.fishName}</div>
+            <div style="font-size:16px;font-weight:bold;color:${nameC};margin-bottom:2px;overflow-wrap:anywhere;">${r.fishName}</div>
             ${buildAttrBars(r.feature, r.isSuccess)}
         </div>`;
     }).join('');
@@ -2352,16 +2361,19 @@ function showRoundSummary() {
         <div style="${sharedCard}padding:7px 11px;margin-bottom:10px;
                     animation:rsSlideUp .26s ${ecoDelay}s ease both;">
             <div style="font-size:12px;color:#60c8f0;font-weight:bold;margin-bottom:3px;">${gameUiIcon("eco", 18)}生態小知識</div>
-            <div style="font-size:16px;color:rgba(190,235,255,0.88);line-height:1.6;">${currentS.why}</div>
+            <div style="font-size:14px;color:rgba(190,235,255,0.88);line-height:1.45;">${currentS.why}</div>
         </div>` : '';
 
     // ── overlay ──
     const overlay = document.createElement("div");
     overlay.id = "round-summary-overlay";
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', '本輪結算報告');
     overlay.style.cssText = `
-        position:fixed;top:0;left:0;width:100%;height:100%;
+        position:fixed;inset:0;width:100%;height:100%;height:100dvh;
         background:rgba(4,12,22,0.92);display:flex;justify-content:center;
-        align-items:center;box-sizing:border-box;
+        align-items:center;box-sizing:border-box;padding:16px;
         z-index:4000;
     `;
 
@@ -2370,17 +2382,16 @@ function showRoundSummary() {
     modal.style.cssText = `
         background:linear-gradient(170deg,#0d2137 0%,#081626 100%);
         border-radius:20px;border:1px solid rgba(255,255,255,0.07);
-        width:92%;max-width:400px;
-        max-height:82vh;overflow-y:auto;
-        padding:12px 11px 14px;box-sizing:border-box;
-        animation:rsSlideDown .36s ease-out both;
+        width:100%;max-width:400px;min-width:0;
+        padding:10px;box-sizing:border-box;overflow-wrap:anywhere;
+        animation:rsFadeIn .36s ease-out both;
     `;
 
     modal.innerHTML = `
         <style>
-            @keyframes rsSlideDown {
-                from { transform:translateY(-30px); opacity:0; }
-                to   { transform:translateY(0);     opacity:1; }
+            @keyframes rsFadeIn {
+                from { opacity:0; }
+                to   { opacity:1; }
             }
             @keyframes rsSlideUp {
                 from { transform:translateY(13px); opacity:0; }
@@ -2389,26 +2400,28 @@ function showRoundSummary() {
             @keyframes rsPulse {
                 0%,100% { opacity:1; } 50% { opacity:.4; }
             }
-            #round-summary-overlay ::-webkit-scrollbar { width:3px; }
-            #round-summary-overlay ::-webkit-scrollbar-track { background:transparent; }
-            #round-summary-overlay ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15);border-radius:2px; }
+            #round-summary-overlay .round-summary-content {
+                min-width:0;overflow-wrap:anywhere;
+            }
         </style>
 
+        <div class="round-summary-content" aria-label="結算內容">
         <div style="${sharedCard}padding:7px 11px;margin-bottom:8px;
                     animation:rsSlideUp .26s .04s ease both;">
             <div style="font-size:12px;color:#60c8f0;letter-spacing:1.5px;margin-bottom:2px;">📜 本回召喚條件 📜</div>
             <div style="font-size:16px;color:#fff;font-weight:bold;line-height:1.4;">${currentS.t}</div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;min-width:0;">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;margin-bottom:8px;min-width:0;">
             ${cardsHtml}
         </div>
 
         ${ecoHtml}
+        </div>
 
         <button id="close-summary-btn" style="
-            width:100%;padding:11px;border:none;border-radius:50px;
-            font-size:22px;font-weight:900;cursor:pointer;letter-spacing:0.5px;
+            width:100%;padding:11px;border:none;border-radius:50px;flex-shrink:0;margin-top:8px;
+            font-size:20px;font-weight:900;cursor:pointer;letter-spacing:0.5px;
             background:linear-gradient(135deg,#f5c842,#e07828);
             color:#1a0800;
             box-shadow:0 4px 0 #8a4200, 0 6px 14px rgba(200,100,0,0.3);
@@ -2416,10 +2429,45 @@ function showRoundSummary() {
         ">整理魚獲，繼續冒險</button>
     `;
 
-    overlay.appendChild(modal);
+    // 先以自然高度排完所有內容，再縮放整張報告，完整放入目前視窗。
+    // frame 保留縮放後的實際版面尺寸；scaler 的 transform 不影響文字量測。
+    const frame = document.createElement('div');
+    frame.className = 'round-summary-fit';
+    frame.style.cssText = 'position:relative;flex:none;';
+    const scaler = document.createElement('div');
+    scaler.style.cssText = 'position:absolute;top:0;left:0;transform-origin:top left;';
+    scaler.appendChild(modal);
+    frame.appendChild(scaler);
+    overlay.appendChild(frame);
     document.body.appendChild(overlay);
 
+    function fitSummary() {
+        if (!overlay.isConnected) return;
+        const availableWidth = Math.max(1, overlay.clientWidth - 32);
+        const availableHeight = Math.max(1, overlay.clientHeight - 32);
+        const width = Math.min(400, availableWidth);
+        scaler.style.width = width + 'px';
+        const height = modal.offsetHeight;
+        const scale = Math.min(1, availableHeight / Math.max(1, height));
+        scaler.style.transform = `scale(${scale})`;
+        frame.style.width = width * scale + 'px';
+        frame.style.height = height * scale + 'px';
+    }
+    const sizeObserver = new ResizeObserver(fitSummary);
+    sizeObserver.observe(modal);
+    sizeObserver.observe(overlay);
+    window.addEventListener('resize', fitSummary);
+    window.visualViewport?.addEventListener('resize', fitSummary);
+    overlay.disposeSummary = () => {
+        sizeObserver.disconnect();
+        window.removeEventListener('resize', fitSummary);
+        window.visualViewport?.removeEventListener('resize', fitSummary);
+    };
+    fitSummary();
+    document.fonts?.ready.then(fitSummary);
+
     document.getElementById("close-summary-btn").onclick = () => {
+        overlay.disposeSummary();
         overlay.remove();
         lockUI();
         playPendingReturns(() => proceedToNextRound());
@@ -2907,6 +2955,7 @@ function toggleReportMode() {
         // 關掉時清除可能殘留的結算 overlay
         const existing = document.getElementById("round-summary-overlay");
         if (existing) {
+            existing.disposeSummary?.();
             existing.remove();
             playPendingReturns(() => proceedToNextRound());
         }

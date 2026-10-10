@@ -1142,7 +1142,7 @@
 
 	/* ── 音效・音樂 ──
 	   歡迎頁本身沒有背景音樂，開關只儲存狀態，
-	   不在這裡呼叫 bgm.play()，由遊戲開始後的 initGame 處理。
+	   選港時不播放；啟航點擊時啟動主音樂，initGame 延續同一次播放。
 	*/
 	var _sfxOn = sessionStorage.getItem('sfxEnabled') !== 'false';
     // 啟航音效：在點擊事件內播放，符合手機音訊限制。
@@ -1245,6 +1245,10 @@
 		   變成 null，都會導致 initGame() 抓到錯的地點。鎖進區域變數、當參數傳遞，
 		   就能徹底避開這整類「延遲讀取共用可變狀態」造成的競爭問題。 */
 		var lockedLocationId = window.selectedLocationId;
+
+        // 在啟航點擊當下啟動主音樂，轉場與發牌不再另起一次播放。
+        if (typeof sfxEnabled !== 'undefined') sfxEnabled = _sfxOn;
+        if (_sfxOn && typeof startGameMusic === 'function') startGameMusic();
 
 		/* 同步結算報告狀態到遊戲中按鈕 */
 		if(typeof showSummaryMode !== 'undefined') showSummaryMode = _rptOn;
