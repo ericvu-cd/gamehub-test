@@ -185,6 +185,7 @@ function injectTaskOverlayStyles() {
     .task-overlay-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
         color: rgba(255,255,255,0.7); font-size: 14px; pointer-events: none; }
     `;
+    style.textContent += ".task-cost-dialog::backdrop { background:rgba(0,0,0,.65); }";
     document.head.appendChild(style);
 }
 
@@ -201,7 +202,7 @@ function createTaskOverlay(task) {
             <div class="task-overlay-loading">任務載入中…</div>
             <iframe class="task-overlay-frame" allow="autoplay; fullscreen; screen-wake-lock"></iframe>
         </div>`;
-    el.querySelector('.task-overlay-title').textContent = task.name || '';
+    el.querySelector('.task-overlay-title').textContent = task.title || task.name || '';
     const iframe = el.querySelector('.task-overlay-frame');
     iframe.title = task.name || '任務';
     iframe.addEventListener('load', () => {
@@ -233,36 +234,91 @@ export function closeTaskOverlay(taskId) {
     }
 }
 
-// 開啟任務：先蓋上任務視窗（顯示載入中），扣款成功才真正載入任務網址
+// 預載只下載資源，不建立 iframe、不執行任務程式。
+let taskOpening = false;
+const taskPreloads = new Map();
+function preloadTaskHome(task) {
+    const url = new URL(task.link, location.href);
+    if (taskPreloads.has(url.href)) return;
+    const hint = document.createElement('link');
+    hint.rel = 'prefetch'; hint.as = 'document'; hint.href = url.href;
+    document.head.appendChild(hint);
+    const work = (async () => {
+        const response = await fetch(url.href, { cache: 'force-cache', signal: AbortSignal.timeout(8000) });
+        if (!response.ok) throw new Error('preload');
+        const html = await response.text();
+        const imageTags = html.match(/<img\b[^>]*>/gi) || [];
+        const priority = imageTags.find(tag => /fetchpriority=["']high["']/i.test(tag));
+        const src = priority?.match(/\bsrc=["']([^"']+)["']/i)?.[1]
+            || html.match(/url\(\s*["']?([^\s)"']+\.(?:png|jpe?g|webp|avif)(?:\?[^\s)"']*)?)["']?\s*\)/i)?.[1]
+            || imageTags.find(tag => /\bsrc=["'][^"']+["']/i.test(tag))?.match(/\bsrc=["']([^"']+)["']/i)?.[1];
+        if (src) {
+            const image = new Image();
+            image.src = new URL(src, response.url || url.href).href;
+        }
+    })().catch(() => { taskPreloads.delete(url.href); });
+    taskPreloads.set(url.href, work);
+}
+function confirmTaskCost(task) {
+    injectTaskOverlayStyles();
+    const dialog = document.createElement('dialog');
+    dialog.className = 'task-cost-dialog';
+    dialog.setAttribute('aria-labelledby', 'task-cost-title');
+    dialog.style.cssText = 'width:min(340px,calc(100vw - 48px));box-sizing:border-box;border:1px solid #7185aa;border-radius:18px;padding:24px;background:#101a35;color:white;font-family:inherit;';
+    dialog.innerHTML = '<h2 id="task-cost-title" style="font-size:20px;margin:0 0 14px">開始任務</h2><p data-name></p><p data-cost></p><div style="display:flex;gap:12px;margin-top:24px"><button type="button" data-cancel style="flex:1;padding:12px;border-radius:10px">取消</button><button type="button" data-agree style="flex:1;padding:12px;border-radius:10px;background:#71e2c4;color:#10253a;font-weight:bold">同意並開始</button></div>';
+    dialog.querySelector('[data-name]').textContent = task.title || task.name || '任務';
+    dialog.querySelector('[data-cost]').textContent = '本次進入需扣除 ' + task.entryCost + ' 金幣，是否開始？';
+    document.body.appendChild(dialog);
+    return new Promise(resolve => {
+        let settled = false;
+        const finish = agreed => {
+            if (settled) return;
+            settled = true; dialog.close(); dialog.remove(); resolve(agreed);
+        };
+        dialog.querySelector('[data-cancel]').onclick = () => finish(false);
+        dialog.querySelector('[data-agree]').onclick = () => finish(true);
+        dialog.addEventListener('cancel', event => { event.preventDefault(); finish(false); });
+        dialog.showModal();
+        dialog.querySelector('[data-cancel]').focus();
+        preloadTaskHome(task);
+    });
+}
+
+// 付費任務先確認並預載；同意後扣款成功才載入任務。
 export async function openTask(task, currentUser, onCoinsChanged) {
     if (!currentUser) {
         alert('請先持船員證報到');
         return { ok: false };
     }
-    if (activeTaskOverlay) return { ok: false }; // 已經有任務開著（理論上任務視窗會蓋住大廳，點不到）
+    if (activeTaskOverlay || taskOpening) return { ok: false }; // 已經有任務開著（理論上任務視窗會蓋住大廳，點不到）
 
-    const { el, iframe } = createTaskOverlay(task);
-    activeTaskOverlay = { taskId: task.id, el, iframe };
+    taskOpening = true;
+    try {
+        if (Number(task.entryCost) > 0 && !(await confirmTaskCost(task))) return { ok: false, cancelled: true };
+        const { el, iframe } = createTaskOverlay(task);
+        activeTaskOverlay = { taskId: task.id, el, iframe };
 
-    // 扣款的同時平行查詢玩家在這個任務的個人最佳成績：扣款本來就要 await，
-    // 順便平行查成績幾乎不增加等待時間，查詢結果有 sessionStorage 快取。
-    const [costResult, myScore] = await Promise.all([
-        deductTaskCost(currentUser.uid, task),
-        fetchMyScore(task.id, currentUser.uid)
-    ]);
-    if (!costResult.ok) {
-        closeTaskOverlay(task.id); // 扣款失敗，收掉還沒載入任務的視窗
-        alert(costResult.reason);
-        return { ok: false };
-    }
-    if (costResult.newCoins !== undefined) onCoinsChanged(costResult.newCoins, costResult.guard);
+        // 扣款的同時平行查詢玩家在這個任務的個人最佳成績：扣款本來就要 await，
+        // 順便平行查成績幾乎不增加等待時間，查詢結果有 sessionStorage 快取。
+        const [costResult, myScore] = await Promise.all([
+            deductTaskCost(currentUser.uid, task),
+            fetchMyScore(task.id, currentUser.uid)
+        ]);
+        if (!costResult.ok) {
+            closeTaskOverlay(task.id); // 扣款失敗，收掉還沒載入任務的視窗
+            alert(costResult.reason);
+            return { ok: false };
+        }
+        if (costResult.newCoins !== undefined) onCoinsChanged(costResult.newCoins, costResult.guard);
 
-    // iframe.contentWindow 在同一個 iframe 裡換頁時仍是同一個物件，
-    // 任務頁面載入後送來的訊息，event.source 會等於這裡記下的 win。
-    const origin = new URL(task.link, location.href).origin;
-    openTaskWindows.set(task.id, { win: iframe.contentWindow, origin, myScore });
-    iframe.src = task.link;
-    return { ok: true };
+        // iframe.contentWindow 在同一個 iframe 裡換頁時仍是同一個物件，
+        // 任務頁面載入後送來的訊息，event.source 會等於這裡記下的 win。
+        const origin = new URL(task.link, location.href).origin;
+        if (activeTaskOverlay?.el !== el) return { ok: false };
+        openTaskWindows.set(task.id, { win: iframe.contentWindow, origin, myScore });
+        iframe.src = task.link;
+        return { ok: true };
+    } finally { taskOpening = false; }
 }
 
 // 掛上全站唯一的訊息監聽器，在平台初始化時呼叫一次

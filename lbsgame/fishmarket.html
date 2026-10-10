@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <script src="start-ticket.js"></script>
+    
 <script>
         /* 桌機/寬螢幕自動導向「手機外框」展示版（fishmarket-desktop.html），
            手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
@@ -19,7 +19,7 @@
 	<link rel="icon" type="image/png" href="image/fmicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <style>
         /* 主題色票：樂高積木拍賣場 —— 經典樂高藍、標售紅、金幣黃、領先綠 */
         :root {
@@ -481,7 +481,7 @@
 
     <div id="intro-screen">
         <div id="intro-card">
-            <img src="image/fmbg.png" alt="永續魚市拍賣場：漁港開賣！永續海洋決勝負">
+            <img fetchpriority="high" src="image/fmbg.png" alt="永續魚市拍賣場：漁港開賣！永續海洋決勝負">
             <button id="intro-start-btn" onclick="startGame()" aria-label="開始拍賣"></button>
         </div>
     </div>
@@ -657,7 +657,8 @@
         </div>
     </div>
 
-    <script>
+    <script src="start-ticket.js"></script>
+<script>
         const SEASONS = ['🌸 春季', '☀️ 夏季', '🍂 秋季', '❄️ 冬季'];
         const SEASON_WELCOME_LINES = [
             '一起用心挑選當季好魚吧！',

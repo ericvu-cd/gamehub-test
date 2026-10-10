@@ -386,7 +386,7 @@
 </header>
 
 <div class="map-wrap">
-  <img id="map-img" src="image/mlcmap.jpg" alt="苗栗海岸手繪地圖" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'map-missing',textContent:'找不到 mlcmap.jpg，請確認地圖圖片和這個 HTML 檔案放在同一個資料夾'}))">
+  <img fetchpriority="high" id="map-img" src="image/mlcmap.jpg" alt="苗栗海岸手繪地圖" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'map-missing',textContent:'找不到 mlcmap.jpg，請確認地圖圖片和這個 HTML 檔案放在同一個資料夾'}))">
   <div id="pin-layer"></div>
   <div class="map-caption">地圖示意．非精確定位</div>
 </div>

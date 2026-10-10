@@ -18,7 +18,7 @@
 <link rel="icon" type="image/png" href="image/fbicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
   :root{
     --sky-top:#5C94FC;
@@ -828,7 +828,7 @@
    <button type="button" id="startMuteBtn" class="start-mute-btn" aria-label="音效開關" aria-pressed="false">🔊</button>
    <button type="button" id="startHelpBtn" aria-label="遊戲說明" onclick="document.getElementById('helpOverlay').classList.add('show')">📖</button>
    <div class="start-bg-wrap" id="startBgWrap">
-    <img src="image/fbbg.png" alt="魚丸追追樂 勇闖海洋冒險" class="start-bg-img" id="startBgImg" draggable="false">
+    <img fetchpriority="high" src="image/fbbg.png" alt="魚丸追追樂 勇闖海洋冒險" class="start-bg-img" id="startBgImg" draggable="false">
     <button class="start-bg-btn" id="startBtn" aria-label="START"></button>
    </div>
   </div>

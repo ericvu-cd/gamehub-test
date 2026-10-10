@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<script src="start-ticket.js"></script>
+
 <script>
     /* 桌機/寬螢幕自動導向「手機外框」展示版（stoneweir-desktop.html），
        手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
@@ -18,7 +18,7 @@
 <title>石滬修復</title>
 <link rel="icon" type="image/png" href="image/sricon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
   :root{
     --ocean-deep:#063d78;
@@ -586,7 +586,7 @@
   <div class="screen active" id="screen-intro">
     <div class="intro-frame">
     <div class="intro-media">
-      <img src="image/srbg.png" alt="石滬修復玩法說明">
+      <img fetchpriority="high" src="image/srbg.png" alt="石滬修復玩法說明">
       <button class="intro-go-btn" id="startBtn" aria-label="開始遊戲" title="開始遊戲"></button>
     </div>
     <div class="intro-stats" id="introStats"></div>
@@ -753,6 +753,7 @@
   </div>
 </div>
 
+<script src="start-ticket.js"></script>
 <script>
 /* ============ 平台通訊（對應「任務頁面通訊介面規格.md」） ============ */
 const TASK_ID = 'stoneweir';
