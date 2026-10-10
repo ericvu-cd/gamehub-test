@@ -264,7 +264,7 @@ function confirmTaskCost(task) {
     const dialog = document.createElement('dialog');
     dialog.className = 'task-cost-dialog';
     dialog.setAttribute('aria-labelledby', 'task-cost-title');
-    dialog.style.cssText = 'width:min(340px,calc(100vw - 48px));box-sizing:border-box;border:1px solid #7185aa;border-radius:18px;padding:24px;background:#101a35;color:white;font-family:inherit;';
+    dialog.style.cssText = 'position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 48px);overflow:auto;width:min(340px,calc(100vw - 48px));box-sizing:border-box;border:1px solid #7185aa;border-radius:18px;padding:24px;background:#101a35;color:white;font-family:inherit;';
     dialog.innerHTML = '<h2 id="task-cost-title" style="font-size:20px;margin:0 0 14px">開始任務</h2><p data-name></p><p data-cost></p><div style="display:flex;gap:12px;margin-top:24px"><button type="button" data-cancel style="flex:1;padding:12px;border-radius:10px">取消</button><button type="button" data-agree style="flex:1;padding:12px;border-radius:10px;background:#71e2c4;color:#10253a;font-weight:bold">同意並開始</button></div>';
     dialog.querySelector('[data-name]').textContent = task.title || task.name || '任務';
     dialog.querySelector('[data-cost]').textContent = '本次進入需扣除 ' + task.entryCost + ' 金幣，是否開始？';
