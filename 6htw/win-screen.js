@@ -619,7 +619,7 @@ async function shareAchievementCard(isPlayer, winner, badgeKey) {
     ctx.letterSpacing = "0px";
 
     canvas.toBlob(async (blob) => {
-        if (!blob) { alert("卡片產生失敗"); return; }
+        if (!blob) { void showGameMessage("卡片產生失敗，請稍後再試。"); return; }
         const file = new File([blob], `友魚守護團_${badgeKey}.png`, { type:"image/png" });
         const text = `我在《友魚守護團》解鎖了「${badgeKey}」成就！你也來挑戰看看 🌊`;
         if (navigator.canShare && navigator.canShare({ files:[file] })) {
@@ -709,7 +709,7 @@ async function shareGameCard(isPlayer, winner) {
     ctx.letterSpacing = "0px";
 
     canvas.toBlob(async (blob) => {
-        if (!blob) { alert("卡片產生失敗"); return; }
+        if (!blob) { void showGameMessage("卡片產生失敗，請稍後再試。"); return; }
         const file = new File([blob], "image/友魚守護團.png", {type:"image/png"});
         const text = isPlayer
             ? `${winner.n} 在《友魚守護團》守護了海洋！難度【${diffLabel}】，共 ${rounds} 回合 🎉🌊`

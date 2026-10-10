@@ -678,12 +678,12 @@ body.game-started > *:not(#welcome-screen):not(#intro-screen):not(#collection-mo
 .hand { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 5px; min-height: 126px; align-items: flex-end; -webkit-overflow-scrolling: touch; }
 
 /* 預覽放大卡牌專用 */
-#card-preview-overlay {
+#card-preview-overlay, .game-message-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.82); z-index: 4500;
     display: none; justify-content: center; align-items: center;
 }
-#card-preview-container {
+#card-preview-container, .game-message-container {
     transform: scale(1);
     transition: transform 0.2s;
     justify-content: center;

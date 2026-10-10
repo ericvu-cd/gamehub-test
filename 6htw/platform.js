@@ -181,10 +181,58 @@ function exitToPlatform() {
 }
 
 // 遊戲進行中按下「返回」：先二次確認，避免手滑中斷正在進行的一局。
-function confirmExitDuringGame() {
-    if (window.confirm('確定要離開任務、返回平台嗎？\n目前這一局的進度不會被保留。')) {
+// 沿用遊戲現有卡片預覽的置中遮罩、卡片與確認／取消按鈕樣式。
+let gameMessagePending = null;
+function showGameMessage(message, confirm = false) {
+    if (gameMessagePending) return gameMessagePending;
+    const overlay = document.createElement('div');
+    overlay.className = 'game-message-overlay';
+    overlay.style.display = 'flex';
+    overlay.style.visibility = 'visible';
+    overlay.style.opacity = '1';
+    overlay.style.zIndex = '10000';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', confirm ? '返回平台' : '提示');
+    overlay.innerHTML = '<div class="game-message-container"><div class="preview-detail-card" style="border-color:#77D9A8;padding:22px;box-sizing:border-box;color:#173b32"><h2 style="font-size:20px;margin:0 0 12px"></h2><p style="white-space:pre-line;line-height:1.7;margin:0"></p></div><div class="preview-controls"><button type="button" data-ok class="preview-btn btn-confirm" aria-label="確定">✔</button><button type="button" data-cancel class="preview-btn btn-cancel" aria-label="取消">✕</button></div></div>';
+    overlay.querySelector('h2').textContent = confirm ? '返回平台' : '提示';
+    overlay.querySelector('p').textContent = message;
+    overlay.querySelector('[data-cancel]').hidden = !confirm;
+    if (!confirm) overlay.querySelector('[data-cancel]').style.display = 'none';
+    const previousFocus = document.activeElement;
+    document.body.appendChild(overlay);
+    gameMessagePending = new Promise(resolve => {
+        const finish = result => {
+            document.removeEventListener('keydown', onKey, true);
+            overlay.remove(); gameMessagePending = null;
+            if (previousFocus?.isConnected) previousFocus.focus();
+            resolve(result);
+        };
+        const onKey = event => {
+            if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); finish(false); }
+            if (event.key === 'Tab') {
+                event.preventDefault();
+                const other = document.activeElement === overlay.querySelector('[data-ok]') && confirm ? '[data-cancel]' : '[data-ok]';
+                overlay.querySelector(other).focus();
+            }
+        };
+        overlay.querySelector('[data-ok]').onclick = () => finish(true);
+        overlay.querySelector('[data-cancel]').onclick = () => finish(false);
+        document.addEventListener('keydown', onKey, true);
+        overlay.querySelector(confirm ? '[data-cancel]' : '[data-ok]').focus();
+    });
+    return gameMessagePending;
+}
+
+let exitPromptPending = false;
+async function confirmExitDuringGame() {
+    if (exitPromptPending) return;
+    exitPromptPending = true;
+    try {
+    if (await showGameMessage('確定要離開任務、返回平台嗎？\n目前這一局的進度不會被保留。', true)) {
         exitToPlatform();
     }
+    } finally { exitPromptPending = false; }
 }
 
 // 結算畫面的「關閉」按鈕：不需要二次確認（已經是結算畫面，沒有進行中的局要中斷）。
