@@ -35,7 +35,7 @@
   {
     "id": "cultural_discount",
     "name": "番社30文創商品折價券",
-    "description": "使用地點：竹南陳家古厝。現場購買本會的文創商品，單筆交易滿200元，現折20元，每張限使用一次。",
+    "description": "使用地點：竹南陳家古厝。\n現場購買本會的文創商品，單筆交易滿200元，現折20元。\n單筆交易限使用一張劵。\n結帳前請先向店員出示。",
     "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/shopItems/1791703105583_cultural_discount.png",
     "cost": 200,
     "type": "merchant",
