@@ -501,3 +501,16 @@ body::after {
 @keyframes couponPulse {50% {transform:scale(1.2);opacity:.6;}}
 @media(prefers-reduced-motion:reduce){.coupon-success-mark{animation:none;}}
 .shop-card .shop-desc {white-space:normal;overflow:visible;display:block;-webkit-line-clamp:unset;}
+
+/* 商城分類標題及失效券 */
+#shop-list > .section-label {font-size:22px;font-weight:800;line-height:1.4;}
+.merchant-coupon-entry {position:relative;margin:10px 0;border:1px solid #64748b;border-radius:12px;overflow:hidden;}
+.merchant-coupon-entry .merchant-coupon-card {margin:0;border:0;border-radius:0;}
+.coupon-state-badge {display:inline-block;margin:6px 0 0 8px;padding:3px 9px;border-radius:6px;background:#166534;color:#fff;font-size:14px;font-weight:800;}
+.coupon-invalid {border:2px dashed #94a3b8;background:rgba(100,116,139,.18);}
+.coupon-invalid .coupon-art,.coupon-expired-art {filter:grayscale(1);opacity:.45;}
+.coupon-invalid strong {color:#aeb8c8;text-decoration:line-through;}
+.coupon-invalid .coupon-state-badge,.coupon-detail-invalid {background:#7f1d1d;color:#fff;}
+.coupon-detail-status {display:inline-block;padding:6px 16px;border-radius:8px;font-size:20px;font-weight:800;margin:10px 0;}
+
+.coupon-clear-btn {display:block;margin:0 14px 14px;padding:9px 16px;border:1px solid #fca5a5;border-radius:8px;background:transparent;color:#fecaca;font:inherit;font-weight:700;cursor:pointer;}

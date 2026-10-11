@@ -1,5 +1,5 @@
 import { db } from './firebase-config.js';
-import { doc, collection, runTransaction, serverTimestamp, getDocFromServer, getDocsFromServer } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { doc, collection, runTransaction, serverTimestamp, getDocFromServer, getDocsFromServer, query, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { loadShopItems } from './content.js';
 import { ticketGuard } from './itemTickets.js';
 
@@ -24,7 +24,9 @@ const receipt = (uid, id) => doc(db, 'shopRedemptions', uid, 'entries', id);
 const offline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
 const record = snap => ({ id: snap.id, ...snap.data() });
 export async function listMerchantCoupons(uid) {
-    const snapshots = await getDocsFromServer(collection(db, 'shopRedemptions', uid, 'entries'));
+    const entries = collection(db, 'shopRedemptions', uid, 'entries');
+    // 單一欄位查詢，不需要複合索引；已清除的券不會下載。
+    const snapshots = await getDocsFromServer(query(entries, where('status', 'in', ['available', 'used'])));
     return snapshots.docs.map(record).filter(row => row.type === 'merchant_coupon')
         .sort((a, b) => b.redeemedAt - a.redeemedAt);
 }
@@ -75,6 +77,7 @@ export async function useMerchantCoupon(uid, id) {
         const result = await runTransaction(db, async tx => {
             const snap = await tx.get(ref), coupon = snap.data();
             if (!coupon || coupon.type !== 'merchant_coupon') throw new Error('找不到這張券。');
+            if (coupon.status === 'cleared') throw new Error('此券已清除。');
             if (coupon.status !== 'available') return { alreadyUsed: true };
             if (coupon.expiresAt !== null && Date.now() >= coupon.expiresAt) throw new Error('此券已過期。');
             tx.update(ref, { status: 'used', usedAt: serverTimestamp() });
@@ -85,6 +88,7 @@ export async function useMerchantCoupon(uid, id) {
         // The write may have committed before a network failure; refresh from server before retrying.
         try {
             const coupon = await readMerchantCoupon(uid, id);
+            if (coupon.status === 'cleared') return { ok: false, uncertain: false, reason: '此券已清除。' };
             if (coupon.status === 'used') return { ok: true, alreadyUsed: true, coupon };
             if (coupon.expiresAt !== null && Date.now() >= coupon.expiresAt)
                 return { ok: false, uncertain: false, reason: '此券已過期，無法使用。' };
@@ -92,3 +96,20 @@ export async function useMerchantCoupon(uid, id) {
         return { ok: false, uncertain: true, reason: '尚未確認使用結果，請連線後重新查看此券狀態。' };
     }
 }
+
+export async function clearMerchantCoupon(uid, id) {
+    if (offline()) return { ok: false, reason: '請連線後再清除。' };
+    try {
+        await runTransaction(db, async tx => {
+            const ref = receipt(uid, id), snap = await tx.get(ref), coupon = snap.data();
+            if (!coupon || coupon.type !== 'merchant_coupon') throw new Error('找不到這張券。');
+            if (coupon.status === 'cleared') return;
+            if (coupon.status !== 'used' && !(coupon.status === 'available'
+                && coupon.expiresAt !== null && Date.now() >= coupon.expiresAt))
+                throw new Error('只有已使用或已過期的券可以清除。');
+            tx.update(ref, { status: 'cleared', clearedAt: serverTimestamp() });
+        });
+        return { ok: true };
+    } catch { return { ok: false, reason: '清除未完成，請連線後重新查看背包。' }; }
+}
+

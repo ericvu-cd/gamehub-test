@@ -1,4 +1,4 @@
-import { buyMerchantCoupon, listMerchantCoupons, readMerchantCoupon, useMerchantCoupon } from './merchantCoupons.js';
+import { buyMerchantCoupon, listMerchantCoupons, readMerchantCoupon, useMerchantCoupon, clearMerchantCoupon } from './merchantCoupons.js';
 import { platformConfirm, platformAlert } from './platformDialogs.js';
 import { buyItemTicket } from './itemTickets.js';
 // =====================================================================
@@ -520,7 +520,7 @@ async function markNewsAsRead() {
 let merchantCouponUid = null, merchantLoad = 0, merchantUseBusy = false;
 const couponTime = value => value?.toDate ? value.toDate().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : '—';
 const couponIcon = row => row.iconUrl ? '<img src="' + escapeHtml(row.iconUrl) + '" alt="" style="width:48px;height:48px;object-fit:contain">' : '🎁';
-const couponState = row => row.status === 'used' ? '已使用' : row.expiresAt !== null && Date.now() >= row.expiresAt ? '已過期' : '可使用';
+const couponState = row => row.status === 'cleared' ? '已清除' : row.status === 'used' ? '已使用' : row.expiresAt !== null && Date.now() >= row.expiresAt ? '已過期' : '可使用';
 async function refreshMerchantCoupons() {
     const uid = currentUser?.uid, generation = ++merchantLoad;
     merchantCouponUid = uid;
@@ -534,9 +534,13 @@ async function refreshMerchantCoupons() {
         section.classList.toggle('hidden', !rows.length);
         const active = rows.filter(r => couponState(r) === '可使用');
         const history = rows.filter(r => couponState(r) !== '可使用');
-        const cards = items => items.map(row => `<button class="merchant-coupon-card" data-coupon-id="${escapeHtml(row.id)}"><span>${couponIcon(row)}</span> <strong>${escapeHtml(row.itemName)}</strong><small>券號：${escapeHtml(row.couponCode)}</small><small>有效期限：${escapeHtml(row.validUntil || '無有效期限')}・${couponState(row)}</small></button>`).join('');
+        const cards = items => items.map(row => {
+            const invalid = couponState(row) !== '可使用';
+            return `<div class="merchant-coupon-entry ${invalid ? 'coupon-invalid' : ''}"><button class="merchant-coupon-card" data-coupon-id="${escapeHtml(row.id)}"><span class="coupon-art">${couponIcon(row)}</span> <strong>${escapeHtml(row.itemName)}</strong><span class="coupon-state-badge">${couponState(row)}</span><small>券號：${escapeHtml(row.couponCode)}</small><small>有效期限：${escapeHtml(row.validUntil || '無有效期限')}</small></button>${invalid ? `<button class="coupon-clear-btn" data-clear-coupon="${escapeHtml(row.id)}">清除此券</button>` : ''}</div>`;
+        }).join('');
         list.innerHTML = cards(active) + (history.length ? `<details><summary>使用／過期紀錄（${history.length}）</summary>${cards(history)}</details>` : '');
         list.querySelectorAll('[data-coupon-id]').forEach(button => button.onclick = () => window.showMerchantCoupon(button.dataset.couponId));
+        list.querySelectorAll('[data-clear-coupon]').forEach(button => button.onclick = () => window.clearMerchantCouponFromBag(button.dataset.clearCoupon));
     } catch {
         if (currentUser?.uid !== uid || generation !== merchantLoad) return;
         section.classList.remove('hidden');
@@ -545,6 +549,21 @@ async function refreshMerchantCoupons() {
     }
 }
 
+window.clearMerchantCouponFromBag = async function(id) {
+    const uid = currentUser?.uid;
+    if (!uid || merchantUseBusy) return;
+    merchantUseBusy = true;
+    try {
+        if (!await platformConfirm('確定清除此失效券？清除後，此帳號在所有裝置的背包都不再顯示。', '清除失效券', '確認清除')) return;
+        if (currentUser?.uid !== uid) return;
+        const result = await clearMerchantCoupon(uid, id);
+        if (currentUser?.uid !== uid) return;
+        if (!result.ok) await platformAlert(result.reason, '清除未完成');
+        else window.closeDetailModal();
+        await refreshMerchantCoupons();
+    } finally { merchantUseBusy = false; }
+};
+
 window.showMerchantCoupon = async function(id, success = false, supplied = null) {
     const uid = currentUser?.uid;
     if (!uid) return;
@@ -552,16 +571,25 @@ window.showMerchantCoupon = async function(id, success = false, supplied = null)
     try { row = supplied || await readMerchantCoupon(uid, id); }
     catch { await platformAlert('無法確認券狀態，請連線後重新查看。'); return; }
     if (currentUser?.uid !== uid) return;
+    if (row.status === 'cleared') {
+        window.closeDetailModal(); await platformAlert('此券已清除。'); await refreshMerchantCoupons(); return;
+    }
     const state = couponState(row);
     document.getElementById('detail-modal-title').textContent = success ? '核銷成功' : row.itemName;
     const body = document.getElementById('detail-modal-body');
-    body.innerHTML = `${success ? '<div class="coupon-success"><span class="coupon-success-mark">✓</span><p>本次使用成功</p></div>' : ''}<div class="detail-modal-icon">${couponIcon(row)}</div><p><strong>${escapeHtml(row.itemName)}</strong></p><p>券號：<strong>${escapeHtml(row.couponCode)}</strong></p><p class="coupon-description">${escapeHtml(row.description)}</p><p>有效期限：${escapeHtml(row.validUntil || '無有效期限')}</p><p>狀態：${state}</p>${row.status === 'used' ? `<p>使用時間：${couponTime(row.usedAt)}（台灣時間）</p>` : state === '可使用' ? '<button class="task-btn" data-use-coupon>立即使用</button>' : ''}`;
+    body.innerHTML = `${success ? '<div class="coupon-success"><span class="coupon-success-mark">✓</span><p>本次使用成功</p></div>' : ''}<div class="detail-modal-icon">${couponIcon(row)}</div><p><strong>${escapeHtml(row.itemName)}</strong></p><p>券號：<strong>${escapeHtml(row.couponCode)}</strong></p><p class="coupon-description">${escapeHtml(row.description)}</p><p>有效期限：${escapeHtml(row.validUntil || '無有效期限')}</p><p class="coupon-detail-status ${state !== '可使用' && !success ? 'coupon-detail-invalid' : ''}">${state}</p>${row.status === 'used' ? `<p>使用時間：${couponTime(row.usedAt)}（台灣時間）</p>` : state === '可使用' ? '<button class="task-btn" data-use-coupon>立即使用</button>' : ''}`;
+    if (state !== '可使用' && !success) {
+        body.querySelector('.detail-modal-icon')?.classList.add('coupon-expired-art');
+        const clear = document.createElement('button');
+        clear.className = 'coupon-clear-btn'; clear.textContent = '清除此券';
+        clear.onclick = () => window.clearMerchantCouponFromBag(id); body.appendChild(clear);
+    }
     const button = body.querySelector('[data-use-coupon]');
     if (button) button.onclick = async () => {
         if (merchantUseBusy || currentUser?.uid !== uid) return;
         merchantUseBusy = true; button.disabled = true;
         try {
-            if (!await platformConfirm('請在店員確認後使用。確認後此券立即失效，無法再次使用。', '使用店家商品', '確認使用')) return;
+            if (!await platformConfirm('請由店員確認使用。確認後此券立即失效，無法再次使用。', '使用店家商品', '確認使用')) return;
             if (currentUser?.uid !== uid) return;
             const result = await useMerchantCoupon(uid, id);
             if (currentUser?.uid !== uid) return;
@@ -579,7 +607,6 @@ window.showMerchantCoupon = async function(id, success = false, supplied = null)
 /* ---------------- 探索背包 ---------------- */
 function renderBag() {
     if (!currentUser) return;
-    if (merchantCouponUid !== currentUser.uid) refreshMerchantCoupons();
     const ownedTickets = currentUser.itemTickets || [];
     document.getElementById('item-ticket-section').classList.toggle('hidden', ownedTickets.length === 0);
     document.getElementById('item-ticket-grid').innerHTML = ownedTickets.map(id => {
@@ -637,7 +664,7 @@ function renderShop() {
     if (!currentUser) return;
     const items = (siteData.shopItems || []).filter(it => it.isActive !== false);
     document.getElementById('shop-list').innerHTML = [
-        { ticket: false, name: '店家商品', text: '兌換後存入背包，請在店員確認後連線使用，每張限使用一次。' },
+        { ticket: false, name: '店家商品', text: '兌換後存入背包，請由店員確認使用（需連線），每張限使用一次。' },
         { ticket: true, name: '道具券', text: '購買後存入背包，在指定任務中使用。每種最多持有一張，使用後消耗。' }
     ].map(group => {
         const rows = items.filter(it => (it.type === 'item_ticket') === group.ticket);
