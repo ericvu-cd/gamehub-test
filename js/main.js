@@ -1,3 +1,4 @@
+import { buyMerchantCoupon, listMerchantCoupons, readMerchantCoupon, useMerchantCoupon } from './merchantCoupons.js';
 import { platformConfirm, platformAlert } from './platformDialogs.js';
 import { buyItemTicket } from './itemTickets.js';
 // =====================================================================
@@ -10,7 +11,7 @@ import {
 import {
     loadActiveBanners, loadTasks, loadNews, loadBadges, loadCertificates, loadAvatarPresets, loadShopItems, loadSettings
 } from './content.js';
-import { claimDailyLogin, redeemShopItem } from './coins.js';
+import { claimDailyLogin } from './coins.js';
 import { openTask, initTaskMessageListener } from './tasks.js';
 import { fetchLeaderboard } from './leaderboard.js';
 import { openDailySlot } from './dailySlot.js';
@@ -516,9 +517,69 @@ async function markNewsAsRead() {
     } catch (err) { /* 非關鍵操作，失敗不影響使用 */ }
 }
 
+let merchantCouponUid = null, merchantLoad = 0, merchantUseBusy = false;
+const couponTime = value => value?.toDate ? value.toDate().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : '—';
+const couponIcon = row => row.iconUrl ? '<img src="' + escapeHtml(row.iconUrl) + '" alt="" style="width:48px;height:48px;object-fit:contain">' : '🎁';
+const couponState = row => row.status === 'used' ? '已使用' : row.expiresAt !== null && Date.now() >= row.expiresAt ? '已過期' : '可使用';
+async function refreshMerchantCoupons() {
+    const uid = currentUser?.uid, generation = ++merchantLoad;
+    merchantCouponUid = uid;
+    const section = document.getElementById('merchant-coupon-section');
+    const list = document.getElementById('merchant-coupon-list');
+    section.classList.add('hidden'); list.replaceChildren();
+    if (!uid) return;
+    try {
+        const rows = await listMerchantCoupons(uid);
+        if (currentUser?.uid !== uid || generation !== merchantLoad) return;
+        section.classList.toggle('hidden', !rows.length);
+        const active = rows.filter(r => couponState(r) === '可使用');
+        const history = rows.filter(r => couponState(r) !== '可使用');
+        const cards = items => items.map(row => `<button class="merchant-coupon-card" data-coupon-id="${escapeHtml(row.id)}"><span>${couponIcon(row)}</span> <strong>${escapeHtml(row.itemName)}</strong><small>券號：${escapeHtml(row.couponCode)}</small><small>有效期限：${escapeHtml(row.validUntil || '無有效期限')}・${couponState(row)}</small></button>`).join('');
+        list.innerHTML = cards(active) + (history.length ? `<details><summary>使用／過期紀錄（${history.length}）</summary>${cards(history)}</details>` : '');
+        list.querySelectorAll('[data-coupon-id]').forEach(button => button.onclick = () => window.showMerchantCoupon(button.dataset.couponId));
+    } catch {
+        if (currentUser?.uid !== uid || generation !== merchantLoad) return;
+        section.classList.remove('hidden');
+        list.textContent = '無法讀取店家商品，請連線後重新開啟背包。';
+        merchantCouponUid = null;
+    }
+}
+
+window.showMerchantCoupon = async function(id, success = false, supplied = null) {
+    const uid = currentUser?.uid;
+    if (!uid) return;
+    let row;
+    try { row = supplied || await readMerchantCoupon(uid, id); }
+    catch { await platformAlert('無法確認券狀態，請連線後重新查看。'); return; }
+    if (currentUser?.uid !== uid) return;
+    const state = couponState(row);
+    document.getElementById('detail-modal-title').textContent = success ? '核銷成功' : row.itemName;
+    const body = document.getElementById('detail-modal-body');
+    body.innerHTML = `${success ? '<div class="coupon-success"><span class="coupon-success-mark">✓</span><p>本次使用成功</p></div>' : ''}<div class="detail-modal-icon">${couponIcon(row)}</div><p><strong>${escapeHtml(row.itemName)}</strong></p><p>券號：<strong>${escapeHtml(row.couponCode)}</strong></p><p class="coupon-description">${escapeHtml(row.description)}</p><p>有效期限：${escapeHtml(row.validUntil || '無有效期限')}</p><p>狀態：${state}</p>${row.status === 'used' ? `<p>使用時間：${couponTime(row.usedAt)}（台灣時間）</p>` : state === '可使用' ? '<button class="task-btn" data-use-coupon>立即使用</button>' : ''}`;
+    const button = body.querySelector('[data-use-coupon]');
+    if (button) button.onclick = async () => {
+        if (merchantUseBusy || currentUser?.uid !== uid) return;
+        merchantUseBusy = true; button.disabled = true;
+        try {
+            if (!await platformConfirm('請在店員確認後使用。確認後此券立即失效，無法再次使用。', '使用店家商品', '確認使用')) return;
+            if (currentUser?.uid !== uid) return;
+            const result = await useMerchantCoupon(uid, id);
+            if (currentUser?.uid !== uid) return;
+            if (!result.ok) { await platformAlert(result.reason, '請確認使用結果'); await window.showMerchantCoupon(id); }
+            else {
+                if (result.alreadyUsed) await platformAlert('此券已使用，以下為原使用紀錄。');
+                await window.showMerchantCoupon(id, !result.alreadyUsed, result.coupon);
+            }
+            await refreshMerchantCoupons();
+        } finally { merchantUseBusy = false; button.disabled = false; }
+    };
+    document.getElementById('detail-modal').classList.remove('hidden');
+};
+
 /* ---------------- 探索背包 ---------------- */
 function renderBag() {
     if (!currentUser) return;
+    if (merchantCouponUid !== currentUser.uid) refreshMerchantCoupons();
     const ownedTickets = currentUser.itemTickets || [];
     document.getElementById('item-ticket-section').classList.toggle('hidden', ownedTickets.length === 0);
     document.getElementById('item-ticket-grid').innerHTML = ownedTickets.map(id => {
@@ -576,14 +637,14 @@ function renderShop() {
     if (!currentUser) return;
     const items = (siteData.shopItems || []).filter(it => it.isActive !== false);
     document.getElementById('shop-list').innerHTML = [
-        { ticket: false, name: '店家商品', text: '兌換成功後，請將收據畫面截圖給店家核銷。' },
+        { ticket: false, name: '店家商品', text: '兌換後存入背包，請在店員確認後連線使用，每張限使用一次。' },
         { ticket: true, name: '道具券', text: '購買後存入背包，在指定任務中使用。每種最多持有一張，使用後消耗。' }
     ].map(group => {
         const rows = items.filter(it => (it.type === 'item_ticket') === group.ticket);
         return `<h3 class="section-label">${group.name}</h3><p class="shop-category-note">${group.text}</p>` + (rows.map(it => {
             const owned = group.ticket && (currentUser.itemTickets || []).includes(it.id);
             const disabled = redeemBusy || owned || currentUser.coins < it.cost;
-            return `<div class="shop-card ${group.ticket ? 'item-ticket' : ''}"><div class="shop-thumb">${it.iconUrl ? `<img src="${it.iconUrl}" alt="">` : group.ticket ? '🎟️' : '🎁'}</div><div class="shop-info"><h4 class="shop-title">${escapeHtml(it.name)}</h4><p class="shop-desc">${escapeHtml(it.description || '')}</p></div><button class="task-btn" ${disabled ? 'disabled' : ''} onclick="window.handleRedeem('${it.id}')">${owned ? '已持有' : '🪙' + it.cost}</button></div>`;
+            return `<div class="shop-card ${group.ticket ? 'item-ticket' : ''}"><div class="shop-thumb">${it.iconUrl ? `<img src="${it.iconUrl}" alt="">` : group.ticket ? '🎟️' : '🎁'}</div><div class="shop-info"><h4 class="shop-title">${escapeHtml(it.name)}</h4><p class="shop-desc">${escapeHtml(it.description || '')}</p>${!group.ticket ? `<p class="detail-meta">有效期限：${escapeHtml(it.validUntil || '無有效期限')}</p>` : ''}</div><button class="task-btn" ${disabled ? 'disabled' : ''} onclick="window.handleRedeem('${it.id}')">${owned ? '已持有' : '🪙' + it.cost}</button></div>`;
         }).join('') || '<p class="empty-hint">目前沒有上架品項</p>');
     }).join('');
 }
@@ -595,11 +656,11 @@ window.handleRedeem = async function (itemId) {
     const ticket = item.type === 'item_ticket';
     if (ticket && (currentUser.itemTickets || []).includes(item.id)) return;
     redeemBusy = true;
-    const agreed = await platformConfirm(`確定要用 ${item.cost} 金幣${ticket ? '購買' : '兌換'}「${item.name}」嗎？`, ticket ? '購買道具券' : '兌換商品', ticket ? '確認購買' : '確認兌換');
+    const agreed = await platformConfirm(`確定要用 ${item.cost} 金幣${ticket ? '購買' : '兌換'}「${item.name}」嗎？${ticket ? '' : '\n' + (item.description || '') + '\n有效期限：' + (item.validUntil || '無有效期限')}`, ticket ? '購買道具券' : '兌換商品', ticket ? '確認購買' : '確認兌換');
     if (!agreed || currentUser?.uid !== buyerUid) { redeemBusy = false; renderShop(); return; }
     renderShop();
     let r;
-    try { r = await (ticket ? buyItemTicket(buyerUid, item) : redeemShopItem(buyerUid, item)); }
+    try { r = await (ticket ? buyItemTicket(buyerUid, item) : buyMerchantCoupon(buyerUid, item)); }
     finally { redeemBusy = false; renderShop(); }
     if (currentUser?.uid !== buyerUid) return;
     if (!r.ok) { await platformAlert(r.reason || '兌換失敗，請稍後再試', '交易未完成'); return; }
@@ -615,16 +676,9 @@ window.handleRedeem = async function (itemId) {
         document.getElementById('detail-modal-title').innerText = '購買成功，已存入背包！';
         return;
     }
-    // 兌換成功後，把這張「收據」用詳情彈窗顯示出來，玩家截圖給店家看即可核銷
-    document.getElementById('detail-modal-title').innerText = '兌換成功！';
-    document.getElementById('detail-modal-body').innerHTML = `
-        <div class="detail-modal-icon">${item.iconUrl ? `<img src="${item.iconUrl}" alt="${item.name}">` : '🎁'}</div>
-        <p style="font-weight:800;font-size:16px;">${item.name}</p>
-        <p class="detail-meta">花費 ${item.cost} 金幣</p>
-        <p class="detail-meta">${new Date(r.redemption.redeemedAt).toLocaleString()}</p>
-        <p class="detail-meta" style="margin-top:10px;">📸 請把這個畫面截圖給店家看即可核銷</p>
-    `;
-    document.getElementById('detail-modal').classList.remove('hidden');
+    await window.showMerchantCoupon(r.redemption.id);
+    await refreshMerchantCoupons();
+
 };
 
 /* ---------------- 排行榜 ---------------- */
@@ -683,7 +737,7 @@ window.switchTab = function (tabName) {
     document.getElementById(`nav-${tabName}`).classList.add('tab-active');
 
     if (tabName === 'news') { renderNews(); markNewsAsRead(); }
-    if (tabName === 'bag') renderBag();
+    if (tabName === 'bag') { renderBag(); refreshMerchantCoupons(); }
     if (tabName === 'leaderboard') renderLeaderboardOptions();
     if (tabName === 'shop') renderShop();
 };
@@ -759,6 +813,8 @@ async function init() {
     watchAuthState(async (user) => {
         closeCrewCard();
         currentUser = user;
+        window.closeDetailModal();
+        refreshMerchantCoupons();
         renderUserBar();
         renderTasks();
         renderNewsBadgeDot();

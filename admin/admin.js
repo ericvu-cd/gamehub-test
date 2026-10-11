@@ -590,6 +590,7 @@ window.editShopItem = function (index) {
     document.getElementById('shopItems-name').value = it.name || '';
     document.getElementById('shopItems-description').value = it.description || '';
     document.getElementById('shopItems-cost').value = it.cost || 0;
+    document.getElementById('shopItems-validUntil').value = it.validUntil || '';
     document.getElementById('shopItems-sortOrder').value = it.sortOrder || 0;
     showExistingImage('shopItems', it.iconUrl);
     enterEditMode('shopItems', false);
@@ -639,13 +640,15 @@ window.submitShopItem = async function (e) {
         if (!/^[A-Za-z0-9_-]{1,80}$/.test(id)) throw new Error('商品 ID 需為 1～80 個英數字、底線或連字號。');
         if (type === 'item_ticket' && !/^[A-Za-z0-9_-]{1,80}$/.test(taskId)) throw new Error('請填寫有效的適用任務 ID。');
         if (existing?.type === 'item_ticket' && (type !== 'item_ticket' || taskId !== existing.taskId)) throw new Error('既有道具券請保留分類及適用任務；如需不同用途，請新增商品 ID。');
+        const validUntil = type === 'merchant' ? document.getElementById('shopItems-validUntil').value : '';
+        if (validUntil && !/^\d{4}-\d{2}-\d{2}$/.test(validUntil)) throw new Error('請填寫有效期限。');
         const iconUrl = await uploadPendingImage('shopItems', existing?.iconUrl);
         const data = {
             id,
             name: document.getElementById('shopItems-name').value,
             description: document.getElementById('shopItems-description').value || '',
             iconUrl,
-            cost, type, taskId: type === 'item_ticket' ? taskId : null,
+            cost, type, validUntil, taskId: type === 'item_ticket' ? taskId : null,
             sortOrder: Number(document.getElementById('shopItems-sortOrder').value) || 0,
             isActive: existing ? existing.isActive !== false : true
         };
