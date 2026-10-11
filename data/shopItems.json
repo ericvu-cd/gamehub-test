@@ -28,8 +28,9 @@
     "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/shopItems/1791534398349_stoneweir_assistant.png",
     "cost": 200,
     "type": "item_ticket",
+    "validUntil": "",
     "taskId": "stoneweir",
-    "sortOrder": 2,
+    "sortOrder": 1,
     "isActive": true
   },
   {
