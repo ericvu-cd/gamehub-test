@@ -43,7 +43,7 @@
     "type": "merchant",
     "validUntil": "2027-12-31",
     "taskId": null,
-    "sortOrder": 3,
+    "sortOrder": 1,
     "isActive": true
   }
 ]
