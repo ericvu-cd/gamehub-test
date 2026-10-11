@@ -223,7 +223,8 @@ body::after {
 }
 .shop-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .shop-info { flex: 1; min-width: 0; padding-left: 2px; }
-.shop-title { font-size: 15.5px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shop-title { font-size: 15.5px; font-weight: 800; color: #fff; white-space: normal; overflow: visible; overflow-wrap: anywhere; line-height: 1.45; }
+.shop-card > .task-btn { flex-shrink: 0; white-space: nowrap; }
 .shop-desc { font-size: 11.5px; color: var(--text-dim); margin-top: 1px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .coin-icon-wrap { white-space: nowrap; }
 
