@@ -6,8 +6,9 @@
     "iconUrl": "https://raw.githubusercontent.com/ericvu-cd/gamehub-test/main/data/images/shopItems/1791535304082_fishball_revive.png",
     "cost": 300,
     "type": "item_ticket",
+    "validUntil": "",
     "taskId": "fishball",
-    "sortOrder": 0,
+    "sortOrder": 3,
     "isActive": true
   },
   {
