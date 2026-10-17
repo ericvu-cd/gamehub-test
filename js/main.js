@@ -197,10 +197,6 @@ window.toggleAuthMode = function () {
     pwdInput.type = 'password';
     pwdInput.value = '';
     pwdInput.autocomplete = isRegisterMode ? 'new-password' : 'current-password';
-    const confirmation = document.getElementById('auth-password-confirm');
-    confirmation.value = '';
-    confirmation.type = 'password';
-    document.getElementById('auth-password-confirm-wrap').classList.toggle('hidden', !isRegisterMode);
     document.getElementById('auth-notice-checkbox').checked = false;
     document.getElementById('auth-notice-checkbox').disabled = true;
     document.getElementById('auth-error').classList.add('hidden');
@@ -215,7 +211,6 @@ window.togglePasswordVisibility = function () {
     const btn = document.getElementById('auth-password-toggle');
     const showing = pwdInput.type === 'text';
     pwdInput.type = showing ? 'password' : 'text';
-    document.getElementById('auth-password-confirm').type = pwdInput.type;
     btn.innerText = showing ? '顯示' : '隱藏';
 };
 
@@ -253,9 +248,6 @@ window.handleAuthSubmit = async function () {
     if (isRegisterMode) {
         const passwordErr = validatePassword(password);
         if (passwordErr) { showAuthError(passwordErr); return; }
-        if (password !== document.getElementById('auth-password-confirm').value) {
-            showAuthError('兩次輸入的密碼不一致，請重新確認'); return;
-        }
         if (!document.getElementById('auth-notice-checkbox').checked) {
             showAuthError('請先勾選確認已知悉沒有密碼救援服務'); return;
         }
@@ -287,7 +279,6 @@ window.handleAuthSubmit = async function () {
             await loginUser(username, password);
         }
         document.getElementById('auth-password').value = '';
-        document.getElementById('auth-password-confirm').value = '';
         document.getElementById('auth-modal').classList.add('hidden');
     } catch (err) {
         showAuthError(err.message);
