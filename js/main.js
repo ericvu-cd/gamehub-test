@@ -12,7 +12,7 @@ import {
     loadActiveBanners, loadTasks, loadNews, loadBadges, loadCertificates, loadAvatarPresets, loadShopItems, loadSettings
 } from './content.js';
 import { claimDailyLogin } from './coins.js';
-import { openTask, initTaskMessageListener } from './tasks.js';
+import { openTask, initTaskMessageListener, preloadTaskHomeImages } from './tasks.js';
 import { fetchLeaderboard } from './leaderboard.js';
 import { openDailySlot } from './dailySlot.js';
 import { openCrewCard, closeCrewCard, getCrewTitle } from './crewCard.js';
@@ -790,7 +790,12 @@ async function loadAllContent() {
     // 這裡只是多一層保險。
     const FALLBACKS = { settings: { dailyLoginCoins: 10, levelStep: 25 } };
     const keys = Object.keys(loaders);
-    const results = await Promise.allSettled(keys.map(k => loaders[k]()));
+    const results = await Promise.allSettled(keys.map(async k => {
+        const value = await loaders[k]();
+        // 任務清單一回來就開始，不等其他內容來源、登入或扣款確認。
+        if (k === 'tasks') preloadTaskHomeImages(value);
+        return value;
+    }));
 
     siteData = {};
     results.forEach((r, i) => {

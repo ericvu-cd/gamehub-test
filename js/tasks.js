@@ -243,7 +243,41 @@ export function closeTaskOverlay(taskId) {
 // 預載只下載資源，不建立 iframe、不執行任務程式。
 let taskOpening = false;
 const taskPreloads = new Map();
+// 直接預載首頁圖，不必等任務 HTML 下載及解析；網址跟隨各環境的任務連結。
+const taskHomeImages = Object.freeze({
+    fishball: 'image/fbbg.png',
+    fishmarket: 'image/fmbg.png',
+    stoneweir: 'image/srbg.png'
+});
+const homeImagePreloads = new Map();
+function preloadTaskHomeImage(task, urgent = false) {
+    const path = taskHomeImages[task.id];
+    if (!path || !task.link) return false;
+    let url;
+    try { url = new URL(path, new URL(task.link, location.href)).href; }
+    catch { return false; }
+    const existing = homeImagePreloads.get(url);
+    if (existing) {
+        if (urgent) existing.fetchPriority = 'high';
+        return true;
+    }
+    const image = new Image();
+    image.decoding = 'async';
+    image.fetchPriority = urgent ? 'high' : 'auto';
+    image.onerror = () => homeImagePreloads.delete(url); // 開啟確認視窗時可重試。
+    image.onload = () => { image.decode?.().catch(() => {}); };
+    homeImagePreloads.set(url, image);
+    image.src = url;
+    return true;
+}
+export function preloadTaskHomeImages(tasks) {
+    for (const task of tasks || []) {
+        if (task.isActive !== false) preloadTaskHomeImage(task);
+    }
+}
+
 function preloadTaskHome(task) {
+    if (preloadTaskHomeImage(task, true)) return;
     const url = new URL(task.link, location.href);
     if (taskPreloads.has(url.href)) return;
     const hint = document.createElement('link');
