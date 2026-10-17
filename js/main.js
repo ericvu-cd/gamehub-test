@@ -1,10 +1,11 @@
+import { SYSTEM_AVATARS, getSystemAvatar, avatarImageHTML } from './systemAvatars.js';
 import { buyMerchantCoupon, listMerchantCoupons, readMerchantCoupon, useMerchantCoupon, clearMerchantCoupon } from './merchantCoupons.js';
-import { platformConfirm, platformAlert } from './platformDialogs.js';
+import { platformConfirm, platformAlert, showPlatformDialog } from './platformDialogs.js';
 import { buyItemTicket } from './itemTickets.js';
 // =====================================================================
 // 在地文化知識型互動平台 — 主程式
 // =====================================================================
-import { auth } from './firebase-config.js';
+import { auth, db } from './firebase-config.js';
 import {
     registerUser, loginUser, logoutUser, changePassword, watchAuthState, validateUsername, validatePassword
 } from './auth.js';
@@ -170,6 +171,7 @@ function showToast(text) {
 
 /* ---------------- Auth UI ---------------- */
 window.toggleAuthMode = function () {
+    if (isSubmitting) return;
     isRegisterMode = !isRegisterMode;
 
     document.getElementById('auth-title').innerText = isRegisterMode ? '申請船員證' : '船員報到';
@@ -189,12 +191,21 @@ window.toggleAuthMode = function () {
     document.getElementById('auth-avatar-wrap').classList.toggle('hidden', !isRegisterMode);
     document.getElementById('auth-notice-wrap').classList.toggle('hidden', !isRegisterMode);
 
-    // 註冊時密碼預設可視，方便確認輸入正確；登入時維持遮蔽保護隱私
+    // 切換模式清除密碼與確認勾選，預設遮蔽。
     const pwdInput = document.getElementById('auth-password');
     const pwdToggleBtn = document.getElementById('auth-password-toggle');
-    pwdInput.type = isRegisterMode ? 'text' : 'password';
+    pwdInput.type = 'password';
+    pwdInput.value = '';
+    pwdInput.autocomplete = isRegisterMode ? 'new-password' : 'current-password';
+    const confirmation = document.getElementById('auth-password-confirm');
+    confirmation.value = '';
+    confirmation.type = 'password';
+    document.getElementById('auth-password-confirm-wrap').classList.toggle('hidden', !isRegisterMode);
+    document.getElementById('auth-notice-checkbox').checked = false;
+    document.getElementById('auth-notice-checkbox').disabled = true;
+    document.getElementById('auth-error').classList.add('hidden');
     pwdToggleBtn.classList.toggle('hidden', !isRegisterMode);
-    pwdToggleBtn.innerText = '隱藏';
+    pwdToggleBtn.innerText = '顯示';
 
     if (isRegisterMode) renderAvatarPicker();
 };
@@ -204,15 +215,17 @@ window.togglePasswordVisibility = function () {
     const btn = document.getElementById('auth-password-toggle');
     const showing = pwdInput.type === 'text';
     pwdInput.type = showing ? 'password' : 'text';
+    document.getElementById('auth-password-confirm').type = pwdInput.type;
     btn.innerText = showing ? '顯示' : '隱藏';
 };
 
 function renderAvatarPicker() {
+    if (!selectedAvatarId && siteData.avatarPresets.length) selectedAvatarId = siteData.avatarPresets[0].id;
     const wrap = document.getElementById('avatar-picker');
     wrap.innerHTML = siteData.avatarPresets.map(a => `
         <button type="button" onclick="window.selectAvatar('${a.id}')"
             class="avatar-choice ${selectedAvatarId === a.id ? 'selected' : ''}"
-            style="--glow:${a.glowColor || '#B8863B'}">${a.emoji}</button>
+            style="--glow:${a.glowColor || '#B8863B'}" aria-label="${a.name}" title="${a.name}" aria-pressed="${selectedAvatarId === a.id}">${avatarImageHTML(a)}</button>
     `).join('');
     if (!selectedAvatarId && siteData.avatarPresets.length) {
         selectedAvatarId = siteData.avatarPresets[0].id;
@@ -220,6 +233,7 @@ function renderAvatarPicker() {
 }
 
 window.selectAvatar = function (avatarId) {
+    if (isSubmitting) return;
     selectedAvatarId = avatarId;
     renderAvatarPicker();
 };
@@ -239,6 +253,12 @@ window.handleAuthSubmit = async function () {
     if (isRegisterMode) {
         const passwordErr = validatePassword(password);
         if (passwordErr) { showAuthError(passwordErr); return; }
+        if (password !== document.getElementById('auth-password-confirm').value) {
+            showAuthError('兩次輸入的密碼不一致，請重新確認'); return;
+        }
+        if (!document.getElementById('auth-notice-checkbox').checked) {
+            showAuthError('請先勾選確認已知悉沒有密碼救援服務'); return;
+        }
     } else if (!password) {
         showAuthError('請輸入密碼'); return;
     }
@@ -247,6 +267,10 @@ window.handleAuthSubmit = async function () {
     const submitText = document.getElementById('auth-submit-text');
     const submitSpinner = document.getElementById('auth-submit-spinner');
     isSubmitting = true;
+    const fields = [...document.querySelectorAll('#auth-modal input, #auth-modal button')];
+    const disabledBefore = fields.map(el => el.disabled);
+    fields.forEach(el => { el.disabled = true; });
+    document.getElementById('auth-modal-card').setAttribute('aria-busy', 'true');
     submitBtn.disabled = true;
     submitText.classList.add('hidden');
     submitSpinner.classList.remove('hidden');
@@ -258,15 +282,19 @@ window.handleAuthSubmit = async function () {
             // registerUser() 內部的 createUserWithEmailAndPassword 本身就會讓使用者
             // 直接處於登入狀態，不需要再多呼叫一次 loginUser()（原本這裡多打一次，
             // 是造成註冊流程變慢的主因之一）。
-            await registerUser(username, password, siteData.avatarPresets.map(a => a.id));
+            await registerUser(username, password, siteData.avatarPresets.map(a => a.id), selectedAvatarId);
         } else {
             await loginUser(username, password);
         }
+        document.getElementById('auth-password').value = '';
+        document.getElementById('auth-password-confirm').value = '';
         document.getElementById('auth-modal').classList.add('hidden');
     } catch (err) {
         showAuthError(err.message);
     } finally {
         isSubmitting = false;
+        fields.forEach((el, i) => { el.disabled = disabledBefore[i]; });
+        document.getElementById('auth-modal-card').removeAttribute('aria-busy');
         submitBtn.disabled = false;
         submitText.classList.remove('hidden');
         submitSpinner.classList.add('hidden');
@@ -291,8 +319,62 @@ window.openMyCrewCard = function () {
         document.getElementById('auth-modal').classList.remove('hidden');
         return;
     }
-    const avatar = siteData.avatarPresets.find(a => a.id === currentUser.avatarId);
-    openCrewCard({ user: currentUser, avatar: avatar?.emoji || '🙂', level: computeLevel(currentUser) });
+    const avatar = getSystemAvatar(currentUser.avatarId);
+    openCrewCard({ user: currentUser, avatar: avatar.image, level: computeLevel(currentUser) });
+};
+
+window.openAccountReminder = async function () {
+    if (isSubmitting) return;
+    const accepted = await showPlatformDialog({
+        title: '請記好帳號與密碼', confirmText: '我了解了',
+        message: '為了保護你的隱私，平台不要求提供真實姓名、Email 或電話。\n\n管理員看不到你的密碼，也無法在你忘記密碼時確認帳號是你的，因此不能幫你找回或重設密碼。\n\n請妥善保存帳號與密碼，避免失去原帳號的金幣、成績與收藏。'
+    });
+    if (accepted && isRegisterMode) {
+        const checkbox = document.getElementById('auth-notice-checkbox');
+        checkbox.disabled = false;
+        checkbox.checked = true;
+    }
+};
+window.openAvatarSettings = function () {
+    if (!currentUser) return;
+    document.getElementById('user-menu').classList.add('hidden');
+    if (document.getElementById('avatar-settings')) return;
+    const owner = currentUser.uid;
+    let selection = getSystemAvatar(currentUser.avatarId).id, saving = false;
+    const previousFocus = document.activeElement;
+    const dialog = document.createElement('dialog');
+    dialog.id = 'avatar-settings'; dialog.className = 'avatar-settings-dialog';
+    dialog.setAttribute('aria-labelledby', 'avatar-settings-title');
+    dialog.innerHTML = '<h2 id="avatar-settings-title">更換頭像</h2><p>選擇一位喜歡的夥伴，一起探索海線。</p><div class="system-avatar-grid"></div><p class="avatar-save-status" role="status" aria-live="polite"></p><div class="avatar-settings-actions"><button type="button" data-cancel>取消</button><button type="button" data-save>儲存頭像</button></div>';
+    const grid = dialog.querySelector('.system-avatar-grid');
+    const status = dialog.querySelector('.avatar-save-status');
+    const paint = () => {
+        grid.innerHTML = SYSTEM_AVATARS.map(a => '<button type="button" class="system-avatar-option" data-id="'+a.id+'" aria-pressed="'+(a.id===selection)+'">'+avatarImageHTML(a)+'<span>'+a.name+'</span></button>').join('');
+        grid.querySelectorAll('button').forEach(button => button.onclick = () => {
+            if (saving) return;
+            selection = button.dataset.id;
+            grid.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id===selection)));
+        });
+    };
+    const close = () => { dialog.close(); dialog.remove(); if (previousFocus?.isConnected) previousFocus.focus(); };
+    dialog.addEventListener('cancel', e => { e.preventDefault(); if (!saving) close(); });
+    dialog.querySelector('[data-cancel]').onclick = close;
+    dialog.querySelector('[data-save]').onclick = async () => {
+        if (saving || currentUser?.uid !== owner) return;
+        saving = true;
+        dialog.querySelectorAll('button').forEach(b => { b.disabled = true; });
+        status.textContent = '儲存中…';
+        try {
+            const {doc, updateDoc} = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+            if (auth.currentUser?.uid !== owner || currentUser?.uid !== owner) throw new Error('請重新登入後再試');
+            await updateDoc(doc(db, 'users', owner), { avatarId: selection });
+            if (currentUser?.uid === owner) { currentUser = {...currentUser, avatarId: selection}; renderUserBar(); }
+            close(); showToast('頭像已更新');
+        } catch { status.textContent = '尚未確認儲存完成，請確認連線後重試。'; }
+        finally { saving = false; dialog.querySelectorAll('button').forEach(b => { b.disabled = false; }); }
+    };
+    paint(); document.body.appendChild(dialog); dialog.showModal();
+    grid.querySelector('[aria-pressed="true"]').focus();
 };
 
 window.toggleUserMenu = function () {
@@ -338,14 +420,14 @@ function renderUserBar() {
         progressWrap.classList.add('hidden');
         return;
     }
-    const avatar = siteData.avatarPresets.find(a => a.id === currentUser.avatarId);
+    const avatar = getSystemAvatar(currentUser.avatarId);
     const levelInfo = computeLevelInfo(currentUser);
     document.getElementById('user-name').innerText = currentUser.nickname;
     document.getElementById('user-crew-title').textContent = getCrewTitle(levelInfo.level);
     document.getElementById('user-crew-title').classList.remove('hidden');
     document.getElementById('user-level').innerText = `Lv.${levelInfo.level}`;
     document.getElementById('user-coins').innerText = currentUser.coins;
-    avatarEl.innerText = avatar?.emoji || '🙂';
+    avatarEl.innerHTML = avatarImageHTML(avatar);
     avatarEl.style.setProperty('--glow', avatar?.glowColor || '#B8863B');
 
     progressWrap.classList.remove('hidden');

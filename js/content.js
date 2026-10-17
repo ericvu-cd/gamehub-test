@@ -1,3 +1,4 @@
+import { SYSTEM_AVATARS } from './systemAvatars.js';
 // =====================================================
 // 內容資料層：Banner／任務／公告／徽章／證書／頭像清單
 // 全部改放 GitHub 的 /data/*.json，前端直接 fetch 讀取，
@@ -53,7 +54,7 @@ export async function loadCertificates() {
 }
 
 export async function loadAvatarPresets() {
-    return fetchJson('./data/avatarPresets.json');
+    return SYSTEM_AVATARS;
 }
 
 // 保留下架品項的字典供已持有道具券顯示；商城畫面自行篩選 isActive。

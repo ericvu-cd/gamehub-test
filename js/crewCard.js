@@ -58,7 +58,8 @@ function makeCard(data) {
     c.stroke();
     c.font = '72px sans-serif';
     c.textBaseline = 'middle';
-    c.fillText(data.avatar, 450, 308);
+    if (data.avatarImage) c.drawImage(data.avatarImage, 374, 231, 152, 152);
+    else c.fillText(data.avatar, 450, 308);
     c.textBaseline = 'alphabetic';
     c.fillStyle = '#fff';
     fitText(c, data.name, 748, 62);
@@ -209,6 +210,11 @@ export function openCrewCard({ user, avatar, level }) {
                     document.fonts.load('700 48px "Noto Sans TC"'),
                     new Promise(resolve => setTimeout(resolve, 1500))
                 ]);
+            }
+            if (closed) return;
+            if (data.avatar.startsWith('data:image/svg+xml')) {
+                const image = new Image(); image.src = data.avatar;
+                await image.decode(); data.avatarImage = image;
             }
             if (closed) return;
             const canvas = makeCard(data);

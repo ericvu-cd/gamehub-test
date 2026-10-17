@@ -515,3 +515,21 @@ body::after {
 .coupon-detail-status {display:inline-block;padding:6px 16px;border-radius:8px;font-size:20px;font-weight:800;margin:10px 0;}
 
 .coupon-clear-btn {display:block;margin:0 14px 14px;padding:9px 16px;border:1px solid #fca5a5;border-radius:8px;background:transparent;color:#fecaca;font:inherit;font-weight:700;cursor:pointer;}
+
+/* 程式內建的系統插畫頭像 */
+.system-avatar-image{display:block;width:100%;height:100%;object-fit:contain;border-radius:50%}
+.avatar-choice{width:52px;height:52px;padding:2px;flex:0 0 auto}
+.avatar-circle{overflow:hidden;padding:0}
+.avatar-choice:focus-visible,.system-avatar-option:focus-visible{outline:3px solid #fff0a8;outline-offset:3px}
+.account-reminder-link{border:0;background:transparent;color:#fff0a8;text-decoration:underline;font:inherit;font-size:14px;margin:9px 0 0;padding:5px;cursor:pointer}
+.avatar-settings-dialog{position:fixed;inset:0;margin:auto;width:min(410px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;box-sizing:border-box;background:#102438;color:white;border:1px solid #7185aa;border-radius:20px;padding:22px;font-family:inherit}
+.avatar-settings-dialog::backdrop{background:rgba(0,0,0,.7)}
+.avatar-settings-dialog h2{font-size:22px;margin:0 0 8px}.avatar-settings-dialog p{font-size:14px;line-height:1.6;color:#c8dbe6;margin:0 0 16px}
+.system-avatar-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.system-avatar-option{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;border:2px solid transparent;border-radius:15px;background:#ffffff0c;color:white;padding:9px 5px;cursor:pointer;font:inherit;font-size:12px}
+.system-avatar-option img{width:64px;height:64px;max-width:100%}
+.system-avatar-option[aria-pressed="true"]{border-color:#ffe394;background:#f4c65a26}
+.avatar-settings-actions{display:flex;gap:12px;margin-top:12px}.avatar-settings-actions button{flex:1;border:0;border-radius:10px;padding:13px;font:inherit;font-weight:700;cursor:pointer;background:#28445b;color:white}.avatar-settings-actions [data-save]{background:#7dd8c0;color:#102438}
+.avatar-settings-dialog .avatar-save-status{margin-top:12px;margin-bottom:0;min-height:22px;color:#ffe394}
+.avatar-settings-dialog button:disabled{opacity:.5;cursor:wait}
+@media(max-width:350px){.avatar-settings-dialog{padding:16px}.system-avatar-grid{gap:7px}.system-avatar-option{font-size:11px}}
