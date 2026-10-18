@@ -223,7 +223,7 @@ export async function awardBadge(uid, taskId, badgeId) {
             const snap = await tx.get(userRef);
             const data = snap.data();
             const currentBadges = data.badges || [];
-            if (currentBadges.includes(badgeId)) return { alreadyOwned: true };
+            if (currentBadges.includes(badgeId)) return { alreadyOwned: true, badges: currentBadges, guard: data.dailyGuard };
 
             const newBadges = [...currentBadges, badgeId];
             const guard = nextDailyGuard(data.dailyGuard, 0);
@@ -234,7 +234,7 @@ export async function awardBadge(uid, taskId, badgeId) {
             });
             return { alreadyOwned: false, badges: newBadges, guard };
         }));
-        if (result.alreadyOwned) return { ok: true, alreadyOwned: true };
+        if (result.alreadyOwned) return { ok: true, alreadyOwned: true, badges: result.badges, guard: result.guard };
         return { ok: true, badges: result.badges, guard: result.guard };
     } catch (err) {
         return friendlyError(err);
@@ -249,7 +249,7 @@ export async function awardCertificate(uid, taskId, certificateId) {
             const snap = await tx.get(userRef);
             const data = snap.data();
             const currentCerts = data.certificates || [];
-            if (currentCerts.includes(certificateId)) return { alreadyOwned: true };
+            if (currentCerts.includes(certificateId)) return { alreadyOwned: true, certificates: currentCerts, guard: data.dailyGuard };
 
             const newCerts = [...currentCerts, certificateId];
             const guard = nextDailyGuard(data.dailyGuard, 0);
@@ -260,7 +260,7 @@ export async function awardCertificate(uid, taskId, certificateId) {
             });
             return { alreadyOwned: false, certificates: newCerts, guard };
         }));
-        if (result.alreadyOwned) return { ok: true, alreadyOwned: true };
+        if (result.alreadyOwned) return { ok: true, alreadyOwned: true, certificates: result.certificates, guard: result.guard };
         return { ok: true, certificates: result.certificates, guard: result.guard };
     } catch (err) {
         return friendlyError(err);

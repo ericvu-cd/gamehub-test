@@ -421,6 +421,19 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
             case 'complete': {
                 const detail = { coinsAwarded: 0, badgesAwarded: [], certificatesAwarded: [] };
                 let user = currentUser;
+                // 每筆結果只更新其負責欄位，不以開始處理時的舊快照蓋掉最新玩家資料。
+                const publish = patch => {
+                    const latest = getCurrentUser();
+                    if (latest?.uid !== uid) return;
+                    const update = { uid, ...patch };
+                    // 收藏只會在此流程增加；並行領取的較早結果不能移除已取得的通行證。
+                    for (const key of ['badges', 'certificates']) {
+                        if (Array.isArray(update[key])) update[key] = [...new Set([...(latest[key] || []), ...update[key]])];
+                    }
+                    if (update.dailyGuard == null) delete update.dailyGuard;
+                    user = { ...latest, ...update };
+                    onUserProfileChanged(update);
+                };
                 logTaskEvent(uid, msg.taskId, 'info', 'complete 訊息開始處理', msg.payload);
 
                 try {
@@ -428,7 +441,7 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                         const r = await claimTaskReward(user.uid, msg.taskId, msg.payload.coins);
                         if (r.ok) {
                             detail.coinsAwarded = r.coinsAwarded;
-                            user = { ...user, coins: r.newCoins ?? user.coins, dailyGuard: r.guard ?? user.dailyGuard };
+                            publish({ coins: r.newCoins ?? getCurrentUser()?.coins, dailyGuard: r.guard });
                             logTaskEvent(uid, msg.taskId, 'info', `金幣發放成功 +${r.coinsAwarded}`, { newCoins: r.newCoins, guard: r.guard });
                         } else {
                             detail.rejectedReason = r.reason;
@@ -440,9 +453,10 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                         const r = await awardBadge(user.uid, msg.taskId, badgeId);
                         if (r.ok && !r.alreadyOwned) {
                             detail.badgesAwarded.push(badgeId);
-                            user = { ...user, badges: r.badges, dailyGuard: r.guard ?? user.dailyGuard };
+                            publish({ badges: r.badges, dailyGuard: r.guard });
                             logTaskEvent(uid, msg.taskId, 'info', `徽章 ${badgeId} 發放成功`);
                         } else if (r.ok && r.alreadyOwned) {
+                            publish({ badges: r.badges, dailyGuard: r.guard });
                             logTaskEvent(uid, msg.taskId, 'info', `徽章 ${badgeId} 已擁有，略過`);
                         } else {
                             logTaskEvent(uid, msg.taskId, 'warn', `徽章 ${badgeId} 發放失敗：${r.reason}`, { guardBefore: user.dailyGuard, rawCode: r.rawCode, rawMessage: r.rawMessage });
@@ -453,9 +467,10 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                         const r = await awardCertificate(user.uid, msg.taskId, certId);
                         if (r.ok && !r.alreadyOwned) {
                             detail.certificatesAwarded.push(certId);
-                            user = { ...user, certificates: r.certificates, dailyGuard: r.guard ?? user.dailyGuard };
+                            publish({ certificates: r.certificates, dailyGuard: r.guard });
                             logTaskEvent(uid, msg.taskId, 'info', `證書 ${certId} 發放成功`);
                         } else if (r.ok && r.alreadyOwned) {
+                            publish({ certificates: r.certificates, dailyGuard: r.guard });
                             logTaskEvent(uid, msg.taskId, 'info', `證書 ${certId} 已擁有，略過`);
                         } else {
                             logTaskEvent(uid, msg.taskId, 'warn', `證書 ${certId} 發放失敗：${r.reason}`, { guardBefore: user.dailyGuard });
@@ -469,7 +484,6 @@ export function initTaskMessageListener(getCurrentUser, onUserProfileChanged) {
                 }
 
                 logTaskEvent(uid, msg.taskId, 'info', 'complete 處理完成', detail);
-                onUserProfileChanged(user);
                 entry.win.postMessage({
                     source: 'culture-platform', version: 1, type: 'ack',
                     forType: 'complete', ok: true, result: detail
