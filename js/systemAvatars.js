@@ -1,6 +1,6 @@
 // 系統頭像直接內建於程式；不下載圖片，不讀取 avatarPresets.json。
 const outline = '#203B52';
-const eye = (x,y) => `<ellipse cx="${x}" cy="${y}" rx="3.7" ry="5" fill="${outline}"/><circle cx="${x-1}" cy="${y-2}" r="1.25" fill="white"/>`;
+const eye = (x,y) => `<ellipse cx="${x}" cy="${y+1}" rx="6.1" ry="7.4" fill="#FFFFFF"/><ellipse cx="${x}" cy="${y}" rx="5.1" ry="6.6" fill="url(#eyeGloss)"/><ellipse cx="${x-1.5}" cy="${y-2.6}" rx="1.9" ry="2.2" fill="white"/><circle cx="${x+2}" cy="${y+2}" r=".9" fill="#D7EEFF"/>`;
 const face = (y=64) => `${eye(48,y)}${eye(80,y)}<path d="M58 ${y+12} Q64 ${y+18} 70 ${y+12}" fill="none" stroke="${outline}" stroke-width="2.6" stroke-linecap="round"/><ellipse cx="37" cy="${y+10}" rx="7" ry="3.5" fill="#EE8F91" opacity=".55"/><ellipse cx="91" cy="${y+10}" rx="7" ry="3.5" fill="#EE8F91" opacity=".55"/>`;
 const ellipse=(cx,cy,rx,ry,color)=>`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${color}"/>`;
 const shape=(d,color)=>`<path d="${d}" fill="${color}" stroke="${outline}" stroke-width="2.5" stroke-linejoin="round"/>`;
@@ -19,8 +19,20 @@ const designs=[
  ['dolphin','微笑海豚','#79AEC4','#D5EDF1',shape('M36 79 Q16 45 48 28 73 17 91 41 L110 55 Q114 64 95 65 L89 84 105 103 80 97 Q58 111 43 94 L25 100Z','#79B8C8')+ellipse(65,76,21,21,'#D8EEDF')+eye(77,47)+`<path d="M80 65 Q87 72 94 64" stroke="${outline}" stroke-width="2.5" fill="none"/>`+shape('M41 68 L18 75 36 83Z','#619BB7')],
  ['whale','藍藍鯨魚','#7E9FC9','#DDE9F4',shape('M30 56 Q37 29 70 36 105 41 101 77 L115 67 115 91 Q96 111 64 102 28 105 24 77Z','#83A9D2')+shape('M28 77 Q55 96 99 78 Q94 104 64 103 35 103 28 77Z','#E2F1E7')+eye(49,64)+`<path d="M61 78 Q67 85 74 78" stroke="${outline}" stroke-width="2.5" fill="none"/><path d="M62 30 V17 M61 21 Q47 8 45 22 M63 22 Q77 7 79 22" stroke="#80BFC9" stroke-width="5" fill="none" stroke-linecap="round"/>`]
 ];
+
+function tone(hex, amount) {
+ const c=hex.slice(1);return '#'+[0,2,4].map(i=>Math.round(parseInt(c.slice(i,i+2),16)*(1-Math.abs(amount))+(amount>0?255*Math.abs(amount):0)).toString(16).padStart(2,'0')).join('');
+}
 export const SYSTEM_AVATARS=Object.freeze(designs.map(([id,name,glowColor,bg,art])=>{
- const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><defs><clipPath id="round"><circle cx="64" cy="64" r="63"/></clipPath></defs><g clip-path="url(#round)"><rect width="128" height="128" fill="${bg}"/><circle cx="104" cy="20" r="24" fill="white" opacity=".24"/><path d="M0 111 Q38 93 64 108 T128 105 V128 H0Z" fill="${glowColor}" opacity=".26"/>${art}${['fish','turtle','octopus','crab','dolphin','whale'].includes(id)?'':collar}</g><circle cx="64" cy="64" r="62" fill="none" stroke="white" stroke-opacity=".6" stroke-width="2"/></svg>`;
+ const colors=[...new Set((art+collar).match(/#[A-Fa-f0-9]{6}/g))];
+ let surfaces=art+(['fish','turtle','octopus','crab','dolphin','whale'].includes(id)?'':collar);
+ if(id === 'panda') surfaces=surfaces.replace('<ellipse cx="47" cy="59" rx="3" ry="5" fill="white"/>',eye(47,60)).replace('<ellipse cx="81" cy="59" rx="3" ry="5" fill="white"/>',eye(81,60));
+ const gradients=colors.filter(color=>color.toUpperCase()!==outline.toUpperCase()).map((color,i)=>{
+    surfaces=surfaces.replaceAll('fill="'+color+'"','fill="url(#surface'+i+')"');
+    return '<radialGradient id="surface'+i+'" cx="30%" cy="23%" r="85%"><stop stop-color="'+tone(color,.45)+'"/><stop offset=".34" stop-color="'+tone(color,.1)+'"/><stop offset=".7" stop-color="'+color+'"/><stop offset="1" stop-color="'+tone(color,-.27)+'"/></radialGradient>';
+ }).join('');
+ surfaces=surfaces.replaceAll('stroke-width="2.5"','stroke-width="1.1"');
+ const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><defs><clipPath id="round"><circle cx="64" cy="64" r="63"/></clipPath><radialGradient id="bg" cx="32%" cy="20%" r="90%"><stop stop-color="#FFFFFF"/><stop offset=".45" stop-color="${bg}"/><stop offset="1" stop-color="${tone(bg,-.13)}"/></radialGradient><linearGradient id="eyeGloss" x2=".3" y2="1"><stop stop-color="#172D40"/><stop offset=".6" stop-color="#29495C"/><stop offset="1" stop-color="#678E9D"/></linearGradient><filter id="cast" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="3" stdDeviation="2" flood-color="${tone(glowColor,-.45)}" flood-opacity=".26"/></filter><radialGradient id="shadow"><stop stop-color="${tone(glowColor,-.4)}" stop-opacity=".24"/><stop offset="1" stop-color="${bg}" stop-opacity="0"/></radialGradient>${gradients}</defs><g clip-path="url(#round)"><rect width="128" height="128" fill="url(#bg)"/><ellipse cx="64" cy="112" rx="44" ry="13" fill="url(#shadow)"/><g filter="url(#cast)">${surfaces}</g><ellipse cx="37" cy="30" rx="10" ry="5" fill="white" opacity=".13" transform="rotate(-35 37 30)"/></g><circle cx="64" cy="64" r="61.5" fill="none" stroke="white" stroke-opacity=".8" stroke-width="2"/></svg>`;
  return Object.freeze({id,name,glowColor,image:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
 }));
 export function getSystemAvatar(id){return SYSTEM_AVATARS.find(a=>a.id===id)||SYSTEM_AVATARS[0];}

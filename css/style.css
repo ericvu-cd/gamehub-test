@@ -538,3 +538,24 @@ body::after {
 #avatar-picker{gap:5px;margin-bottom:12px}
 #avatar-picker .avatar-choice{width:40px;height:40px;padding:3px}
 .system-avatar-option{gap:0;padding:12px 5px}
+
+/* 261018：紙票輪廓、票根與撕線；缺口實際透明。 */
+.shop-card.shop-ticket{display:grid;grid-template-columns:minmax(0,1fr) 82px;align-items:stretch;gap:0;padding:0;border:0;border-radius:0;background:#FFF2D8;box-shadow:none;position:relative;margin-bottom:18px;overflow:visible;
+-webkit-mask-image:radial-gradient(circle at calc(100% - 82px) 0,transparent 9px,#000 10px),radial-gradient(circle at calc(100% - 82px) 100%,transparent 9px,#000 10px),radial-gradient(circle at 0 50%,transparent 7px,#000 8px),radial-gradient(circle at 100% 50%,transparent 7px,#000 8px);mask-image:radial-gradient(circle at calc(100% - 82px) 0,transparent 9px,#000 10px),radial-gradient(circle at calc(100% - 82px) 100%,transparent 9px,#000 10px),radial-gradient(circle at 0 50%,transparent 7px,#000 8px),radial-gradient(circle at 100% 50%,transparent 7px,#000 8px);-webkit-mask-composite:source-in;mask-composite:intersect}
+.ticket-main{min-width:0;padding:16px 14px 15px 18px;background:linear-gradient(120deg,#FFF9ED,#F9E8C8)}
+.ticket-heading{display:flex;align-items:center;gap:9px;margin-bottom:9px}.ticket-heading-text{min-width:0;flex:1}
+.shop-ticket .shop-thumb{width:49px;height:49px;flex:0 0 49px;border:0;border-radius:0;background:none;box-shadow:none}
+.shop-ticket .shop-thumb img{width:100%;height:100%;object-fit:contain}
+.ticket-kind{display:block;color:#846A41;font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:4px}
+.shop-ticket .shop-title{color:#3D3327;font-size:16px;line-height:1.5;margin:0;white-space:normal;overflow-wrap:anywhere}
+.shop-ticket .shop-desc{color:#705F46;font-size:12px;line-height:1.7;margin:0;white-space:normal;overflow:visible;display:block}
+.shop-ticket .detail-meta{font-size:11px;line-height:1.6;color:#8B734F;margin-top:9px}
+.ticket-stub{position:relative;background:#EFDDBB;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 7px;gap:14px;min-width:0}
+.ticket-stub::before{content:'';position:absolute;left:0;top:15px;bottom:15px;border-left:2px dashed #BAA17A}
+.ticket-stub-label{font-size:11px;letter-spacing:1px;color:#836B46;font-weight:700}
+.shop-ticket .task-btn{min-width:0;max-width:100%;width:64px;padding:11px 4px;background:#795E33;border:0;border-radius:8px;color:#FFF5DC;font-size:21px;line-height:1.2;box-shadow:none;white-space:normal}
+.shop-ticket .task-btn small{display:block;font-size:10px;margin-top:5px;font-weight:500;letter-spacing:1px}
+.shop-ticket .task-btn:disabled{background:#A99B81;color:#F8F4E9;opacity:.7;font-size:15px}
+.ticket-stub-mark{width:37px;height:15px;opacity:.3;background:repeating-linear-gradient(90deg,#795E33 0 2px,transparent 2px 4px,#795E33 4px 5px,transparent 5px 8px)}
+.shop-ticket.item-ticket .ticket-kind{color:#3C7C79}.shop-ticket.item-ticket .ticket-stub{background:#D9E7DA}.shop-ticket.item-ticket .ticket-main{background:linear-gradient(120deg,#F4F8EB,#E8EFDF)}.shop-ticket.item-ticket .task-btn{background:#347A72}.shop-ticket.item-ticket .ticket-stub::before{border-color:#9BB3A4}
+@media(max-width:350px){.ticket-main{padding:14px 11px 14px 14px}.ticket-heading{gap:6px}.shop-ticket .shop-title{font-size:14px}.shop-ticket .shop-thumb{width:40px;height:40px;flex-basis:40px}}
