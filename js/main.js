@@ -340,7 +340,7 @@ window.openAvatarSettings = function () {
     const grid = dialog.querySelector('.system-avatar-grid');
     const status = dialog.querySelector('.avatar-save-status');
     const paint = () => {
-        grid.innerHTML = SYSTEM_AVATARS.map(a => '<button type="button" class="system-avatar-option" data-id="'+a.id+'" aria-pressed="'+(a.id===selection)+'">'+avatarImageHTML(a)+'<span>'+a.name+'</span></button>').join('');
+        grid.innerHTML = SYSTEM_AVATARS.map(a => '<button type="button" class="system-avatar-option" data-id="'+a.id+'" aria-label="'+a.name+'" aria-pressed="'+(a.id===selection)+'">'+avatarImageHTML(a)+'</button>').join('');
         grid.querySelectorAll('button').forEach(button => button.onclick = () => {
             if (saving) return;
             selection = button.dataset.id;

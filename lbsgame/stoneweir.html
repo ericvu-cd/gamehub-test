@@ -514,15 +514,13 @@
 </div>
 <div id="nightOverlay"></div>
 <div id="tideFlash"></div>
-
-<button class="sound-toggle-btn corner-left" id="restartBtn" aria-label="返回平台" title="返回平台" style="display:none; filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">⛔</button>
 <button class="sound-toggle-btn" id="muteBtn" aria-label="切換音效" title="切換音效">🔊</button>
 <button class="sound-toggle-btn corner-left" id="helpBtn" aria-label="遊戲說明" title="遊戲說明" onclick="document.getElementById('helpOverlay').classList.add('show')">📖</button>
 
 <div id="helpOverlay">
   <div id="helpInner">
     <h2>📖 石滬修復</h2>
-    <div class="help-version">版本 260915</div>
+    <div class="help-version">版本 261018</div>
 
     <h3>🎮 遊戲介紹</h3>
     <p>取材自後龍真實的石滬文化——先民利用潮汐、以天然石材堆砌石牆捕魚的傳統漁法。因石滬日久失修，你是搶修匠師，要在潮水不斷侵蝕、鳥賊環伺下把石滬修復完好。</p>
@@ -802,7 +800,7 @@ if (window.history && window.history.pushState) {
   history.pushState(null, '', location.href);
   window.addEventListener('popstate', async function () {
     history.pushState(null, '', location.href);
-    if (!(await taskConfirm('確定要返回平台嗎？這局進度不會被保留。'))) return;
+    if (!(await taskConfirm('確定要返回平台嗎？'))) return;
     exitAndClosePlatform();
   });
 }
@@ -1404,9 +1402,6 @@ function switchScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 
-  // 返回按鈕（原本是重來按鈕，改成強制返回平台用）：只在遊戲進行中顯示，說明頁/結算頁不需要
-  const restartBtn = document.getElementById('restartBtn');
-  if(restartBtn) restartBtn.style.display = (id === 'screen-game') ? '' : 'none';
 
   // 說明按鈕：只在介紹頁出現，不需要在遊戲進行中或結算頁顯示
   const helpBtn = document.getElementById('helpBtn');
@@ -1435,11 +1430,6 @@ function updateIntroStats(){
 document.getElementById('startBtn').addEventListener('click', ()=>{ SoundFX.unlock(); SoundFX.uiClick(); startGame(); });
 // 長按畫面時（尤其是石塊、竹簍）避免跳出系統的右鍵/長按選單
 document.addEventListener('contextmenu', (e)=>{ e.preventDefault(); });
-document.getElementById('restartBtn').addEventListener('click', async ()=>{
-  SoundFX.uiClick();
-  if(!(await taskConfirm('確定要返回平台嗎？這局進度不會被保留。'))) return;
-  exitAndClosePlatform();
-});
 document.getElementById('collectFishBtn').addEventListener('click', ()=>{
   if(!state || state.over || state.tidePhase !== 'day' || assistantTicketActive) return;
   SoundFX.uiClick?.();

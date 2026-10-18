@@ -791,7 +791,6 @@
         <div class="timer pixel" id="levelBadge" style="min-width:auto; padding:2px 6px;">Lv1</div>
         <div class="timer pixel" id="timerDisplay">55</div>
         <button type="button" id="muteBtn" class="mute-btn" aria-label="音效開關" aria-pressed="false">🔊</button>
-        <button type="button" id="exitBtn" class="mute-btn" aria-label="返回平台" style="filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">⛔</button>
       </div>
     </div>
     <div class="stat-bar">
@@ -890,7 +889,7 @@
 <div id="helpOverlay">
   <div id="helpInner">
     <h2>📖 苑港｜魚丸追追樂</h2>
-    <div class="help-version">版本 260915</div>
+    <div class="help-version">版本 261018</div>
 
     <h3>🎮 遊戲介紹</h3>
     <p>在漁港出現一串會持續移動的魚丸，一路吃東西維持生態平衡，10 個關卡、每關都有潮水上漲的時間壓力跟地形機關，分數是全程累計的。</p>
@@ -991,7 +990,7 @@
     history.pushState(null, '', location.href);
     window.addEventListener('popstate', async function () {
       history.pushState(null, '', location.href);
-      if (!(await taskConfirm('確定要返回平台嗎？這局進度不會被保留。'))) return;
+      if (!(await taskConfirm('確定要返回平台嗎？'))) return;
       exitAndClosePlatform();
     });
   }
@@ -3469,11 +3468,6 @@
   });
   backToInstructionsBtn.addEventListener('click', ()=>{
     SFX.uiTap();
-    exitAndClosePlatform();
-  });
-  document.getElementById('exitBtn').addEventListener('click', async ()=>{
-    SFX.uiTap();
-    if(!(await taskConfirm('確定要返回平台嗎？這局進度不會被保留。'))) return;
     exitAndClosePlatform();
   });
 

@@ -216,7 +216,7 @@ function createTaskOverlay(task) {
         if (button.disabled) return;
         button.disabled = true;
         try {
-            if (await platformConfirm('確定要離開任務、返回平台嗎？\n目前這一局的進度不會被保留。', '返回平台', '返回平台')) {
+            if (await platformConfirm('確定要離開任務、返回平台嗎？', '返回平台', '返回平台')) {
                 if (activeTaskOverlay?.el === el) closeTaskOverlay(task.id);
             }
         } finally { button.disabled = false; }

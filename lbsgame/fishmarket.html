@@ -345,8 +345,6 @@
 
         #history-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; transition: transform 0.08s ease, background 0.08s ease; }
         #history-fab:active { transform: scale(0.90); background: rgba(255,255,255,0.32); }
-        #exit-fab { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; flex-shrink: 0; transition: transform 0.08s ease, background 0.08s ease; }
-        #exit-fab:active { transform: scale(0.90); background: rgba(255,255,255,0.32); }
         #sound-toggle { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 10px; font-size: 0.85rem; font-weight: bold; cursor: pointer; flex-shrink: 0; line-height: 1.4; transition: transform 0.08s ease, background 0.08s ease; }
         #sound-toggle:active { transform: scale(0.90); background: rgba(255,255,255,0.32); }
         #sound-toggle.muted { opacity: 0.55; }
@@ -490,7 +488,7 @@
     <div id="help-overlay">
         <div id="help-inner">
             <h2>📖 永續魚市拍賣：苗栗龍鳳漁港</h2>
-            <div class="help-version">版本 261005</div>
+            <div class="help-version">版本 261018</div>
 
             <h3>🎮 遊戲介紹</h3>
             <p>你來到苗栗竹南龍鳳漁港，要跟另外 6 位買家一起競標剛進港的漁獲，用有限的現金標到魚貨，最終依照你的採購內容決定是不是一個懂得永續海鮮觀念的守護者。</p>
@@ -571,7 +569,6 @@
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
                 <div id="ui-budget">💰 現金: 1500元</div>
-                <button id="exit-fab" onclick="exitAndReturnToPlatform()" aria-label="返回平台" style="filter: brightness(1.9) saturate(1.8) drop-shadow(0 0 4px rgba(255,255,255,0.9));">⛔ 返回</button>
             </div>
         </div>
         <div id="top-bar-row2">
@@ -992,7 +989,7 @@
             history.pushState(null, '', location.href);
             window.addEventListener('popstate', async function () {
                 history.pushState(null, '', location.href);
-                if (!(await taskConfirm('確定要返回平台嗎？這局進度不會被保留。'))) return;
+                if (!(await taskConfirm('確定要返回平台嗎？'))) return;
                 exitAndClosePlatform();
             });
         }
@@ -1625,7 +1622,7 @@
 
         // 頂部列的「返回」按鈕：遊戲進行中隨時可以按，會中斷這一局，先跳確認框避免誤觸。
         async function exitAndReturnToPlatform() {
-            if (!(await taskConfirm('確定要返回平台嗎？這局進度不會被保留。'))) return;
+            if (!(await taskConfirm('確定要返回平台嗎？'))) return;
             exitAndClosePlatform();
         }
 

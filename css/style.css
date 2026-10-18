@@ -533,3 +533,8 @@ body::after {
 .avatar-settings-dialog .avatar-save-status{margin-top:12px;margin-bottom:0;min-height:22px;color:#ffe394}
 .avatar-settings-dialog button:disabled{opacity:.5;cursor:wait}
 @media(max-width:350px){.avatar-settings-dialog{padding:16px}.system-avatar-grid{gap:7px}.system-avatar-option{font-size:11px}}
+
+/* 261018：註冊頭像縮小，選項仍保留可點擊範圍 */
+#avatar-picker{gap:5px;margin-bottom:12px}
+#avatar-picker .avatar-choice{width:40px;height:40px;padding:3px}
+.system-avatar-option{gap:0;padding:12px 5px}
