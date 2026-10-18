@@ -4,6 +4,7 @@ import { platformAlert } from './platformDialogs.js';
 // 就以全頁完成畫面鎖住網頁，引導玩家回主畫面從 App 圖示重新開啟。
 
 const DISMISS_KEY = 'gh_install_guide_dismissed';
+const COMPATIBILITY_NOTICE = '如果一直重覆出現此畫面不能進入平台, 那是相容性不足, 請改用Chrome重新開始';
 let deferredPrompt = null;
 let installedResolvers = [];
 let startupPromise = null;
@@ -113,6 +114,7 @@ function showInstalledAndLeaveWeb() {
                 請關閉此瀏覽器頁面，回到手機主畫面，<br>
                 點 <span class="ig-installed-app">「在地文化平台」</span> 圖示重新開啟。
             </div>
+            <p class="ig-note" style="margin-top:12px;font-size:14px;line-height:1.6;color:#ffe0a0">${COMPATIBILITY_NOTICE}</p>
         </div>`;
     document.body.appendChild(screen);
     document.documentElement.style.overflow = 'hidden';
@@ -141,7 +143,7 @@ function showGuide({ auto, waitForPrompt }) {
             const stepsHtml = content.steps.map((s,i)=>`<li><span class="ig-num">${i+1}</span><span>${s}</span></li>`).join('');
             card.innerHTML = `<div class="ig-head"><img src="icons/icon-192-edu-v1.png" alt=""><div><div class="ig-title">安裝到主畫面</div><div class="ig-sub">${content.sub}</div></div></div>
                 ${stepsHtml ? `<ul class="ig-steps">${stepsHtml}</ul>` : ''}
-                ${content.note ? `<p class="ig-note">${content.note}</p>` : ''}<div class="ig-btns"></div>`;
+                ${content.note ? `<p class="ig-note" style="font-size:16px;line-height:1.7;color:#fff;font-weight:600">${content.note}</p>` : ''}<p class="ig-note" style="margin-top:12px;font-size:14px;line-height:1.6;color:#ffe0a0">${COMPATIBILITY_NOTICE}</p><div class="ig-btns"></div>`;
             const btns = card.querySelector('.ig-btns');
             // 自動安裝引導不提供略過選項；玩家必須完成安裝。
             // 從使用者選單手動開啟時，仍保留「關閉」，避免選單視窗無法退出。
@@ -151,7 +153,7 @@ function showGuide({ auto, waitForPrompt }) {
 
         function renderStatus(html,{spinner,buttons}={}) {
             card.innerHTML = `<div class="ig-head"><img src="icons/icon-192-edu-v1.png" alt=""><div><div class="ig-title">安裝到主畫面</div></div></div>
-                <div class="ig-status">${spinner?'<div class="ig-spinner"></div>':''}<div>${html}</div></div><div class="ig-btns"></div>`;
+                <div class="ig-status">${spinner?'<div class="ig-spinner"></div>':''}<div>${html}</div></div><p class="ig-note" style="margin-top:12px;font-size:14px;line-height:1.6;color:#ffe0a0">${COMPATIBILITY_NOTICE}</p><div class="ig-btns"></div>`;
             const btns=card.querySelector('.ig-btns');
             (buttons||[]).forEach(b=>addBtn(btns,b.text,b.style,b.onClick));
         }
