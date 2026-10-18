@@ -4,7 +4,7 @@ import { platformAlert } from './platformDialogs.js';
 // 就以全頁完成畫面鎖住網頁，引導玩家回主畫面從 App 圖示重新開啟。
 
 const DISMISS_KEY = 'gh_install_guide_dismissed';
-const COMPATIBILITY_NOTICE = '如果一直重覆出現此畫面不能進入平台, 那是相容性不足, 請改用Chrome重新開始';
+const COMPATIBILITY_NOTICE = '如果你已進行過上述安裝程序，並已由主畫面的圖示再打開，卻會出現此畫面不能進入平台，那是相容性不足，請改用Chrome重新開始';
 let deferredPrompt = null;
 let installedResolvers = [];
 let startupPromise = null;
@@ -236,3 +236,4 @@ export function updateMenuEntry(){
     const btn=document.getElementById('menu-install-btn');
     if(btn)btn.style.display=isStandalone()?'none':'';
 }
+
