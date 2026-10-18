@@ -1738,22 +1738,7 @@
             btn10.disabled = disable;
             btnFast.disabled = auctionState.giveUp || isPlayerLeading;
 
-            const aiGrid = document.getElementById('arena-ai-row');
-            aiGrid.innerHTML = '';
-            auctionState.aiStatus.forEach(ai => {
-                let cls = 'ai-chip';
-                if (ai.out) cls += ' out';
-                else if (ai.id === auctionState.highestBidderId) cls += ' leader';
-                else if (ai.status.includes('加價')) cls += ' bid';
-                else if (ai.status.includes('思考中')) cls += ' thinking';
-
-                const parts = splitAiName(ai.name);
-                const nameDisplay = parts.label;
-                const bidMatch = ai.status.match(/加價\s*\+?(\d+)/);
-                const statusDisplay = bidMatch ? '出價中' : ai.status;
-                const bubbleHTML = bidMatch ? `<div class="ai-bid-paddle">＋$${bidMatch[1]}</div>` : '';
-                aiGrid.innerHTML += `<div class="${cls}"><div class="ai-chip-clip"><img class="ai-chip-avatar" src="${DEMO_ASSETS.avatars[nameDisplay]}" alt="${nameDisplay}" onerror="this.outerHTML='<div class=\\'ai-chip-avatar-fallback\\'>${parts.emoji}</div>'"></div>${bubbleHTML}<span class="ai-name">${nameDisplay}</span><span class="ai-status">${statusDisplay}</span></div>`;
-            });
+            renderBuyerRow();
         }
 
         function countdownTimer() {
@@ -2080,7 +2065,7 @@ const controls=document.querySelector('.arena-action-btns');const adjust=documen
 document.getElementById('offer-minus').onclick=()=>{demoIncrement=Math.max(1,demoIncrement-1);updateAuctionUI()};document.getElementById('offer-plus').onclick=()=>{demoIncrement=Math.min(10,demoIncrement+1);updateAuctionUI()};
 document.getElementById('arena-btn-5').onclick=()=>playerBid(auctionState.bidStep*demoIncrement);
 const sceneUpdate=updateAuctionUI;updateAuctionUI=function(){sceneUpdate();const price=auctionState.currentPrice+auctionState.bidStep*demoIncrement;document.getElementById('offer-amount').textContent='$'+price;const bid=document.getElementById('arena-btn-5');if(auctionState.highestBidderId!=='player')bid.textContent='出價';document.getElementById('offer-minus').disabled=bid.disabled;document.getElementById('offer-plus').disabled=bid.disabled;};
-document.getElementById('demo-tools').append(document.getElementById('history-fab')); const sceneInit=initRound;initRound=function(){sceneInit();document.getElementById('ui-day-season').textContent+=' '+gameState.round+'/4'}; const seasonEl=document.getElementById('ui-day-season');const oldSeason=seasonEl.innerHTML;
+document.getElementById('demo-tools').append(document.getElementById('history-fab')); const sceneInit=initRound;initRound=function(){sceneInit()}; const seasonEl=document.getElementById('ui-day-season');const oldSeason=seasonEl.innerHTML;
 document.querySelector('#demo-bar span').id='flow-stage';document.querySelector('#demo-bar span').textContent='看板準備中';document.querySelector('#demo-bar span+span').textContent='261018';
 const brand=document.createElement('div');brand.id='scene-brand';brand.textContent='永續魚市拍賣';document.getElementById('top-bar').prepend(brand);
 </script><script src="fishmarket-3d/production.js"></script></body>
