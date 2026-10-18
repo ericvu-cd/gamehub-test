@@ -1,26 +1,16 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-<head>
+<head><script>window.DEMO_ASSETS={"fish":{"三點蟹":"fishmarket-3d/8c4600220f8f.webp","剝皮魚":"fishmarket-3d/3b4fe08f6598.webp","午仔魚":"fishmarket-3d/31ab43924ede.webp","台灣鯖魚":"fishmarket-3d/c34423d612c5.webp","吳郭魚":"fishmarket-3d/b936945dd746.webp","小卷":"fishmarket-3d/d0ca2935b26d.webp","白帶魚":"fishmarket-3d/e143df1b5747.webp","白海豚":"fishmarket-3d/bf49880574b7.webp","白鯧":"fishmarket-3d/21913671913b.webp","皮刀":"fishmarket-3d/3e8a60fd6cc9.webp","竹筴魚":"fishmarket-3d/9e73adc3a997.webp","紅目鰱":"fishmarket-3d/7b201f084e63.webp","紅魽":"fishmarket-3d/52bf7cd1523e.webp","臭肚魚":"fishmarket-3d/960bd767cdca.webp","花枝":"fishmarket-3d/94adcff140c4.webp","虱目魚":"fishmarket-3d/407311d24fd1.webp","赤鯮":"fishmarket-3d/c36f45088454.webp","野生石斑":"fishmarket-3d/81f75296cfec.webp","養殖烏魚":"fishmarket-3d/7a69e69fc0e3.webp","養殖鱸魚":"fishmarket-3d/190a97b19f48.webp","鬼頭刀":"fishmarket-3d/ca92c7790447.webp","鯨鯊":"fishmarket-3d/90ac5439be84.webp","鰆魚":"fishmarket-3d/cd425d7c1b32.webp","黃鰭鯛":"fishmarket-3d/1cc041e7fda6.webp","黑鮪魚":"fishmarket-3d/78be69ddd4ba.webp"},"avatars":{"餐廳老闆":"fishmarket-3d/2ffbe41314f3.png","快炒店":"fishmarket-3d/cc987977708a.png","量販採購":"fishmarket-3d/62c8a6877e17.png","批發商":"fishmarket-3d/e168cf89c78e.png","魚販阿姨":"fishmarket-3d/d7cb9542f5df.png","魚販阿伯":"fishmarket-3d/c1641f943fc2.png"}};</script><script src="task-dialogs.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-<script src="task-dialogs.js"></script>
-<script>
-        /* 桌機/寬螢幕自動導向「手機外框」展示版（fishmarket-desktop.html），
-           手機直接開（寬度 <=700）完全不受影響、不會跳轉。 */
-        (function() {
-            var params = new URLSearchParams(window.location.search);
-            var inIframe = (window.self !== window.top);
-            if (window.innerWidth > 700 && !inIframe && !params.has('embedded')) {
-                window.location.replace('fishmarket-desktop.html');
-            }
-        })();
-    </script>
-    <title>永續魚市拍賣：苗栗龍鳳漁港</title>
-	<link rel="icon" type="image/png" href="image/fmicon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+
+
+    <title>永續魚市拍賣</title>
+	
+    
+    
+    
     <style>
         /* 主題色票：樂高積木拍賣場 —— 經典樂高藍、標售紅、金幣黃、領先綠 */
         :root {
@@ -66,7 +56,7 @@
         #top-bar { background-color: var(--primary-color); color: white; padding: 12px 15px; z-index: 20; box-shadow: 0 3px 0 rgba(0,20,50,0.35), 0 4px 8px rgba(0,0,0,0.2); flex-shrink: 0; border-bottom: 3px solid #003A82; }
         #top-bar-row1 { display: flex; justify-content: space-between; font-weight: bold; font-size: 1rem; }
         #top-bar-row2 { display: flex; justify-content: space-between; font-size: 0.82rem; margin-top: 4px; color: #D6ECFA; }
-        .idle-nickname { font-size: clamp(1rem, 2.8vh, 1.25rem); font-weight: bold; color: #012F72; margin-bottom: 6px; }
+        .idle-nickname { font-size: clamp(1rem, 21.84px, 1.25rem); font-weight: bold; color: #012F72; margin-bottom: 6px; }
 
         #main-content { flex: 1; width: 100%; min-height: 0; background-color: var(--bg-color); background-image: radial-gradient(circle, rgba(255,255,255,0.5) 0 4px, transparent 4.5px); background-size: 20px 20px; display: flex; flex-direction: column; overflow: hidden; }
 
@@ -75,7 +65,7 @@
 
         #board-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; font-size: 0.8rem; color: #31556F; gap: 8px; background: #DCEEF9; border-bottom: 1px solid #A9D3EE; }
 
-        #board-strip { flex-shrink: 0; display: grid; grid-template-rows: repeat(2, 1fr); grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; padding: 8px 10px; overflow: hidden; height: clamp(160px, 30vh, 260px); background-color: #AED4EB; background-image: radial-gradient(circle, rgba(255,255,255,0.45) 0 4px, transparent 4.5px); background-size: 20px 20px; border-bottom: 2px solid #8FC1F2; }
+        #board-strip { flex-shrink: 0; display: grid; grid-template-rows: repeat(2, 1fr); grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; padding: 8px 10px; overflow: hidden; height: clamp(160px, 234px, 260px); background-color: #AED4EB; background-image: radial-gradient(circle, rgba(255,255,255,0.45) 0 4px, transparent 4.5px); background-size: 20px 20px; border-bottom: 2px solid #8FC1F2; }
         /* ===== 看板小卡：塑膠周轉魚箱造型 ===== */
         .strip-card { min-width: 0; min-height: 0; position: relative; display: flex; flex-direction: column; border-radius: 10px; padding: 4px 4px 3px; gap: 3px; transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
             background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.16) 0 2px, transparent 2px 6px), linear-gradient(160deg, #4AA3E8 0%, #1F73B8 55%, #145A94 100%);
@@ -99,10 +89,10 @@
 
         .strip-name-overlay { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 8px 3px 2px; text-align: center;
             background: linear-gradient(180deg, rgba(1,47,114,0) 0%, rgba(1,47,114,0.72) 55%, rgba(1,47,114,0.88) 100%); }
-        .strip-name-overlay .name { font-weight: 900; font-size: clamp(0.7rem, 2.1vh, 0.92rem); color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .strip-name-overlay .name { font-weight: 900; font-size: clamp(0.7rem, 16.38px, 0.92rem); color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         .strip-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: 5px; row-gap: 1px; background: #FFFFFF; border-radius: 6px; padding: 1.5px 4px; box-shadow: 0 1px 1px rgba(0,40,90,0.12); }
-        .strip-meta span { font-size: clamp(0.5rem, 1.35vh, 0.58rem); font-weight: 700; color: #163E5B; white-space: nowrap; max-width: 100%; }
+        .strip-meta span { font-size: clamp(0.5rem, 10.53px, 0.58rem); font-weight: 700; color: #163E5B; white-space: nowrap; max-width: 100%; }
 
         .strip-card.active { z-index: 3; animation: liveGlow 1.1s ease-in-out infinite; }
         .strip-card.active .strip-badge { background: var(--accent-color); animation: badgePulse 1s ease-in-out infinite; }
@@ -127,7 +117,7 @@
 
         #arena-idle { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
         #arena-idle-content { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; max-width: 380px; padding: 0 12px; }
-        .idle-emoji { font-size: clamp(2rem, 6vh, 3rem); }
+        .idle-emoji { font-size: clamp(2rem, 46.8px, 3rem); }
         .summary-icon-badge {
             width: 88px; height: 88px; margin: 0 auto 10px;
             border-radius: 24px; position: relative; overflow: hidden;
@@ -190,8 +180,8 @@
             to{transform:translateY(-4px)}
         }
 
-        .idle-title { font-size: clamp(1.1rem, 3.2vh, 1.4rem); font-weight: bold; color: #012F72; }
-        .idle-sub { font-size: clamp(0.85rem, 2.4vh, 1.02rem); color: #1B3B52; line-height: 1.5; background: rgba(255,255,255,0.62); padding: 8px 14px; border-radius: 12px; }
+        .idle-title { font-size: clamp(1.1rem, 24.96px, 1.4rem); font-weight: bold; color: #012F72; }
+        .idle-sub { font-size: clamp(0.85rem, 18.72px, 1.02rem); color: #1B3B52; line-height: 1.5; background: rgba(255,255,255,0.62); padding: 8px 14px; border-radius: 12px; }
         .idle-btn { margin-top: 6px; padding: 14px 26px; }
         .idle-btn-row { display: flex; gap: 8px; width: 100%; margin-top: 6px; }
 
@@ -203,7 +193,7 @@
         .arena-col-left { min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 1px; overflow: hidden; }
         .arena-col-right { min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
 
-        .arena-timer-wrap { position: relative; width: clamp(36px, 7vh, 50px); height: clamp(36px, 7vh, 50px); flex-shrink: 0; margin: 0 auto; }
+        .arena-timer-wrap { position: relative; width: clamp(36px, 54.6px, 50px); height: clamp(36px, 54.6px, 50px); flex-shrink: 0; margin: 0 auto; }
         #arena-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
         .ring-track { fill: none; stroke: rgba(1,47,114,0.16); stroke-width: 8; }
         .ring-progress { fill: none; stroke: #4FD1A8; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 326.7; stroke-dashoffset: 0; transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease; }
@@ -211,19 +201,19 @@
         @keyframes ringUrgent { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
         @keyframes timerUrgent { 0%,100% { color: #E3000B; text-shadow: 0 0 12px rgba(227,0,11,0.8); transform: scale(1); } 50% { color: #ff6b6b; text-shadow: 0 0 20px rgba(255,107,107,0.8); transform: scale(1.1); } }
         .arena-timer-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #arena-time { font-size: clamp(0.8rem, 2.4vh, 1.05rem); font-weight: bold; font-family: monospace; transition: color 0.2s ease, transform 0.2s ease; }
+        #arena-time { font-size: clamp(0.8rem, 18.72px, 1.05rem); font-weight: bold; font-family: monospace; transition: color 0.2s ease, transform 0.2s ease; }
         #arena-time.urgent { animation: timerUrgent var(--blink-dur, 0.5s) ease-in-out infinite; }
 
-        .arena-fish-info { flex: 1; min-height: 0; max-height: 20vh; width: 100%; text-align: center; background: rgba(255,255,255,0.6); border-radius: 10px; padding: 0px 0px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0px; overflow: hidden; }
+        .arena-fish-info { flex: 1; min-height: 0; max-height: 156px; width: 100%; text-align: center; background: rgba(255,255,255,0.6); border-radius: 10px; padding: 0px 0px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0px; overflow: hidden; }
         .arena-fish-icon-big { flex: 1; min-height: 0; min-width: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .arena-fish-icon-big img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
-        .arena-fish-name { font-size: clamp(1.05rem, 3.4vh, 1.4rem); font-weight: bold; color: #012F72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; flex-shrink: 0; }
-        .arena-fish-name.name-len-4 { font-size: clamp(0.82rem, 2.6vh, 1.08rem); }
-        .arena-fish-name.name-len-5plus { font-size: clamp(0.7rem, 2.2vh, 0.92rem); }
+        .arena-fish-name { font-size: clamp(1.05rem, 26.52px, 1.4rem); font-weight: bold; color: #012F72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; flex-shrink: 0; }
+        .arena-fish-name.name-len-4 { font-size: clamp(0.82rem, 20.28px, 1.08rem); }
+        .arena-fish-name.name-len-5plus { font-size: clamp(0.7rem, 17.16px, 0.92rem); }
 
         .arena-price-block { flex-shrink: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--panel-bg); border: 2px solid var(--gold-color-dark); border-radius: 10px; padding: 4px 8px; }
         .arena-price-label { font-size: 0.66rem; color: #315F7B; }
-        .arena-price-row { font-size: clamp(1.1rem, 3.6vh, 1.5rem); font-weight: bold; color: #B87900; font-family: monospace; transition: transform 0.15s ease; }
+        .arena-price-row { font-size: clamp(1.1rem, 28.08px, 1.5rem); font-weight: bold; color: #B87900; font-family: monospace; transition: transform 0.15s ease; }
         .arena-price-row.pulse-player { animation: pricePulseGreen 0.35s ease; }
         .arena-price-row.pulse-ai { animation: pricePulseOrange 0.35s ease; }
         @keyframes pricePulseGreen { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: #4FD1A8; } 100% { transform: scale(1); color: #F2B84D; } }
@@ -264,7 +254,7 @@
         }
 
 
-        .arena-ai-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); gap: clamp(9px,2vh,14px); align-content: stretch; padding: 8px; }
+        .arena-ai-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); gap: clamp(9px,15.6px,14px); align-content: stretch; padding: 8px; }
 
         /* 右欄下方：我的現金 + 出價操作（與左欄「即時資訊」對調位置） */
         .arena-bid-panel { flex-shrink: 0; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
@@ -274,10 +264,10 @@
         .ai-chip-clip { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; }
         .ai-chip-avatar { position: absolute; left: 0; top: 0; height: 100%; width: auto; max-width: 100%; object-fit: contain; object-position: left center; }
         .ai-chip-avatar-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
-        .ai-chip .ai-name { position: absolute; top: 2px; right: 3px; z-index: 2; background: rgba(4,20,42,0.68); color: #fff; font-weight: 900; font-size: clamp(0.56rem, 1.5vh, 0.7rem); padding: 1px 5px; border-radius: 6px; max-width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ai-chip .ai-status { position: absolute; bottom: 2px; right: 3px; z-index: 2; background: rgba(4,20,42,0.55); color: #EAF3FB; font-size: clamp(0.5rem, 1.3vh, 0.6rem); padding: 1px 5px; border-radius: 6px; max-width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ai-chip .ai-name { position: absolute; top: 2px; right: 3px; z-index: 2; background: rgba(4,20,42,0.68); color: #fff; font-weight: 900; font-size: clamp(0.56rem, 11.7px, 0.7rem); padding: 1px 5px; border-radius: 6px; max-width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ai-chip .ai-status { position: absolute; bottom: 2px; right: 3px; z-index: 2; background: rgba(4,20,42,0.55); color: #EAF3FB; font-size: clamp(0.5rem, 10.14px, 0.6rem); padding: 1px 5px; border-radius: 6px; max-width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .ai-bubble { position: absolute; top: -10px; left: 4px; z-index: 5; background: #fff; color: #C1541A; font-weight: 900; font-size: clamp(0.5rem, 1.3vh, 0.64rem); padding: 2px 6px; border-radius: 10px; border: 1.5px solid #ff9d5c; box-shadow: 0 2px 4px rgba(0,0,0,0.3); white-space: nowrap; animation: bubblePop 0.2s ease; }
+        .ai-bubble { position: absolute; top: -10px; left: 4px; z-index: 5; background: #fff; color: #C1541A; font-weight: 900; font-size: clamp(0.5rem, 10.14px, 0.64rem); padding: 2px 6px; border-radius: 10px; border: 1.5px solid #ff9d5c; box-shadow: 0 2px 4px rgba(0,0,0,0.3); white-space: nowrap; animation: bubblePop 0.2s ease; }
         .ai-bubble::after { content: ''; position: absolute; left: 9px; bottom: -5px; border-width: 5px 4px 0 4px; border-style: solid; border-color: #fff transparent transparent transparent; }
         .ai-bubble::before { content: ''; position: absolute; left: 8.5px; bottom: -7px; border-width: 6px 4.5px 0 4.5px; border-style: solid; border-color: #ff9d5c transparent transparent transparent; }
         @keyframes bubblePop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
@@ -296,7 +286,7 @@
             transform:translate(-50%,-58%) rotate(-4deg);
             min-width:58px; padding:6px 8px;
             background:#FFD500; color:#3A2600; border:3px solid #A3000A;
-            border-radius:7px; font-size:clamp(.72rem,2vh,.95rem); font-weight:900;
+            border-radius:7px; font-size:clamp(.72rem,15.6px,.95rem); font-weight:900;
             text-align:center; white-space:nowrap;
             box-shadow:0 4px 0 #A3000A,0 7px 12px rgba(0,0,0,.3);
             animation:paddleRaise .58s cubic-bezier(.2,1.45,.35,1);
@@ -315,7 +305,7 @@
         .btn-giveup { background-color: #7C93A0; border-color: #4F6672; box-shadow: 0 4px 0 #4F6672; }
         .btn-giveup:disabled { background-color: #C9C6BC; border-color: #A6A39A; box-shadow: 0 4px 0 #A6A39A; }
 
-        #arena-sold-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(1.6rem, 6vh, 2.6rem); font-weight: 900; letter-spacing: 2px; background: rgba(1,47,114,0); color: transparent; pointer-events: none; transition: background 0.25s ease, color 0.25s ease; }
+        #arena-sold-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(1.6rem, 46.8px, 2.6rem); font-weight: 900; letter-spacing: 2px; background: rgba(1,47,114,0); color: transparent; pointer-events: none; transition: background 0.25s ease, color 0.25s ease; }
         #arena-sold-overlay .stamp { display: inline-block; padding: 10px 26px; border: 3px solid currentColor; outline: 1.5px solid currentColor; outline-offset: 5px; border-radius: 8px; transform: rotate(-6deg); }
         #arena-sold-overlay .sold-sub { font-size: 0.5em; font-weight: 700; margin-top: 6px; letter-spacing: 0; }
         @keyframes soldFlash { 0%,100% { background: rgba(1,47,114,0); } 20% { background: rgba(242,193,78,0.35); } 40% { background: rgba(1,47,114,0.72); } }
@@ -333,7 +323,7 @@
         #overbid-flash span {
             padding:10px 20px; border-radius:12px; background:#E3000B; color:#fff;
             border:3px solid #fff; box-shadow:0 5px 0 #A3000A,0 9px 20px rgba(0,0,0,.3);
-            font-size:clamp(1.25rem,4.6vh,2rem); font-weight:900; letter-spacing:2px;
+            font-size:clamp(1.25rem,35.88px,2rem); font-weight:900; letter-spacing:2px;
             animation:overbidPop .72s cubic-bezier(.2,1.45,.35,1);
         }
         @keyframes overbidScreen { 0%{opacity:0} 18%{opacity:1} 100%{opacity:0} }
@@ -351,7 +341,7 @@
 
         #drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 39; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
         #drawer-backdrop.open { opacity: 1; pointer-events: auto; }
-        #history-drawer { position: fixed; left: 0; right: 0; bottom: 0; max-height: 78vh; background: var(--panel-bg); z-index: 40; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 16px rgba(0,0,0,0.25); transform: translateY(100%); transition: transform 0.25s ease; display: flex; flex-direction: column; }
+        #history-drawer { position: fixed; left: 0; right: 0; bottom: 0; max-height: 608.4px; background: var(--panel-bg); z-index: 40; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 16px rgba(0,0,0,0.25); transform: translateY(100%); transition: transform 0.25s ease; display: flex; flex-direction: column; }
         #history-drawer.open { transform: translateY(0); }
         #drawer-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #EDE7DA; flex-shrink: 0; }
         #drawer-header h2 { margin: 0; border: none; padding: 0; }
@@ -360,8 +350,8 @@
         #drawer-body { overflow-y: auto; padding: 12px 16px 24px; }
 
         /* ── 開局說明頁：改用整頁看板圖 fmbg1，按鈕疊在圖片「遊戲開始」原始位置上（單頁塞滿手機直式畫面，不捲動）── */
-        #intro-screen { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 2vh 3vw; background: radial-gradient(ellipse at 50% 15%, #123B44 0%, #06232B 65%, #02141A 100%); overflow: hidden; }
-        #intro-card { position: relative; max-width: 440px; width: 100%; max-height: 96vh; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,0.45); line-height: 0; }
+        #intro-screen { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 15.6px 11.7px; background: radial-gradient(ellipse at 50% 15%, #123B44 0%, #06232B 65%, #02141A 100%); overflow: hidden; }
+        #intro-card { position: relative; max-width: 440px; width: 100%; max-height: 748.8px; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,0.45); line-height: 0; }
         #intro-card img { display: block; width: 100%; height: auto; }
 
         /* 透明按鈕：疊在底圖「開始拍賣」按鈕的實際座標上（以圖片寬高比例定位，圖片比例改變時仍能對齊） */
@@ -401,7 +391,7 @@
         }
         #help-overlay.show { display: flex; }
         #help-inner {
-            width: 100%; max-width: 380px; max-height: 80vh; overflow-y: auto;
+            width: 100%; max-width: 380px; max-height: 624px; overflow-y: auto;
             background: #FBF8F0; padding: 18px 18px 22px; box-sizing: border-box;
             border-radius: 16px; box-shadow: 0 12px 34px rgba(0,0,0,0.4);
         }
@@ -420,9 +410,9 @@
         #help-inner .help-version { text-align: center; font-size: 0.72rem; color: #999; margin: -4px 0 4px; }
 
         /* ── 整局最終結算：改用整頁滿版顯示，內容過長可捲動，不受拍賣區小面板限制 ── */
-        #final-result-screen { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; padding: 3vh 4vw; background: radial-gradient(ellipse at 50% 15%, #123B44 0%, #06232B 65%, #02141A 100%); }
+        #final-result-screen { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; padding: 23.4px 15.6px; background: radial-gradient(ellipse at 50% 15%, #123B44 0%, #06232B 65%, #02141A 100%); }
         #final-result-screen.show { display: flex; }
-        #final-result-card { width: 100%; max-width: 440px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,0.45); }
+        #final-result-card { width: 100%; max-width: 440px; max-height: 733.2px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,0.45); }
         #final-result-body {
             flex: 1 1 auto; min-height: 0; /* 沒有這兩行，內容一長就會把卡片撐爆，
                 超出 max-height 的部分（包括最下面的「關閉」按鈕）會被外層 overflow:hidden
@@ -431,8 +421,8 @@
                 內容太長就在這塊區域「內部」捲動，按鈕列永遠留在卡片最下面看得到。 */
             overflow-y: auto; padding: 22px 20px; text-align: center; color: #1F2A38;
         }
-        #final-result-body .idle-emoji { font-size: clamp(2rem, 6vh, 3rem); }
-        #final-result-body .idle-title { font-size: clamp(1.15rem, 3.2vh, 1.45rem); font-weight: bold; color: #012F72; margin: 4px 0 10px; }
+        #final-result-body .idle-emoji { font-size: clamp(2rem, 46.8px, 3rem); }
+        #final-result-body .idle-title { font-size: clamp(1.15rem, 24.96px, 1.45rem); font-weight: bold; color: #012F72; margin: 4px 0 10px; }
         #final-result-body .final-round-list { text-align: left; margin-bottom: 12px; font-size: 0.9rem; }
         #final-result-body .final-round-list div { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px dashed rgba(31,42,56,0.18); }
         #final-result-body .final-summary { font-size: 0.95rem; line-height: 1.9; margin-top: 6px; }
@@ -447,7 +437,7 @@
         }
         #badge-popup.show { display: flex; }
         #badge-popup-img {
-            width: 55vw; max-width: 260px; border-radius: 20px;
+            width: 214.5px; max-width: 260px; border-radius: 20px;
             box-shadow: 0 12px 40px rgba(0,0,0,0.45);
             animation: badgePopIn 0.6s cubic-bezier(.34,1.56,.64,1) both;
         }
@@ -466,8 +456,86 @@
         #final-result-btn-row { flex-shrink: 0; display: flex; gap: 10px; padding: 14px 20px 20px; border-top: 1px solid #EDE7DA; }
         #final-result-btn-row .btn-bid { flex: 1; }
     </style>
-</head>
-<body>
+<style>html,body{width:100%;height:100%;margin:0;overflow:hidden!important;background:#132b35!important;background-image:none!important;display:block!important}
+#demo-stage{position:absolute;left:50%;top:50%;width:390px;height:780px;transform:translate(-50%,-50%) scale(var(--frame-scale,1));transform-origin:center;overflow:hidden;display:flex;flex-direction:column;background:var(--bg-color);box-shadow:0 0 35px #0008}
+#demo-stage *{font-family:"Microsoft JhengHei",-apple-system,BlinkMacSystemFont,sans-serif}
+#demo-bar{height:25px;min-height:25px;flex:0 0 25px;background:#193d4b;color:#ffefce;font-size:11px;padding:5px 9px;display:flex;align-items:center;justify-content:space-between;z-index:120}
+#demo-bar span+span{font-size:9px;color:#c5d8d5}
+#demo-tools{height:31px;flex:0 0 31px;background:#193d4b;color:#dce8e1;display:flex;align-items:center;gap:7px;padding:3px 8px;z-index:600;font-size:10px}
+#demo-tools a{color:#e5d6b5;text-decoration:none;border:1px solid #6b858b;padding:3px 5px;border-radius:5px;white-space:nowrap}
+#demo-tools button{color:#fff0d5;background:#315965;border:1px solid #6b858b;padding:3px 5px;border-radius:5px;font-size:10px}
+#demo-tools label{flex:1;display:flex;align-items:center;gap:3px;white-space:nowrap}
+#demo-tools input{width:12px;height:12px;accent-color:#ccae6d}
+#demo-tools .seed-label{font-size:9px;opacity:.7}
+.portrait-warning{display:none!important}
+#demo-stage #main-content{min-height:0}
+#demo-stage #intro-screen{height:780px;width:390px}
+#demo-stage #history-drawer{max-height:724px;bottom:31px}
+#demo-stage #help-overlay{width:390px;height:780px}
+#demo-stage #help-inner{max-height:716px}
+#demo-stage #final-result-screen{width:390px;height:780px;padding-bottom:40px}
+#demo-stage #final-result-card{max-height:724px}
+#demo-stage #final-result-card .final-btn-row{flex-wrap:wrap}
+#demo-stage #pause-overlay{width:390px;height:780px}
+#demo-stage .test-dialog{position:fixed;inset:0;margin:auto;max-height:670px;overflow:auto;width:330px;border:1px solid #bfa66e;border-radius:16px;padding:20px;background:#fff6df;color:#234450;font-size:14px;line-height:1.7}
+#demo-stage .test-dialog::backdrop{background:#0a283bbb}
+#demo-stage .test-dialog button{display:block;padding:10px 20px;border:0;border-radius:8px;background:#327e72;color:white;margin:15px auto 0;font-size:14px}
+
+#demo-stage{padding-bottom:31px}#demo-tools{position:absolute;bottom:0;left:0;width:390px;z-index:10000}
+/* 各區固定像素，不隨魚箱數量、手機高度或文字內容伸縮。 */
+#demo-stage{--bg-color:#DAB889;--primary-color:#214D5A;--accent-color:#D2A245;--accent-color-dark:#99712E;--panel-white:#FFF5DF;--brick-border:#9C835B;color:#253D43;background:linear-gradient(#E7C89C,#B78D5F)}
+#top-bar{position:absolute;top:25px;left:0;width:390px;height:58px;padding:8px 12px 6px;border-bottom:2px solid #91704b;background:linear-gradient(#2d5967,#173d4b);box-shadow:0 3px 0 #ad8555;z-index:10}
+#top-bar-row1{font-size:15px;line-height:21px;align-items:center}#top-bar-row2{margin-top:1px;font-size:10px;line-height:17px;color:#d3dfd5}#ui-day-season{font-size:15px}#ui-budget{color:#ffe1a0}#ingame-help-btn{height:23px;width:23px;margin-left:7px;background:#4c7280;border:1px solid #a2a78f;font-size:13px}#sound-toggle,#history-fab{padding:1px 6px;border:1px solid #8ea2a0;background:#335d67;color:#fff0cf;border-radius:6px;font-size:11px;line-height:18px}
+#lego-stud-strip{display:none}#demo-stage #main-content{position:absolute;top:83px;left:0;width:390px;height:666px;display:block;background:none;overflow:hidden}
+#board-header{position:absolute;top:0;left:9px;width:372px;height:25px;padding:4px 7px;font-size:12px;line-height:16px;background:#f3e5c9;border:1px solid #bca071;border-bottom:0;border-radius:9px 9px 0 0;color:#284e5a}
+#demo-stage #board-strip{position:absolute;top:25px;left:9px;width:372px;height:274px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,80px);grid-auto-flow:row;grid-auto-columns:auto;gap:7px;padding:8px;background:linear-gradient(125deg,#f7ecd7,#e2c69e);background-image:none;border:1px solid #bca071;border-radius:0 0 10px 10px;overflow:hidden}
+#board-strip .strip-card{display:grid;grid-template-columns:54px minmax(0,1fr);grid-template-rows:1fr;gap:6px;height:80px;min-height:80px;padding:5px;background:linear-gradient(130deg,#fff9e9,#ead8b7);box-shadow:inset 0 1px #fff,0 2px 0 #b49b71;border:1px solid #b9a27e;border-radius:8px;transition:none;animation:none;transform:none}
+.strip-rivet,.strip-handle{display:none!important}#board-strip .strip-cavity{height:66px;min-height:66px;align-self:center;border:3px solid #4e8992;border-radius:5px;background:linear-gradient(145deg,#e1f2ef,#9ec3c6);box-shadow:inset 0 3px 5px #2d637755,0 2px 0 #285967;overflow:hidden}#board-strip .strip-cavity img{width:100%;height:55px;object-fit:contain;filter:drop-shadow(0 3px 2px #214c6577)}#board-strip .strip-badge{right:0;top:0;width:13px;height:13px;font-size:8px;border-width:1px}.full-card-info{display:flex;flex-direction:column;justify-content:center;min-width:0;gap:1px}.full-card-info strong{font-size:13px;line-height:17px;white-space:nowrap;color:#254a57}.full-card-info span{font-size:11px;line-height:15px;white-space:nowrap;color:#4b635e}.full-card-info small{font-size:9px;line-height:12px;white-space:nowrap;color:#8b7858}#board-strip .strip-card.active{border:2px solid #d19b32;background:#fff0c7;box-shadow:0 0 0 1px #f2d17b;animation:none}#board-strip .strip-card.active .full-card-info small{color:#a46723;font-weight:bold}#board-strip .strip-card.sold-player{background:#deebd2;border-color:#81a16e}#board-strip .strip-card.sold-other,#board-strip .strip-card.unsold{filter:none;background:#e6dfd1}#board-strip .strip-card.sold-other .strip-cavity img,#board-strip .strip-card.unsold .strip-cavity img{filter:saturate(.6)}
+#demo-stage #auction-arena{position:absolute;top:305px;left:9px;width:372px;height:353px;flex:none;padding:8px;background:linear-gradient(#e9d0ab,#ca9e69);background-image:none;border:1px solid #a88355;border-radius:11px;overflow:hidden}
+#arena-live{height:335px;flex:0 0 335px;flex-direction:column;gap:7px;min-height:0}#arena-ai-row{height:120px;min-height:120px;max-height:120px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,53px);gap:6px;padding:4px;background:#234955;border:0;border-radius:8px;box-shadow:inset 0 1px 0 #fff3}#arena-ai-row::after{display:none}.ai-chip{position:relative;display:grid;grid-template-columns:39px minmax(0,1fr);grid-template-rows:24px 20px;gap:0 4px;height:53px;min-height:53px;padding:4px;border:1px solid #799697;border-radius:8px;background:linear-gradient(#d9e5df,#aabdb6);box-shadow:0 2px 0 #14333f;overflow:visible;color:#23454f}.ai-chip-clip{grid-column:1;grid-row:1/3;width:38px!important;height:43px!important;border-radius:6px!important;overflow:hidden!important;background:linear-gradient(#e9f4e9,#b9cdbb);box-shadow:inset 0 2px 3px #233d3c55}.ai-chip-avatar{width:38px!important;height:43px!important;object-fit:contain!important;transform:none!important}.ai-name{grid-column:2;font-size:10px!important;line-height:13px;white-space:nowrap;overflow:visible;color:#23424b}.ai-status{grid-column:2;font-size:9px!important;line-height:12px;color:#59716d;white-space:nowrap}.ai-chip.leader{border:2px solid #e1b653;background:linear-gradient(#fff3c0,#dfbc65);box-shadow:0 0 8px #f5d77a66}.ai-chip.out{opacity:.65;filter:none}.ai-bid-paddle{position:absolute;right:0;top:-7px;font-size:10px;padding:2px 5px;border:1px solid #b1863b;background:#fff4c9;border-radius:8px;z-index:5}
+#arena-live .arena-columns{height:203px;min-height:203px;max-height:203px;display:flex;flex-direction:column;gap:7px}#arena-live .arena-col-left{height:143px;min-height:143px;display:grid;grid-template-columns:120px minmax(0,1fr);grid-template-rows:109px 26px;padding:4px;gap:0 7px;background:linear-gradient(115deg,#e9eee6,#fff6e4);border:1px solid #b09b78;border-radius:10px;box-shadow:0 2px 0 #9b7b4f}#arena-live .arena-col-left::after{display:none}.arena-fish-info{grid-column:1;grid-row:1;display:flex;align-items:center;justify-content:center;margin:0;padding:8px}.arena-fish-icon-big{position:relative;width:105px!important;height:76px!important;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(135deg,#dcebe788 0 5px,#c0d7d455 5px 10px),linear-gradient(#eff7ef,#b4d3d0);border:7px solid #3d8188;border-bottom:10px solid #28646d;border-radius:8px;box-shadow:inset 0 4px 5px #194b5777,0 5px 0 #1d4c55,0 8px 7px #173a4144;overflow:hidden;transform:perspective(230px) rotateX(9deg)}.arena-fish-icon-big img{width:93px!important;height:58px!important;object-fit:contain;filter:drop-shadow(0 3px 2px #173a4477)}.full-fish-copy{grid-column:2;grid-row:1;min-width:0;padding-top:4px}.arena-fish-name{font-size:21px!important;line-height:26px;white-space:nowrap;min-height:0!important;margin:0!important;text-align:left!important;color:#1d4657}.arena-fish-name.name-len-4,.arena-fish-name.name-len-5plus{font-size:18px!important}.full-fish-meta{font-size:11px;line-height:17px;color:#566c64;white-space:nowrap}.arena-price-block{margin:2px 0 0!important;padding:0!important;background:none!important;box-shadow:none!important;border:0!important}.arena-price-label{display:inline!important;font-size:10px!important;color:#856a48;margin-right:6px}.arena-price-row{display:inline!important}.arena-price-row #arena-price{font-size:26px!important;line-height:29px;font-weight:900;color:#a05035;text-shadow:none!important}.arena-price-unit{font-size:11px!important;color:#856a48}.full-leader{font-size:10px;line-height:15px;color:#2a796b;white-space:nowrap}
+.arena-timer-wrap{grid-column:1/3;grid-row:2;position:static!important;display:flex!important;align-items:center;gap:8px;width:100%!important;height:26px!important;margin:0!important;background:#214854;border-radius:6px;padding:4px 7px}#arena-ring{display:none}.arena-timer-label{position:static!important;transform:none!important;display:flex;align-items:center;gap:5px;color:#fff4d5!important;line-height:18px}#demo-phase{font-size:10px;white-space:nowrap}#arena-time{font-size:18px!important;line-height:18px;color:#ffdc9e!important;text-shadow:none!important;min-width:32px}#demo-time-track{flex:1;height:7px;border-radius:6px;background:#14323f;overflow:hidden}#demo-time-fill{display:block;height:100%;width:100%;background:linear-gradient(90deg,#80c9a6,#d4e5a5);border-radius:6px}.arena-timer-wrap.urgent #demo-time-fill{background:linear-gradient(90deg,#f18b6a,#f0ca7f)}
+.arena-col-right{display:block!important;flex:none!important;height:53px!important;min-height:53px!important}.arena-bid-panel{height:53px!important;padding:0!important;margin:0!important;background:none!important;border:0!important;box-shadow:none!important}.arena-bid-panel::after{display:none}.arena-action-btns{display:grid!important;grid-template-columns:1fr 1fr 74px;gap:8px!important;height:49px;padding:0!important}.arena-action-btns .btn-bid{padding:7px 3px;font-size:15px;border:1px solid #a77c38;border-radius:9px;background:linear-gradient(#ffe6a0,#e8ba53);color:#634522;box-shadow:0 4px 0 #9c7134;height:45px;min-height:45px;line-height:24px}.arena-action-btns .btn-bid::before{display:none}.arena-action-btns .btn-bid.btn-giveup{font-size:13px;background:linear-gradient(#faf1dd,#d4bd94);border-color:#a5906c;color:#75664a}.arena-action-btns .btn-bid:disabled{background:#c7c6b6;border-color:#a5a58f;box-shadow:0 4px 0 #949581;color:#7e827b}
+#arena-idle{height:335px;min-height:335px;width:354px;flex:none;padding:8px;background:#fff3d8;border-radius:9px}#arena-idle-content{width:100%;height:100%;max-width:none;display:flex;flex-direction:column;justify-content:center;gap:9px;padding:8px}.idle-nickname{font-size:14px!important;line-height:20px;margin:0}.idle-title{font-size:22px!important;line-height:1.35;color:#28535d;margin:0}.idle-sub{font-size:14px!important;line-height:1.75;color:#6f6b50;margin:0}.idle-emoji{font-size:36px!important}.idle-btn{padding:10px 14px;font-size:16px;min-height:45px;flex:none!important}.idle-btn-row{display:flex;gap:8px;width:100%}.idle-btn-row .btn-bid{font-size:14px;padding:9px 7px;min-height:44px}.summary-icon-badge{height:48px;width:48px;border-radius:14px;margin:0 auto}.summary-icon-badge svg{height:48px;width:48px}.summary-icon-badge::after{display:none}
+#arena-sold-overlay{border-radius:10px}.sold-sub{font-size:14px}.stamp{font-size:27px;padding:8px 16px}.brick-panel::after{display:none}
+#history-drawer{background:#fff4de;color:#294b56}#drawer-header{background:#234955;color:#fff0cf}#drawer-header h2{color:#fff0cf;border:0;margin:0}#drawer-body{font-size:13px}#record-list .list-item{border-left-color:#6c9c8d;background:#fff8e9}.full-variant-label{color:#d4e7db}
+@media(prefers-reduced-motion:reduce){#demo-stage *,#demo-stage *::before,#demo-stage *::after{animation:none!important;transition:none!important}}
+</style><style>#top-bar{top:25px;height:100px;background:linear-gradient(#d7b47e,#b68750);padding:0 10px;box-shadow:none;border:0}
+#scene-brand{position:absolute;top:0;left:10px;width:282px;height:38px;border:2px solid #63828b;border-radius:10px;background:linear-gradient(#315b68,#153c4b);color:#ffe0a0;text-align:center;font-size:22px;font-weight:bold;line-height:34px;box-shadow:0 4px 0 #86623e}
+#top-bar-row1{position:absolute;top:49px;left:10px;width:370px;height:41px;display:flex;flex-direction:row-reverse;justify-content:space-between;gap:10px}
+#ui-day-season,#ui-budget{display:block;width:180px;height:41px;padding:10px 9px;background:linear-gradient(#fff2d4,#efdab4);border:1px solid #d5ae78;border-radius:9px;color:#244654;font-size:16px;line-height:19px;box-shadow:inset 0 2px #fff8,0 3px #9d713f55}
+#ingame-help-btn{position:absolute;right:0;top:-47px;width:32px;height:32px;border-radius:50%;font-size:18px;box-shadow:0 3px 0 #795c36}
+#top-bar-row2{position:static}#ui-inventory-summary{display:none}#sound-toggle{position:absolute;right:50px;top:3px;height:32px;width:32px;border-radius:50%;font-size:14px;padding:0}#history-fab{position:absolute;right:10px;top:716px;z-index:30;height:23px}
+#demo-stage #main-content{top:124px;height:625px}
+#board-header{top:0;height:26px;background:#f7e8c6;border:0;font-size:13px}
+#demo-stage #board-strip{top:26px;height:269px;grid-template-rows:repeat(3,79px);gap:7px;padding:6px 8px 9px;background:linear-gradient(115deg,#ffedca,#e4c797);border:0}
+#board-strip .strip-card{height:79px;min-height:79px}#board-strip .strip-cavity{height:65px;min-height:65px}#board-strip .strip-cavity img{height:54px}
+#demo-stage #auction-arena{top:301px;left:0;width:390px;height:324px;border:0;padding:0;border-radius:0;background:none;overflow:visible}
+#arena-ai-row{position:absolute;left:0;top:0;width:390px;height:103px;min-height:103px;max-height:103px;padding:0 12px;gap:5px;grid-template-columns:repeat(3,1fr);grid-template-rows:103px;background:#7e6950 url('fishmarket-3d/7dcede64aeaf.webp') center 35%/390px auto no-repeat;border-radius:0;box-shadow:none;isolation:isolate;z-index:2}
+#arena-ai-row::after{display:block;content:'';position:absolute;left:0;right:0;bottom:0;height:10px;background:linear-gradient(#d7aa71,#936333);z-index:1;box-shadow:0 -2px 4px #0004}
+#arena-ai-row .ai-chip{display:block;position:relative;height:103px;min-height:103px;border:0;border-radius:0;padding:0;background:none;box-shadow:none;overflow:visible;z-index:2}
+#arena-ai-row .ai-chip-clip{position:absolute;inset:0;top:0;width:100%!important;height:96px!important;background:none;border-radius:0!important;overflow:visible!important;box-shadow:none}
+#arena-ai-row .ai-chip-avatar{position:absolute;top:0;left:0;width:100%!important;height:96px!important;max-width:100%;object-fit:contain!important;object-position:bottom;filter:drop-shadow(0 3px 3px #2b303899)}
+#arena-ai-row .ai-name{position:absolute;left:50%;right:auto;top:auto;bottom:0;transform:translateX(-50%);width:auto;max-width:110px;padding:2px 6px;line-height:14px;border-radius:5px;background:linear-gradient(#f4dbab,#c29a61);border:1px solid #ac8049;color:#503b24;font-size:10px!important;text-shadow:none;z-index:4}
+#arena-ai-row .ai-status{position:absolute;top:8px;right:0;bottom:auto;max-width:75px;font-size:9px!important;padding:2px 4px;background:#fff6ddeb;color:#695334;z-index:3}
+#arena-ai-row .ai-chip.out{opacity:.65;filter:grayscale(.7)}#arena-ai-row .ai-chip.leader{transform:none}#arena-ai-row .ai-chip.leader .ai-name{background:#ffdf6d;box-shadow:0 0 8px #ffdd6f}
+#arena-ai-row .ai-bid-paddle{top:7px;right:2px;transform:rotate(8deg);background:#ffefb1;border:3px solid #97723a;padding:6px;font-size:13px;z-index:6;box-shadow:0 3px 5px #0005}#arena-ai-row .ai-bid-paddle::after{content:'';position:absolute;width:5px;height:16px;background:#976e35;bottom:-17px;left:50%}
+#arena-live{position:absolute;left:0;top:103px;width:390px;height:217px;min-height:217px;flex:none;display:flex;gap:0}
+#arena-live .arena-columns{display:block;height:217px;max-height:217px;min-height:217px;width:390px}
+#arena-live .arena-col-left{position:relative;width:390px;height:145px;min-height:145px;padding:0;gap:0;grid-template-columns:158px 232px;grid-template-rows:116px 29px;border:0;border-radius:0;background:linear-gradient(105deg,#c1dcd6,#fffae9 45%,#f4e2bf);box-shadow:none}
+.arena-fish-info{height:116px;padding:12px 8px;perspective:400px;background:radial-gradient(ellipse at 45% 85%,#3d737c77,transparent 65%)}
+.arena-fish-icon-big{width:139px!important;height:85px!important;border:6px solid #397883;border-bottom:16px solid #245969;border-radius:8px;overflow:visible;background:repeating-linear-gradient(135deg,#f5ffffbb 0 7px,#badbdcbb 7px 13px),linear-gradient(#edfafa,#99c7ca);transform:perspective(350px) rotateX(20deg) rotateZ(-4deg);box-shadow:inset 0 4px 6px #18475166,0 8px 0 #173f4c,0 12px 8px #173a4166}
+.arena-fish-icon-big img{width:143px!important;height:72px!important;max-width:none!important;transform:rotate(-5deg);filter:drop-shadow(0 6px 3px #173a4477)}
+.full-fish-copy{padding:10px 10px 0 8px}.arena-fish-name{font-size:22px!important;line-height:27px}.full-fish-meta{font-size:11px;line-height:18px}.arena-price-block{text-align:left!important;margin:4px 0 0!important}.arena-price-row #arena-price{font-size:27px!important}.full-leader{font-size:10px}
+.arena-timer-wrap{border-radius:0;padding:5px 10px;height:29px!important;gap:7px}.arena-timer-label{flex-direction:row!important;gap:5px!important;min-width:100px}#demo-phase{display:inline!important;font-size:10px!important}#arena-time{font-size:18px!important}#demo-time-track{height:8px}
+.arena-col-right{position:absolute;left:0;top:151px;width:390px;height:62px!important;min-height:62px!important;padding:0 10px!important}
+.arena-bid-panel{height:62px!important}.arena-action-btns{grid-template-columns:108px 1fr 55px;height:52px;gap:7px!important}#arena-btn-10{display:none!important}.arena-action-btns #arena-btn-5{height:49px;min-height:49px;background:linear-gradient(#ffe792,#ffc635);font-size:20px;font-weight:bold;color:#674714;border:1px solid #c99b38;box-shadow:inset 0 2px #fff9,0 5px 0 #aa7934;text-shadow:0 1px #fff7}.arena-action-btns #arena-btn-fast{height:49px;min-height:49px;font-size:13px;background:linear-gradient(#fff5da,#d6bb8b)}
+.offer-adjust{display:flex;align-items:center;justify-content:space-between;gap:3px;border:1px solid #ac854b;background:#f4d39c;border-radius:9px;padding:4px;box-shadow:0 4px 0 #a97d47}.offer-adjust button{width:24px;height:32px;padding:0;border:1px solid #c4a16b;border-radius:6px;background:linear-gradient(#fff8e7,#e6c28b);color:#9d7c4c;font-size:22px}.offer-adjust strong{font-size:15px;color:#244654;font-variant-numeric:tabular-nums}
+#arena-idle{position:absolute;top:103px;left:0;width:390px;height:214px;min-height:214px;border-radius:0;background:linear-gradient(110deg,#fff4d9,#ead1a6);padding:5px 12px}#arena-idle-content{gap:5px;padding:2px 10px}.idle-title{font-size:19px!important}.idle-nickname{font-size:11px!important}.idle-sub{font-size:12px!important;line-height:1.65}.idle-emoji{display:none}.idle-btn{font-size:15px;padding:8px 18px;min-height:36px}.summary-icon-badge{width:36px;height:36px}.summary-icon-badge svg{width:36px;height:36px}.idle-btn-row .btn-bid{min-height:36px;padding:6px;font-size:13px}
+#demo-tools{background:#815d36;height:31px;gap:5px}#demo-tools a{display:none}#demo-tools .seed-label{font-size:8px}#demo-tools label{font-size:10px}#demo-tools button{margin-right:66px}#demo-bar{font-size:9px;background:#1d414f}#demo-stage{background:#caa36e}
+.full-leader{position:absolute;left:166px;bottom:34px;height:14px;line-height:14px}#history-fab{position:static!important;height:23px!important;flex:none}#demo-tools button{margin-right:0}#demo-tools .seed-label{display:none}.arena-timer-label{min-width:110px}
+</style><script src="start-ticket.js"></script><link rel="stylesheet" href="fishmarket-3d/production.css"></head>
+<body><div id="demo-stage"><div id="demo-bar"><span>永續魚市拍賣</span><span>25魚種 / 4AI / 4回合</span></div>
 <audio id="bgm" loop preload="auto">
   <source src="audio/fmbgm.m4a" type="audio/mp4">
 </audio>
@@ -491,9 +559,9 @@
             <div class="help-version">版本 261018</div>
 
             <h3>🎮 遊戲介紹</h3>
-            <p>你來到苗栗竹南龍鳳漁港，要跟另外 6 位買家一起競標剛進港的漁獲，用有限的現金標到魚貨，最終依照你的採購內容決定是不是一個懂得永續海鮮觀念的守護者。</p>
+            <p>你來到苗栗竹南龍鳳漁港，要跟另外 4 位買家一起競標剛進港的漁獲，用有限的現金標到魚貨，最終依照你的採購內容決定是不是一個懂得永續海鮮觀念的守護者。</p>
 
-            <h3>📋 玩法流程</h3>
+            <h3>📋 玩法流程</h3><p>全局四季，每季先公布全部魚貨，觀察完再開始。每箱觀察 3 秒後競標 8 秒；有效出價會重設 8 秒。AI 最多加價 10 次，仍須等待倒數完畢。用＋／−調整本次加價幅度，再按「出價」；顯示的金額是預計出價總額。放棄會快速處理本箱，領先中不能放棄。開啟說明、紀錄或切換背景會暫停，按「繼續遊戲」後才恢復。</p>
             <ol>
                 <li>每箱魚貨開賣</li>
                 <li>倒數時間內跟其他買家一起喊價</li>
@@ -509,12 +577,12 @@
                 <span class="help-chip"><span class="chip-icon">🔨</span>拍賣中／SOLD 落槌</span>
             </div>
             <div class="help-chip-row">
-                <span class="help-chip"><img class="chip-icon-img" src="image/餐廳老闆.png" alt="" onerror="this.outerHTML='👨‍🍳'">餐廳老闆</span>
-                <span class="help-chip"><img class="chip-icon-img" src="image/快炒店.png" alt="" onerror="this.outerHTML='🍲'">快炒店</span>
-                <span class="help-chip"><img class="chip-icon-img" src="image/量販採購.png" alt="" onerror="this.outerHTML='🏭'">量販採購</span>
-                <span class="help-chip"><img class="chip-icon-img" src="image/批發商.png" alt="" onerror="this.outerHTML='🚚'">批發商</span>
-                <span class="help-chip"><img class="chip-icon-img" src="image/魚販阿姨.png" alt="" onerror="this.outerHTML='🛒'">魚販阿姨</span>
-                <span class="help-chip"><img class="chip-icon-img" src="image/魚販阿伯.png" alt="" onerror="this.outerHTML='🛒'">魚販阿伯</span>
+                <span class="help-chip"><img class="chip-icon-img" src="fishmarket-3d/2ffbe41314f3.png" alt="" onerror="this.outerHTML='👨‍🍳'">餐廳老闆</span>
+                <span class="help-chip"><img class="chip-icon-img" src="fishmarket-3d/cc987977708a.png" alt="" onerror="this.outerHTML='🍲'">快炒店</span>
+                <span class="help-chip"><img class="chip-icon-img" src="fishmarket-3d/62c8a6877e17.png" alt="" onerror="this.outerHTML='🏭'">量販採購</span>
+                
+                
+                
             </div>
             <p>結算時才會看到（競標當下不會提示）：</p>
             <div class="help-chip-row">
@@ -597,35 +665,12 @@
 
             <div id="arena-live">
 
-                <div class="arena-columns">
+                <div class="arena-ai-row brick-panel" id="arena-ai-row"></div><div class="arena-columns">
                     <!-- 左欄（2）：魚貨資訊、目前價格、倒數計時 -->
-                    <div class="arena-col-left brick-panel">
-                        <div class="arena-fish-info">
-                            <div class="arena-fish-icon-big" id="arena-fish-icon"></div>
-                            <div class="arena-fish-name" id="arena-fish-name-text">魚名</div>
-                        </div>
-
-                        <div class="arena-price-block">
-                            <div class="arena-price-label">目前價格</div>
-                            <div class="arena-price-row">
-                                <span id="arena-price">0</span><span class="arena-price-unit">元</span>
-                            </div>
-                        </div>
-
-                        <div class="arena-timer-wrap">
-                            <svg id="arena-ring" viewBox="0 0 120 120">
-                                <circle class="ring-track" cx="60" cy="60" r="52"></circle>
-                                <circle id="ring-progress" class="ring-progress" cx="60" cy="60" r="52"></circle>
-                            </svg>
-                            <div class="arena-timer-label">
-                                <div id="arena-time">3.0</div>
-                            </div>
-                        </div>
-                    </div>
-
+<div class="arena-col-left brick-panel"><div class="arena-fish-info"><div class="arena-fish-icon-big" id="arena-fish-icon"></div></div><div class="full-fish-copy"><div class="arena-fish-name" id="arena-fish-name-text">魚名</div><div class="full-fish-meta" id="demo-box-meta"></div><div class="arena-price-block"><span class="arena-price-label">最高出價</span><span class="arena-price-row"><span id="arena-price">0</span><span class="arena-price-unit">元</span></span></div><div class="full-leader" id="demo-leader"></div></div><div class="arena-timer-wrap"><svg id="arena-ring" viewBox="0 0 120 120"><circle id="ring-progress" class="ring-progress" cx="60" cy="60" r="52"></circle></svg><div class="arena-timer-label"><span id="demo-phase">觀察</span><b id="arena-time">3.0</b><span style="font-size:10px">秒</span></div><div id="demo-time-track"><i id="demo-time-fill"></i></div></div></div>
                     <!-- 右欄（3）：6位買家宮格、我的現金/出價操作 -->
                     <div class="arena-col-right">
-                        <div class="arena-ai-row brick-panel" id="arena-ai-row"></div>
+                        
 
                         <div class="arena-bid-panel brick-panel">
                             <div class="arena-action-btns">
@@ -655,7 +700,7 @@
         </div>
     </div>
 
-    <script src="start-ticket.js"></script>
+    
 <script>
         const SEASONS = ['🌸 春季', '☀️ 夏季', '🍂 秋季', '❄️ 冬季'];
         const SEASON_WELCOME_LINES = [
@@ -665,6 +710,7 @@
             '寒流來的季節，好魚不等人，把握機會！'
         ];
         const TOTAL_ROUNDS = 4;
+        const setInterval=(fn,delay,...args)=>window.setInterval(()=>{if(!window.marketFlow?.paused)fn(...args)},delay);
 
         // ---------- 平台通訊相關 ----------
         const TASK_ID = 'fishmarket';
@@ -745,9 +791,7 @@
             { id: 'ai6', name: '🛒 魚販阿伯', type: 'uncle', budgetRatio: 0.25, priceMultiplier: 2 }
         ];
 
-        function fishIcon(fish) {
-            return `fishdb/${fish.name}.png`;
-        }
+        function fishIcon(fish) { return DEMO_ASSETS.fish[fish.name] || ''; }
 
         function splitAiName(name) {
             const parts = name.split(' ');
@@ -985,19 +1029,8 @@
         // ── 攔截瀏覽器「上一頁」（含手機滑動返回手勢）：不要讓它直接把分頁導覽走 ──
         // 原理：先塞一筆假的瀏覽紀錄，使用者按上一頁時只會觸發 popstate（不會真的離開），
         // 這時候把假紀錄補回去、跳確認視窗；確定要走才真的送 exit + 關閉分頁。
-        if (window.history && window.history.pushState) {
-            history.pushState(null, '', location.href);
-            window.addEventListener('popstate', async function () {
-                history.pushState(null, '', location.href);
-                if (!(await taskConfirm('確定要返回平台嗎？'))) return;
-                exitAndClosePlatform();
-            });
-        }
 
-        // ── 防止長按跳出系統右鍵/選單 ──
-        document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
-        // 收平台送來的訊息：ready 之後回傳的 player_info，帶玩家暱稱、已擁有徽章、這個任務的個人最佳成績
         window.addEventListener('message', function (event) {
             const msg = event.data;
             if (!msg || msg.source !== 'culture-platform') return;
@@ -1008,6 +1041,19 @@
                 myBestScore = (msg.payload && msg.payload.myScore) || null;
             }
         });
+        if (window.history && window.history.pushState) {
+            history.pushState(null, '', location.href);
+            window.addEventListener('popstate', async function () {
+                history.pushState(null, '', location.href);
+                if (!(await taskConfirm('確定要返回平台嗎？'))) return;
+                exitAndClosePlatform();
+            });
+        }
+        // ── 防止長按跳出系統右鍵/選單 ──
+        document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+        // 收平台送來的訊息：ready 之後回傳的 player_info，帶玩家暱稱、已擁有徽章、這個任務的個人最佳成績
+
 
         // 徽章蹦出特效：出現(0.6秒彈跳) → 停留5秒 → 淡出(1.5秒)後整個隱藏
         function playBadgeUnlockEffect() {
@@ -1384,7 +1430,7 @@
         function scheduleNextAiBid() {
             auctionState.pendingAiBid = null;
             auctionState.pendingAiAt = 0;
-            if (auctionState.phase !== 'bidding' || auctionState.giveUp) return;
+            if (auctionState.phase !== 'bidding' || auctionState.giveUp || auctionState.aiBidCount >= auctionState.maxBidRounds) return;
 
             let activeAIs = auctionState.aiStatus.filter(ai => !ai.out && ai.id !== auctionState.highestBidderId);
             activeAIs.forEach(ai => {
@@ -1706,7 +1752,7 @@
                 const bidMatch = ai.status.match(/加價\s*\+?(\d+)/);
                 const statusDisplay = bidMatch ? '出價中' : ai.status;
                 const bubbleHTML = bidMatch ? `<div class="ai-bid-paddle">＋$${bidMatch[1]}</div>` : '';
-                aiGrid.innerHTML += `<div class="${cls}"><div class="ai-chip-clip"><img class="ai-chip-avatar" src="image/${nameDisplay}.png" alt="${nameDisplay}" onerror="this.outerHTML='<div class=\\'ai-chip-avatar-fallback\\'>${parts.emoji}</div>'"></div>${bubbleHTML}<span class="ai-name">${nameDisplay}</span><span class="ai-status">${statusDisplay}</span></div>`;
+                aiGrid.innerHTML += `<div class="${cls}"><div class="ai-chip-clip"><img class="ai-chip-avatar" src="${DEMO_ASSETS.avatars[nameDisplay]}" alt="${nameDisplay}" onerror="this.outerHTML='<div class=\\'ai-chip-avatar-fallback\\'>${parts.emoji}</div>'"></div>${bubbleHTML}<span class="ai-name">${nameDisplay}</span><span class="ai-status">${statusDisplay}</span></div>`;
             });
         }
 
@@ -1864,6 +1910,7 @@
         }
 
         function playerBid(amount) {
+            if (auctionState.phase !== 'bidding' || auctionState.currentBox?.status !== 'active' || auctionState.giveUp) return;
             if (auctionState.phase === 'observe') return;
             if (auctionState.highestBidderId === 'player') return; // 已經領先，不需要跟自己加價
             if (gameState.budget < (auctionState.currentPrice + amount)) {
@@ -1886,10 +1933,13 @@
             pushBidLog('⭐ 你', auctionState.currentPrice);
             scheduleNextAiBid();
             updateAuctionUI();
-            // 玩家出價不計入10次上限，只有AI出價次數會觸發自動截標
+            // 玩家出價不計入 AI 上限；AI 達上限後仍等待倒數。
         }
 
         function endCurrentBox() {
+            if(window.marketFlow?.paused)return;
+            if (!auctionState.currentBox || auctionState.currentBox.status !== 'active') return;
+            auctionState.timeLeft = 0;
             clearInterval(auctionState.mainTimer);
             clearInterval(auctionState.aiTimer);
 
@@ -1922,14 +1972,14 @@
 
             overlay.innerHTML = `<div><div class="stamp">${overlayTitle}</div><div class="sold-sub">${overlaySub}</div></div>`;
             overlay.className = `show ${overlayCls}`;
-            setTimeout(() => { overlay.className = ''; }, 900);
+            marketFlow.delay(() => { overlay.className = ''; }, 900);
 
             document.getElementById('ui-budget').innerText = `💰 現金: ${gameState.budget}元`;
             updateInventorySummary();
             renderBoard();
 
             auctionState.currentIndex++;
-            setTimeout(() => {
+            marketFlow.delay(() => {
                 if (auctionState.currentIndex < auctionState.queue.length) {
                     const remaining = auctionState.queue.length - auctionState.currentIndex;
                     setStageLabel('📋 看板更新中');
@@ -1965,58 +2015,10 @@
         // ── 切到背景時暫停：分頁不可見時（切app、鎖螢幕、切分頁）清掉正在跑的計時器，
         // 不讓拍賣倒數/AI出價在背景偷跑；回到前景後跳出提示，玩家點了才真的恢復，
         // 不會一回來就發現時間已經被扣完、或被 AI 搶標。
-        let pausedContext = null; // 'bidding'（正在喊價）｜'nextBox'（換下一箱的5秒倒數）｜null
-        let wasBgmPlaying = false;
-        let showPauseOverlayPending = false;
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                if (auctionState.mainTimer || auctionState.aiTimer) {
-                    pausedContext = 'bidding';
-                    clearInterval(auctionState.mainTimer);
-                    clearInterval(auctionState.aiTimer);
-                    auctionState.mainTimer = null;
-                    auctionState.aiTimer = null;
-                } else if (auctionState.nextBoxTimer) {
-                    pausedContext = 'nextBox';
-                    clearInterval(auctionState.nextBoxTimer);
-                    auctionState.nextBoxTimer = null;
-                }
-                // 背景音樂從按下「開始拍賣」就會一路播到結束，橫跨拍賣中／看板整備中
-                // 這些不同階段，不能只跟著上面那兩種計時器有沒有在跑來決定要不要暫停——
-                // 「看板已就緒、等你按開始拍賣」這種準備畫面本來就沒有計時器在跑，
-                // 但音樂還是在播，之前只檢查計時器，這個階段切到背景音樂完全沒被暫停到。
-                // 改成只要音樂正在播放，就記一個 wasBgmPlaying，跟計時器分開判斷。
-                if (!bgm.paused) {
-                    wasBgmPlaying = true;
-                    bgm.pause();
-                }
-                // 分頁現在是隱藏的，暫停提示等真的切回來才顯示，不然使用者根本看不到。
-                if (pausedContext) showPauseOverlayPending = true;
-            } else if (showPauseOverlayPending) {
-                showPauseOverlayPending = false;
-                document.getElementById('pause-overlay').classList.add('show');
-            } else if (wasBgmPlaying) {
-                // 剛剛只有音樂在播、沒有拍賣計時器在跑（例如在「看板已就緒」畫面被切走），
-                // 不需要跳出「遊戲已暫停」的提示擋住畫面，直接把音樂接回來就好。
-                wasBgmPlaying = false;
-                bgm.play().catch(()=>{});
-            }
-        });
-
-        window.resumeFromPause = function () {
-            document.getElementById('pause-overlay').classList.remove('show');
-            if (wasBgmPlaying) { wasBgmPlaying = false; bgm.play().catch(()=>{}); }
-            if (pausedContext === 'bidding') {
-                auctionState.mainTimer = setInterval(countdownTimer, 100);
-                auctionState.aiTimer = setInterval(aiThinkLoop, 150);
-            } else if (pausedContext === 'nextBox') {
-                startNextBoxCountdown(); // 5秒倒數重新開始算，不強求精準保留剩餘秒數
-            }
-            pausedContext = null;
-        };
-
         function continueNextBox() {
+            if(window.marketFlow?.paused || !auctionState.nextBoxTimer)return;
             clearInterval(auctionState.nextBoxTimer);
+            auctionState.nextBoxTimer = null;
             setStageLabel('🔨 拍賣中');
             showArenaLive();
             setupNextBox();
@@ -2045,6 +2047,7 @@
         // 獨立處理，不會管這是分頁裡的第幾次遊玩，判斷邏輯（已擁有徽章不重複發、
         // 分數要贏過 Firestore 上真正的最高分）跟重新整理分頁進來玩沒有任何差別。
         function resetAndPlayAgain() {
+            window.marketFlow?.reset();
             gameState.round = 1;
             gameState.seasonIndex = 0;
             gameState.budget = 0;
@@ -2053,9 +2056,32 @@
             gameState.history = [];
             gameState.lastTopUp = 0;
             gameState.aiBudgets = {};
-            document.getElementById('final-result-screen').style.display = 'none';
+            document.getElementById('final-result-screen').classList.remove('show');
+            document.getElementById('final-result-screen').style.display = ''; 
             startGame();
         }
     </script>
-</body>
+
+<footer id="demo-tools"><span id="flow-inventory">本季尚未購入</span><button id="flow-pause" type="button">暫停</button></footer>
+<script>function fitDemoFrame(){document.getElementById("demo-stage").style.setProperty("--frame-scale",Math.min(innerWidth/390,innerHeight/780))}addEventListener("resize",fitDemoFrame);fitDemoFrame();</script></div>
+<script>
+renderBoard=function(){document.getElementById('board-strip').innerHTML=gameState.todayBoxes.map(box=>{const label=box.status==='pending'?'待拍賣':box.status==='active'?'拍賣中':box.status==='sold-player'?'你得標':box.status==='sold-other'?'他人得標':'流標';return '<article class="strip-card '+box.status+'"><div class="strip-cavity"><img src="'+fishIcon(box.fish)+'" alt="'+box.fish.name+'"></div><div class="full-card-info"><strong>'+box.fish.name+'</strong><span>'+box.qty+'尾・'+box.size+'cm</span><span>'+box.fish.methodName+'</span><small>'+label+(box.soldPrice!=null?' '+box.soldPrice+'元':'')+'</small></div></article>'}).join('')};
+const coreUpdate=updateAuctionUI,coreRing=updateRing;
+updateRing=function(){coreRing();const observe=auctionState.phase==='observe';document.getElementById('demo-phase').textContent=observe?'觀察魚貨':'競標倒數';document.getElementById('demo-time-fill').style.width=(Math.max(0,Math.min(1,auctionState.timeLeft/(observe?OBSERVE_SECONDS:BIDDING_SECONDS)))*100)+'%';document.querySelector('.arena-timer-wrap').classList.toggle('urgent',!observe&&auctionState.timeLeft<=URGENT_WARN_START)};
+updateAuctionUI=function(){coreUpdate();const b=auctionState.currentBox;if(b)document.getElementById('demo-box-meta').textContent=b.qty+'尾・'+b.size+'cm・'+b.fish.methodName;document.getElementById('demo-leader').textContent=auctionState.highestBidderId?'領先：'+splitAiName(auctionState.highestBidderName).label:'等待出價'};
+</script><script>
+AI_PLAYERS.splice(4);
+AI_PLAYERS.forEach((ai,i)=>{DEMO_ASSETS.avatars[splitAiName(ai.name).label]=["fishmarket-3d/ebd328f6e13a.webp","fishmarket-3d/35f57f5d0be5.webp","fishmarket-3d/094813252ceb.webp"][i]});
+DEMO_ASSETS.avatars['批發商']="fishmarket-3d/1e0c42128d28.webp";
+const actorRow=document.getElementById('arena-ai-row');document.getElementById('auction-arena').prepend(actorRow);
+actorRow.innerHTML=AI_PLAYERS.map(ai=>'<div class="ai-chip"><div class="ai-chip-clip"><img class="ai-chip-avatar" src="'+DEMO_ASSETS.avatars[splitAiName(ai.name).label]+'"></div><span class="ai-name">'+splitAiName(ai.name).label+'</span><span class="ai-status">準備中</span></div>').join('');
+let demoIncrement=1;
+const controls=document.querySelector('.arena-action-btns');const adjust=document.createElement('div');adjust.className='offer-adjust';adjust.innerHTML='<button type="button" id="offer-minus" aria-label="降低出價">−</button><strong id="offer-amount">—</strong><button type="button" id="offer-plus" aria-label="提高出價">＋</button>';controls.prepend(adjust);
+document.getElementById('offer-minus').onclick=()=>{demoIncrement=Math.max(1,demoIncrement-1);updateAuctionUI()};document.getElementById('offer-plus').onclick=()=>{demoIncrement=Math.min(10,demoIncrement+1);updateAuctionUI()};
+document.getElementById('arena-btn-5').onclick=()=>playerBid(auctionState.bidStep*demoIncrement);
+const sceneUpdate=updateAuctionUI;updateAuctionUI=function(){sceneUpdate();const price=auctionState.currentPrice+auctionState.bidStep*demoIncrement;document.getElementById('offer-amount').textContent='$'+price;const bid=document.getElementById('arena-btn-5');if(auctionState.highestBidderId!=='player')bid.textContent='出價';document.getElementById('offer-minus').disabled=bid.disabled;document.getElementById('offer-plus').disabled=bid.disabled;};
+document.getElementById('demo-tools').append(document.getElementById('history-fab')); const sceneInit=initRound;initRound=function(){sceneInit();document.getElementById('ui-day-season').textContent+=' '+gameState.round+'/4'}; const seasonEl=document.getElementById('ui-day-season');const oldSeason=seasonEl.innerHTML;
+document.querySelector('#demo-bar span').id='flow-stage';document.querySelector('#demo-bar span').textContent='看板準備中';document.querySelector('#demo-bar span+span').textContent='261018';
+const brand=document.createElement('div');brand.id='scene-brand';brand.textContent='永續魚市拍賣';document.getElementById('top-bar').prepend(brand);
+</script><script src="fishmarket-3d/production.js"></script></body>
 </html>
