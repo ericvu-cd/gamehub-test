@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-<head><script>window.DEMO_ASSETS={"fish":{"三點蟹":"fishmarket-3d/8c4600220f8f.webp","剝皮魚":"fishmarket-3d/3b4fe08f6598.webp","午仔魚":"fishmarket-3d/31ab43924ede.webp","台灣鯖魚":"fishmarket-3d/c34423d612c5.webp","吳郭魚":"fishmarket-3d/b936945dd746.webp","小卷":"fishmarket-3d/d0ca2935b26d.webp","白帶魚":"fishmarket-3d/e143df1b5747.webp","白海豚":"fishmarket-3d/bf49880574b7.webp","白鯧":"fishmarket-3d/21913671913b.webp","皮刀":"fishmarket-3d/3e8a60fd6cc9.webp","竹筴魚":"fishmarket-3d/9e73adc3a997.webp","紅目鰱":"fishmarket-3d/7b201f084e63.webp","紅魽":"fishmarket-3d/52bf7cd1523e.webp","臭肚魚":"fishmarket-3d/960bd767cdca.webp","花枝":"fishmarket-3d/94adcff140c4.webp","虱目魚":"fishmarket-3d/407311d24fd1.webp","赤鯮":"fishmarket-3d/c36f45088454.webp","野生石斑":"fishmarket-3d/81f75296cfec.webp","養殖烏魚":"fishmarket-3d/7a69e69fc0e3.webp","養殖鱸魚":"fishmarket-3d/190a97b19f48.webp","鬼頭刀":"fishmarket-3d/ca92c7790447.webp","鯨鯊":"fishmarket-3d/90ac5439be84.webp","鰆魚":"fishmarket-3d/cd425d7c1b32.webp","黃鰭鯛":"fishmarket-3d/1cc041e7fda6.webp","黑鮪魚":"fishmarket-3d/78be69ddd4ba.webp"},"avatars":{"餐廳老闆":"fishmarket-3d/2ffbe41314f3.png","快炒店":"fishmarket-3d/cc987977708a.png","量販採購":"fishmarket-3d/62c8a6877e17.png","批發商":"fishmarket-3d/e168cf89c78e.png","魚販阿姨":"fishmarket-3d/d7cb9542f5df.png","魚販阿伯":"fishmarket-3d/c1641f943fc2.png"}};</script><script src="task-dialogs.js"></script>
+<head><script>window.DEMO_ASSETS={"avatars":{"餐廳老闆":"fishmarket-3d/ebd328f6e13a.webp","快炒店":"fishmarket-3d/35f57f5d0be5.webp","量販採購":"fishmarket-3d/094813252ceb.webp","批發商":"fishmarket-3d/1e0c42128d28.webp"}};</script><script src="task-dialogs.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
@@ -577,9 +577,9 @@
                 <span class="help-chip"><span class="chip-icon">🔨</span>拍賣中／SOLD 落槌</span>
             </div>
             <div class="help-chip-row">
-                <span class="help-chip"><img class="chip-icon-img" src="fishmarket-3d/2ffbe41314f3.png" alt="" onerror="this.outerHTML='👨‍🍳'">餐廳老闆</span>
-                <span class="help-chip"><img class="chip-icon-img" src="fishmarket-3d/cc987977708a.png" alt="" onerror="this.outerHTML='🍲'">快炒店</span>
-                <span class="help-chip"><img class="chip-icon-img" src="fishmarket-3d/62c8a6877e17.png" alt="" onerror="this.outerHTML='🏭'">量販採購</span>
+                <span class="help-chip"><img class="chip-icon-img" src="fishmarket-3d/ebd328f6e13a.webp" alt="" onerror="this.outerHTML='👨‍🍳'">餐廳老闆</span>
+                <span class="help-chip"><img class="chip-icon-img" src="fishmarket-3d/35f57f5d0be5.webp" alt="" onerror="this.outerHTML='🍲'">快炒店</span>
+                <span class="help-chip"><img class="chip-icon-img" src="fishmarket-3d/094813252ceb.webp" alt="" onerror="this.outerHTML='🏭'">量販採購</span>
                 
                 
                 
@@ -791,7 +791,7 @@
             { id: 'ai6', name: '🛒 魚販阿伯', type: 'uncle', budgetRatio: 0.25, priceMultiplier: 2 }
         ];
 
-        function fishIcon(fish) { return DEMO_ASSETS.fish[fish.name] || ''; }
+        function fishIcon(fish) { return `fishdb/${fish.name}.png`; }
 
         function splitAiName(name) {
             const parts = name.split(' ');
@@ -2056,7 +2056,6 @@ updateRing=function(){coreRing();const observe=auctionState.phase==='observe';do
 updateAuctionUI=function(){coreUpdate();const b=auctionState.currentBox;if(b)document.getElementById('demo-box-meta').textContent=b.qty+'尾・'+b.size+'cm・'+b.fish.methodName;document.getElementById('demo-leader').textContent=auctionState.highestBidderId?'領先：'+splitAiName(auctionState.highestBidderName).label:'等待出價'};
 </script><script>
 AI_PLAYERS.splice(4);
-AI_PLAYERS.forEach((ai,i)=>{DEMO_ASSETS.avatars[splitAiName(ai.name).label]=["fishmarket-3d/ebd328f6e13a.webp","fishmarket-3d/35f57f5d0be5.webp","fishmarket-3d/094813252ceb.webp"][i]});
 DEMO_ASSETS.avatars['批發商']="fishmarket-3d/1e0c42128d28.webp";
 const actorRow=document.getElementById('arena-ai-row');document.getElementById('auction-arena').prepend(actorRow);
 actorRow.innerHTML=AI_PLAYERS.map(ai=>'<div class="ai-chip"><div class="ai-chip-clip"><img class="ai-chip-avatar" src="'+DEMO_ASSETS.avatars[splitAiName(ai.name).label]+'"></div><span class="ai-name">'+splitAiName(ai.name).label+'</span><span class="ai-status">準備中</span></div>').join('');
