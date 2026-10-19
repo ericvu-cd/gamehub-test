@@ -609,7 +609,7 @@ async function refreshMerchantCoupons() {
         const history = rows.filter(r => couponState(r) !== '可使用');
         const cards = items => items.map(row => {
             const invalid = couponState(row) !== '可使用';
-            return `<div class="merchant-coupon-entry ${invalid ? 'coupon-invalid' : ''}"><button class="merchant-coupon-card" data-coupon-id="${escapeHtml(row.id)}"><span class="coupon-art">${couponIcon(row)}</span> <strong>${escapeHtml(row.itemName)}</strong><span class="coupon-state-badge">${couponState(row)}</span><small>券號：${escapeHtml(row.couponCode)}</small><small>有效期限：${escapeHtml(row.validUntil || '無有效期限')}</small></button>${invalid ? `<button class="coupon-clear-btn" data-clear-coupon="${escapeHtml(row.id)}">清除此券</button>` : ''}</div>`;
+            return `<div class="merchant-coupon-entry ${invalid ? 'coupon-invalid' : ''}"><button type="button" class="merchant-coupon-card shop-card shop-ticket merchant-ticket bag-ticket" data-coupon-id="${escapeHtml(row.id)}"><span class="ticket-main"><span class="ticket-heading"><span class="shop-thumb coupon-art">${couponIcon(row)}</span><span class="ticket-heading-text"><span class="ticket-kind">店家商品券</span><strong class="shop-title">${escapeHtml(row.itemName)}</strong></span></span><small class="bag-ticket-code">券號：${escapeHtml(row.couponCode)}</small><small class="bag-ticket-expiry">有效期限：${escapeHtml(row.validUntil || '無有效期限')}</small></span><span class="ticket-stub"><span class="coupon-state-badge">${couponState(row)}</span><span class="bag-ticket-open">查看票券</span><span class="ticket-stub-mark" aria-hidden="true"></span></span></button>${invalid ? `<button class="coupon-clear-btn" data-clear-coupon="${escapeHtml(row.id)}">清除此券</button>` : ''}</div>`;
         }).join('');
         list.innerHTML = cards(active) + (history.length ? `<details><summary>使用／過期紀錄（${history.length}）</summary>${cards(history)}</details>` : '');
         list.querySelectorAll('[data-coupon-id]').forEach(button => button.onclick = () => window.showMerchantCoupon(button.dataset.couponId));
@@ -684,8 +684,9 @@ function renderBag() {
     document.getElementById('item-ticket-section').classList.toggle('hidden', ownedTickets.length === 0);
     document.getElementById('item-ticket-grid').innerHTML = ownedTickets.map(id => {
         const item = (siteData.shopItems || []).find(it => it.id === id);
-        return `<button class="collectible" onclick="window.showItemTicketDetail('${id}')"><span class="collectible-icon">${item?.iconUrl ? `<img src="${escapeHtml(item.iconUrl)}" alt="">` : '🎟️'}</span><span class="collectible-name">${escapeHtml(item?.name || id)}</span></button>`;
+        return `<button type="button" class="shop-card shop-ticket item-ticket bag-ticket" data-bag-item-ticket="${escapeHtml(id)}"><span class="ticket-main"><span class="ticket-heading"><span class="shop-thumb">${item?.iconUrl ? `<img src="${escapeHtml(item.iconUrl)}" alt="">` : '🎟️'}</span><span class="ticket-heading-text"><span class="ticket-kind">任務道具券</span><strong class="shop-title">${escapeHtml(item?.name || id)}</strong></span></span><span class="bag-ticket-hint">在指定任務中使用，每張限用一次</span></span><span class="ticket-stub"><span class="bag-ticket-owned">已持有</span><span class="bag-ticket-open">查看票券</span><span class="ticket-stub-mark" aria-hidden="true"></span></span></button>`;
     }).join('');
+    document.querySelectorAll('[data-bag-item-ticket]').forEach(button => button.onclick = () => window.showItemTicketDetail(button.dataset.bagItemTicket));
     const badgeGrid = document.getElementById('badge-grid');
     badgeGrid.innerHTML = Object.entries(siteData.badges).map(([id, b]) => {
         const owned = currentUser.badges.includes(id);
