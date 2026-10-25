@@ -520,7 +520,7 @@
 <div id="helpOverlay">
   <div id="helpInner">
     <h2>📖 石滬修復</h2>
-    <div class="help-version">版本 261018</div>
+    <div class="help-version">版本 261025</div>
 
     <h3>🎮 遊戲介紹</h3>
     <p>取材自後龍真實的石滬文化——先民利用潮汐、以天然石材堆砌石牆捕魚的傳統漁法。因石滬日久失修，你是搶修匠師，要在潮水不斷侵蝕、鳥賊環伺下把石滬修復完好。</p>
@@ -1570,6 +1570,7 @@ function enterDayMode(){
 
 function enterNightMode(){
   if(!state) return;
+  preloadThiefSprite();
   const board = document.getElementById('board');
   if(board) board.classList.add('night-mode');
   document.body.classList.add('night-mode');
@@ -1639,79 +1640,61 @@ function triggerThiefEvent(){
   vibrate([50, 100, 50]);
 }
 
-/* 偷魚小賊造型：紅頭巾扛著魚袋的角色，頭、身體、手、腳畫成同一組連續形狀，
-   避免看起來像各部位分開的零件拼湊在一起。從畫面左側跑進來，往右側跑出去。 */
-function thiefFigureSVG(){
-  return `
-    <svg viewBox="0 0 260 300" width="100%" height="100%">
-      <ellipse cx="150" cy="286" rx="76" ry="10" fill="#000000" opacity="0.15"/>
-
-      <path d="M65,102 C60,130 60,160 65,190 C66,215 64,245 68,265 C72,272 82,274 90,270 C96,266 96,255 93,245 C97,220 96,198 92,188 L108,188 C104,198 103,220 107,245 C104,255 104,266 110,270 C118,274 128,272 132,265 C136,245 134,215 135,190 C140,160 140,130 135,102 C122,94 78,94 65,102 Z"
-        fill="#d0842f" stroke="#241407" stroke-width="3" stroke-linejoin="round"/>
-
-      <path d="M69,225 L92,222" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round" opacity="0.65"/>
-      <path d="M108,222 L131,225" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round" opacity="0.65"/>
-
-      <path d="M65,150 L135,150" stroke="#8a4b16" stroke-width="4"/>
-      <circle cx="100" cy="150" r="6" fill="#c2280f" stroke="#241407" stroke-width="1.5"/>
-
-      <path d="M128,108 C145,100 160,90 172,86 C180,84 187,88 187,96 C187,104 179,109 170,107 C158,105 145,109 133,117 Z"
-        fill="#e0a878" stroke="#241407" stroke-width="3" stroke-linejoin="round"/>
-
-      <circle cx="100" cy="66" r="42" fill="#e0a878" stroke="#241407" stroke-width="3"/>
-
-      <path d="M64,55 C64,30 84,20 100,20 C116,20 136,30 136,55 C136,42 118,34 100,38 C82,34 64,42 64,55 Z"
-        fill="#ff4327" stroke="#241407" stroke-width="3" stroke-linejoin="round"/>
-      <path d="M130,42 C154,44 168,60 166,80 C155,72 143,70 131,74 Z" fill="#c2280f" stroke="#241407" stroke-width="2.5" stroke-linejoin="round"/>
-      <path d="M126,36 C150,32 166,44 170,64 C157,58 144,58 132,64 Z" fill="#ff4327" stroke="#241407" stroke-width="2.5" stroke-linejoin="round"/>
-
-      <path d="M76,58 Q83,53 90,57" fill="none" stroke="#241407" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M100,57 Q107,53 114,58" fill="none" stroke="#241407" stroke-width="2.5" stroke-linecap="round"/>
-      <ellipse cx="84" cy="65" rx="3" ry="4" fill="#241407"/>
-      <ellipse cx="106" cy="65" rx="3" ry="4" fill="#241407"/>
-      <path d="M82,80 Q94,86 106,79" fill="none" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round"/>
-
-      <path d="M172,86 Q184,72 196,64" fill="none" stroke="#8a4b16" stroke-width="4" stroke-linecap="round"/>
-      <ellipse cx="205" cy="108" rx="34" ry="42" fill="#087a89" stroke="#241407" stroke-width="3"/>
-      <path d="M205,68 Q211,62 219,68 L215,82 Q205,78 195,82 Z" fill="#00d4c2" stroke="#241407" stroke-width="2.5" stroke-linejoin="round"/>
-      <path d="M183,102 Q205,94 227,104" fill="none" stroke="#065c66" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
-    </svg>
-  `;
+/* 3D 風格小偷：共用同一張透明角色圖，說明與遊戲外觀保持一致。
+   僅更新呈現；偷魚數量、魚獲扣分、助手券與事件判定維持原流程。 */
+const THIEF_SPRITE_URL = 'image/stoneweir-thief-3d-261025.webp';
+let thiefSpritePreload = null;
+function preloadThiefSprite(){
+  if(thiefSpritePreload) return;
+  thiefSpritePreload = new Image();
+  thiefSpritePreload.src = THIEF_SPRITE_URL;
 }
-
+function thiefFigureHTML(){
+  return `<img src="${THIEF_SPRITE_URL}" alt="紅頭巾小偷扛著魚袋" draggable="false" style="display:block;width:100%;height:100%;object-fit:contain">`;
+}
 function playThiefEffect(){
-  const thief = document.createElement('div');
-  thief.className = 'thief-figure';
-  thief.style.cssText = `
-    position: fixed;
-    top: 38%;
-    left: -100px;
-    width: 84px;
-    height: 97px;
-    pointer-events: none;
-    z-index: 50;
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,.35));
-    animation: thiefDash 1.35s ease-in-out forwards;
-  `;
-  thief.innerHTML = thiefFigureSVG();
-
   if(!document.querySelector('style[data-thief-animation]')){
     const style = document.createElement('style');
     style.setAttribute('data-thief-animation', 'true');
     style.textContent = `
-      @keyframes thiefDash {
-        0% { left: -100px; opacity: 0; transform: translateY(0) scale(.92); }
-        14% { opacity: 1; }
-        50% { transform: translateY(-6px) scale(1); }
-        86% { opacity: 1; }
-        100% { left: 110vw; opacity: 0; transform: translateY(0) scale(.92); }
+      .thief-figure {
+        position:fixed;left:50%;top:38%;width:clamp(140px,42vw,210px);
+        aspect-ratio:3/2;pointer-events:none;z-index:50;
+        filter:drop-shadow(0 9px 6px rgba(0,0,0,.4));
+        animation:thiefDash3D 2.6s ease-in-out forwards;
+        will-change:transform,opacity;
+      }
+      .thief-figure .thief-stride {width:100%;height:100%;animation:thiefStride3D .22s ease-in-out infinite alternate;}
+      @keyframes thiefDash3D {
+        0% {transform:translateX(calc(-50vw - 220px));opacity:0;}
+        12% {opacity:1;}
+        35% {transform:translateX(-58%) translateY(-4px);opacity:1;}
+        44%,58% {transform:translateX(-50%) rotate(-7deg);opacity:1;}
+        66% {transform:translateX(-20%) translateY(-5px) rotate(3deg);opacity:1;}
+        90% {opacity:1;}
+        100% {transform:translateX(calc(50vw + 30px));opacity:0;}
+      }
+      @keyframes thiefStride3D {
+        from {transform:translateY(0) rotate(-2deg);}
+        to {transform:translateY(-5px) rotate(2deg);}
+      }
+      @media (prefers-reduced-motion:reduce) {
+        .thief-figure {animation:thiefStill3D 1.4s ease forwards;}
+        .thief-figure .thief-stride {animation:none;}
+        @keyframes thiefStill3D {0%,100%{transform:translateX(-50%);opacity:0;}15%,85%{transform:translateX(-50%);opacity:1;}}
       }
     `;
     document.head.appendChild(style);
   }
-
+  const thief = document.createElement('div');
+  thief.className = 'thief-figure';
+  thief.setAttribute('aria-hidden','true');
+  thief.innerHTML = `<div class="thief-stride">${thiefFigureHTML()}</div>`;
+  thief.addEventListener('animationend', event=>{
+    if(event.target === thief) thief.remove();
+  });
   document.body.appendChild(thief);
-  setTimeout(()=>{ if(thief.parentNode) thief.remove(); }, 1400);
+  setTimeout(()=>thief.remove(),3000);
 }
 
 function collectFish(){
@@ -2629,10 +2612,10 @@ function showBadgePopup(){
 // 页面加载时初始化统计显示
 updateIntroStats();
 
-// 說明頁的小偷圖示，直接重用遊戲本來畫小偷用的同一段函式，保證長得一模一樣
+// 說明頁與遊戲共用 3D 風格小偷圖片
 (function(){
   const box = document.querySelector('#helpThiefIcon .icon-box');
-  if(box) box.innerHTML = thiefFigureSVG();
+  if(box) box.innerHTML = thiefFigureHTML();
 })();
 </script>
 </body>
