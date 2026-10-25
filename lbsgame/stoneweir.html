@@ -2137,15 +2137,15 @@ function ebbFish(escapeDurationMs){
   }
 }
 
-/* ============ 海鳥偷魚事件（隨機 15%） ============ */
-const BIRD_CHECK_MIN_MS = 4000, BIRD_CHECK_MAX_MS = 8000;
-const BIRD_CHANCE = 0.15;
+/* ============ 海鳥偷魚事件（白天每 3～6 秒檢查，隨機 25%） ============ */
+const BIRD_CHECK_MIN_MS = 3000, BIRD_CHECK_MAX_MS = 6000;
+const BIRD_CHANCE = 0.25;
 
 function scheduleBirdCheck(){
-  if(!state || state.over) return;
+  if(!state || state.over || state.tidePhase !== 'day') return;
   const wait = BIRD_CHECK_MIN_MS + Math.random()*(BIRD_CHECK_MAX_MS - BIRD_CHECK_MIN_MS);
   state.birdHandle = setTimeout(()=>{
-    if(!state || state.over) return;
+    if(!state || state.over || state.tidePhase !== 'day') return;
     if(state.fishList.length > 0 && Math.random() < BIRD_CHANCE){
       triggerBirdEvent();
     }
@@ -2154,7 +2154,7 @@ function scheduleBirdCheck(){
 }
 
 function triggerBirdEvent(){
-  if(assistantTicketActive || !state || state.over || !state.fishList.length) return;
+  if(assistantTicketActive || !state || state.over || state.tidePhase !== 'day' || !state.fishList.length) return;
   const eventState=state;
   const targetFish=state.fishList[Math.floor(Math.random()*state.fishList.length)];
   const targetEl=document.getElementById(targetFish.id);
@@ -2167,13 +2167,26 @@ function triggerBirdEvent(){
   document.body.appendChild(bird);
   // 固定以目標魚的實際螢幕座標俯衝，與縮放後的石滬對齊。
   const targetX=rect.left+rect.width/2-(reverse?24:78),targetY=rect.top+rect.height/2-48;
-  const startX=reverse?window.innerWidth+110:-110,endX=reverse?-130:window.innerWidth+130;
+  const startX=reverse?window.innerWidth-90:-10;
+  const endX=reverse?-110:window.innerWidth+10;
+  const cruiseY=Math.max(6,Math.min(window.innerHeight*.18,targetY-140));
+  const approachX=targetX+(reverse?100:-100);
   const reduced=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-  const motion=bird.animate([
-    {transform:`translate(${reduced?targetX:startX}px,${targetY-85}px) scale(.8)`,opacity:0},
+  // 上方進場與巡飛 → 靠近魚才俯衝 → 48% 處叼魚 → 向上爬升離場。
+  // 保留 1600ms 時長與 768ms 判定，魚獲扣除仍與俯衝最低點同步。
+  const frames=reduced?[
+    {transform:`translate(${targetX}px,${targetY}px)`,opacity:0},
+    {transform:`translate(${targetX}px,${targetY}px)`,opacity:1,offset:.48},
+    {transform:`translate(${targetX}px,${targetY}px)`,opacity:0}
+  ]:[
+    {transform:`translate(${startX}px,-110px) scale(.75)`,opacity:0,offset:0},
+    {transform:`translate(${startX}px,${cruiseY}px) scale(.8)`,opacity:1,offset:.18},
+    {transform:`translate(${approachX}px,${cruiseY}px) scale(.9)`,opacity:1,offset:.32},
     {transform:`translate(${targetX}px,${targetY}px) scale(1.1)`,opacity:1,offset:.48},
-    {transform:`translate(${reduced?targetX:endX}px,${targetY-130}px) scale(.8)`,opacity:0}
-  ],{duration:1600,easing:'linear',fill:'forwards'});
+    {transform:`translate(${targetX+(reverse?-55:55)}px,${cruiseY}px) scale(.95)`,opacity:1,offset:.7},
+    {transform:`translate(${endX}px,-120px) scale(.65)`,opacity:0,offset:1}
+  ];
+  const motion=bird.animate(frames,{duration:1600,easing:'linear',fill:'forwards'});
   motion.onfinish=()=>bird.remove();
   SoundFX.birdSwoop();SoundFX.birdCall();
   setTimeout(()=>{
