@@ -213,24 +213,6 @@
   }
   .tool-broken-banner.show{opacity:1;transform:translateX(-50%) scale(1);animation:toolShake .4s ease .1s 2;}
   @keyframes toolShake{0%,100%{transform:translateX(-50%) scale(1) rotate(0);}25%{transform:translateX(-50%) scale(1) rotate(-3deg);}75%{transform:translateX(-50%) scale(1) rotate(3deg);}}
-  #birdFlyLayer{position:absolute;inset:0;pointer-events:none;z-index:35;overflow:visible;}
-  .bird-fly{position:absolute;top:10%;width:59.8px;height:44.2px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));
-    animation:birdSwoop 1.6s cubic-bezier(.4,0,.6,1) forwards;}
-  .bird-fly svg{width:100%;height:100%;display:block;}
-  .bird-fly.reverse{animation-name:birdSwoopRev;}
-  .bird-fly.reverse svg{transform:scaleX(-1);}
-  .bird-wing{transform-origin:20px 15px;animation:wingFlap .26s ease-in-out infinite alternate;}
-  @keyframes wingFlap{from{transform:rotate(-6deg) scaleY(1);}to{transform:rotate(-38deg) scaleY(.82);}}
-  @keyframes birdSwoop{
-    0%{left:-10%;transform:translateY(0) scale(.85);}
-    48%{transform:translateY(22px) scale(1.05);}
-    100%{left:106%;transform:translateY(-4px) scale(.85);}
-  }
-  @keyframes birdSwoopRev{
-    0%{left:106%;transform:translateY(0) scale(.85);}
-    48%{transform:translateY(22px) scale(1.05);}
-    100%{left:-10%;transform:translateY(-4px) scale(.85);}
-  }
   #board{width:min(340px, 88vw);height:auto;overflow:visible;}
   .stone-cell{cursor:pointer;}
   .stone-visual{transform-box:fill-box;transform-origin:center;transition:transform .15s ease;}
@@ -486,6 +468,22 @@
     transform:translateX(-100%);
   }
 
+
+  /* 3D 風格海鳥與竹簍，使用輕量角色圖搭配 transform 動畫。 */
+  .seagull-3d{position:fixed;left:0;top:0;width:100px;height:84px;pointer-events:none;z-index:55;filter:drop-shadow(0 5px 3px #0005);will-change:transform;}
+  .seagull-body{position:relative;width:100%;height:100%;animation:seagullBeat .22s ease-in-out infinite alternate;}
+  .seagull-body img{width:100%;height:100%;object-fit:contain;display:block;}
+  .seagull-body.reverse{transform:scaleX(-1);animation-name:seagullBeatReverse;}
+  .bird-catch{position:absolute;left:69%;top:53%;width:29px;height:22px;display:none;}
+  .seagull-3d.has-catch .bird-catch{display:block;}
+  @keyframes seagullBeat{from{transform:rotate(-4deg) scaleY(.93);}to{transform:rotate(3deg) scaleY(1);}}
+  @keyframes seagullBeatReverse{from{transform:scaleX(-1) rotate(-4deg) scaleY(.93);}to{transform:scaleX(-1) rotate(3deg) scaleY(1);}}
+  .basket-bob{transform-box:fill-box;transform-origin:50% 80%;filter:drop-shadow(0 6px 3px #0004);}
+  .basket-bob.collecting{animation:basketCollect3D .7s ease;}
+  @keyframes basketCollect3D{0%,100%{transform:rotate(0) scale(1);}28%{transform:rotate(-9deg) scale(1.08,.94);}58%{transform:rotate(7deg) scale(.96,1.07);}80%{transform:rotate(-3deg) scale(1.02);}}
+  .collect-fish-3d{position:fixed;left:0;top:0;pointer-events:none;z-index:54;filter:drop-shadow(0 3px 2px #0005);will-change:transform,opacity;}
+  @media(prefers-reduced-motion:reduce){.seagull-body,.basket-bob.collecting{animation:none;}}
+
 </style>
 </head>
 <body>
@@ -549,7 +547,7 @@
         <span class="label">損壞</span>
       </div>
       <div class="help-icon-item">
-        <div class="icon-box"><svg viewBox="0 0 44 32"><path d="M2,18 L11,13 L11,23 Z" fill="var(--rock-dark)" stroke="var(--outline)" stroke-width="1.3" stroke-linejoin="round"/><ellipse cx="21" cy="19" rx="10.5" ry="7.5" fill="var(--cream)" stroke="var(--outline)" stroke-width="1.6"/><circle cx="32" cy="12" r="6.4" fill="var(--cream)" stroke="var(--outline)" stroke-width="1.6"/><path d="M37,10 L44.5,8 L38,13.5 Z" fill="var(--gold)" stroke="var(--outline)" stroke-width="1.2" stroke-linejoin="round"/><circle cx="34.2" cy="10.2" r="1.3" fill="var(--outline)"/><path d="M17,17 Q2,4 -3,13 Q9,15 19,21 Z" fill="var(--rock-dark)" stroke="var(--outline)" stroke-width="1.3" stroke-linejoin="round"/></svg></div>
+        <div class="icon-box"><img src="image/stoneweir-seagull-3d-261025.webp" alt="海鳥" style="width:100%;height:100%;object-fit:contain"></div>
         <span class="label">飛鳥：叼走還沒收進竹簍的魚</span>
       </div>
       <div class="help-icon-item" id="helpThiefIcon">
@@ -557,7 +555,7 @@
         <span class="label">小偷：夜間偷走已捕獲但沒收好的魚</span>
       </div>
       <div class="help-icon-item">
-        <div class="icon-box"><svg viewBox="0 0 300 300"><path d="M64,72 C40,110 34,150 42,190 C48,225 62,255 90,278 C110,292 190,292 210,278 C238,255 252,225 258,190 C266,150 260,110 236,72 C220,84 180,90 150,90 C120,90 80,84 64,72 Z" fill="#d0842f" stroke="#241407" stroke-width="4.5" stroke-linejoin="round"/><ellipse cx="150" cy="282" rx="62" ry="14" fill="#8a4b16" stroke="#241407" stroke-width="3.5"/></svg></div>
+        <div class="icon-box"><img src="image/stoneweir-basket-3d-261025.webp" alt="竹簍" style="width:100%;height:100%;object-fit:contain"></div>
         <span class="label">竹簍：白天點擊收魚</span>
       </div>
     </div>
@@ -611,7 +609,6 @@
 
     <div class="board-wrap">
     <div class="tool-broken-banner" id="toolBrokenBanner"><span class="icon-slot" id="iconWrench"></span> 工具壞了，維修中…</div>
-    <div id="birdFlyLayer"></div>
     <svg id="board" viewBox="0 0 526 476">
       <defs>
         <symbol id="stoneOk" viewBox="0 0 60 60">
@@ -653,36 +650,7 @@
            線條比預覽版加粗，跟遊戲整體的粗框卡通風格更搭。
            位置完全交給 CSS 的 transform 控制（不用 SVG 的 transform 屬性），
            避免兩邊互相覆蓋導致位置跑掉、沒有真正置中在缺口正中間。 -->
-      <g id="collectFishBtn" class="basket-btn" role="button" tabindex="0" aria-label="日間時可收魚" title="日間時可收魚">
-        <path d="M64,72 C40,110 34,150 42,190 C48,225 62,255 90,278 C110,292 190,292 210,278 C238,255 252,225 258,190 C266,150 260,110 236,72 C220,84 180,90 150,90 C120,90 80,84 64,72 Z"
-          fill="#d0842f" stroke="#241407" stroke-width="4.5" stroke-linejoin="round"/>
-
-        <ellipse cx="150" cy="282" rx="62" ry="14" fill="#8a4b16" stroke="#241407" stroke-width="3.5"/>
-
-        <path d="M85,80 C65,120 62,160 70,195 C76,225 86,250 100,270" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
-        <path d="M118,86 C108,130 106,170 110,205 C112,235 116,258 122,275" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
-        <path d="M150,88 C150,140 150,180 150,215 C150,245 150,262 150,278" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
-        <path d="M182,86 C192,130 194,170 190,205 C188,235 184,258 178,275" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
-        <path d="M215,80 C235,120 238,160 230,195 C224,225 214,250 200,270" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.85"/>
-
-        <path d="M56,124 Q150,138 244,124" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
-        <path d="M46,158 Q150,174 254,158" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
-        <path d="M42,192 Q150,208 258,192" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
-        <path d="M52,226 Q150,240 248,226" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
-        <path d="M70,256 Q150,268 230,256" fill="none" stroke="#8a4b16" stroke-width="3.5" opacity="0.7"/>
-
-        <path d="M70,78 Q38,112 52,148 Q64,160 80,150" fill="none" stroke="#c9a876" stroke-width="8.5" stroke-linecap="round"/>
-        <path d="M70,78 Q38,112 52,148 Q64,160 80,150" fill="none" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
-        <path d="M230,78 Q262,112 248,148 Q236,160 220,150" fill="none" stroke="#c9a876" stroke-width="8.5" stroke-linecap="round"/>
-        <path d="M230,78 Q262,112 248,148 Q236,160 220,150" fill="none" stroke="#8a4b16" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
-
-        <ellipse cx="150" cy="74" rx="87" ry="19" fill="none" stroke="#8a4b16" stroke-width="13"/>
-        <ellipse cx="150" cy="74" rx="87" ry="19" fill="none" stroke="#241407" stroke-width="3.5"/>
-        <ellipse cx="150" cy="71" rx="66" ry="12" fill="#3a2313" stroke="#241407" stroke-width="2.5"/>
-
-        <path d="M160,60 Q167,53 176,60 L171,76 Q160,71 151,76 Z" fill="#00d4c2" stroke="#241407" stroke-width="3.5" stroke-linejoin="round"/>
-        <path d="M154,64 Q160,68 166,64" fill="none" stroke="#065c66" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
-      </g>
+      <g id="collectFishBtn" class="basket-btn" role="button" tabindex="0" aria-label="日間時可收魚" title="日間時可收魚"><g class="basket-bob"><image href="image/stoneweir-basket-3d-261025.webp" x="25" y="40" width="250" height="255" preserveAspectRatio="xMidYMid meet"/></g></g>
     </svg></div>
 
     <div class="legend-mini">
@@ -1476,6 +1444,7 @@ function randomPuzzle(){
 }
 
 function stopTimers(){
+  document.querySelectorAll('.seagull-3d,.collect-fish-3d,.thief-figure').forEach(el=>el.remove());
   if(state){
     clearInterval(state.timerHandle);
     clearTimeout(state.tideHandle);
@@ -1726,22 +1695,38 @@ function updateCollectedFishDisplay(){
 
 function playCollectFishEffect(){
   const btn = document.getElementById('collectFishBtn');
-  if(!btn) return;
-  
+  if(!btn || !state) return;
   const rect = btn.getBoundingClientRect();
-  
-  state.fishList.forEach(fish=>{
+  const destX = rect.left + rect.width * .5;
+  const destY = rect.top + rect.height * .28;
+  const bob = btn.querySelector('.basket-bob');
+  if(bob){bob.classList.remove('collecting');void bob.getBoundingClientRect();bob.classList.add('collecting');setTimeout(()=>bob.classList.remove('collecting'),750);}
+  const reduced = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  // 即刻移出已收魚的清單；動畫僅保留視覺副本，不會清掉之後游入的新魚。
+  const collected = state.fishList.slice();
+  state.fishList = [];
+  collected.forEach((fish,index)=>{
     const el = document.getElementById(fish.id);
     if(!el) return;
-    
-    el.style.transition = 'transform 0.6s ease-in, opacity 0.6s ease-in';
-    el.style.transform += ` translate(${rect.left - fish.x}px, ${rect.top - fish.y}px) scale(0.3)`;
-    el.style.opacity = '0';
+    const from = el.getBoundingClientRect();
+    if(!reduced){
+      const flyer = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      flyer.setAttribute('viewBox','-40 -30 80 60');
+      flyer.classList.add('collect-fish-3d');
+      flyer.style.width = Math.max(20,from.width) + 'px';
+      flyer.style.height = Math.max(16,from.height) + 'px';
+      flyer.innerHTML = '<use href="#fishIcon" x="-31.2" y="-19.2" width="62.4" height="38.4" style="color:#8ed9df"/>';
+      document.body.appendChild(flyer);
+      const x=from.left,y=from.top,dx=destX-from.width/2,dy=destY-from.height/2;
+      const anim=flyer.animate([
+        {transform:`translate(${x}px,${y}px) scale(1)`,opacity:1},
+        {transform:`translate(${(x+dx)/2}px,${Math.min(y,dy)-35}px) scale(.8)`,opacity:1,offset:.55},
+        {transform:`translate(${dx}px,${dy}px) scale(.12)`,opacity:0}
+      ],{duration:620,delay:Math.min(index*30,150),easing:'ease-in-out',fill:'both'});
+      anim.onfinish=()=>flyer.remove();setTimeout(()=>flyer.remove(),850);
+    }
+    el.remove();
   });
-  
-  setTimeout(()=>{ 
-    clearFish();
-  }, 650);
 }
 
 /* ---- 水位控制：倒數期間緩緩上升，撞擊後快速退回 ---- */
@@ -1860,7 +1845,7 @@ function autoCollectFish(){
   if(!assistantTicketActive || !state || state.over || state.fishCaught <= 0) return;
   state.totalFishCollected += state.fishCaught;
   state.fishCaught = 0;
-  clearFish();
+  playCollectFishEffect();
   document.getElementById('statFish').textContent = '0';
   updateCollectedFishDisplay();
   updateLiveScore();
@@ -2169,55 +2154,42 @@ function scheduleBirdCheck(){
 }
 
 function triggerBirdEvent(){
-  if(assistantTicketActive) return;
-  const layer = document.getElementById('birdFlyLayer');
-  if(!layer || !state.fishList.length) return;
-  const idx = Math.floor(Math.random()*state.fishList.length);
-  const targetFish = state.fishList[idx];
-  const boardWrap = document.querySelector('.board-wrap');
-  const wrapH = boardWrap ? boardWrap.clientHeight : 200;
-  // 用目標魚在畫布中的縱向比例，換算飛鳥掠過的高度，讓牠看起來真的往那條魚俯衝
-  const svgH = BOARD_VIEW_H;
-  const topPct = Math.max(4, Math.min(80, (targetFish.y / svgH) * 100));
-
-  const reverse = Math.random() < 0.5;
-  const bird = document.createElement('div');
-  bird.className = 'bird-fly' + (reverse ? ' reverse' : '');
-  bird.style.top = topPct + '%';
-  bird.innerHTML = `
-    <svg viewBox="0 0 44 32">
-      <path d="M2,18 L11,13 L11,23 Z" fill="var(--rock-dark)" stroke="var(--outline)" stroke-width="1.3" stroke-linejoin="round"/>
-      <ellipse cx="21" cy="19" rx="10.5" ry="7.5" fill="var(--cream)" stroke="var(--outline)" stroke-width="1.6"/>
-      <circle cx="32" cy="12" r="6.4" fill="var(--cream)" stroke="var(--outline)" stroke-width="1.6"/>
-      <path d="M37,10 L44.5,8 L38,13.5 Z" fill="var(--gold)" stroke="var(--outline)" stroke-width="1.2" stroke-linejoin="round"/>
-      <circle cx="34.2" cy="10.2" r="1.3" fill="var(--outline)"/>
-      <g class="bird-wing"><path d="M17,17 Q2,4 -3,13 Q9,15 19,21 Z" fill="var(--rock-dark)" stroke="var(--outline)" stroke-width="1.3" stroke-linejoin="round"/></g>
-    </svg>`;
-  layer.appendChild(bird);
-  SoundFX.birdSwoop();
-  SoundFX.birdCall();
-
-  // 動畫飛行到約一半時，正好掠過畫面中央，此時判定魚被叼走
+  if(assistantTicketActive || !state || state.over || !state.fishList.length) return;
+  const eventState=state;
+  const targetFish=state.fishList[Math.floor(Math.random()*state.fishList.length)];
+  const targetEl=document.getElementById(targetFish.id);
+  if(!targetEl) return;
+  const rect=targetEl.getBoundingClientRect();
+  const reverse=Math.random()<.5;
+  const bird=document.createElement('div');
+  bird.className='seagull-3d';bird.setAttribute('aria-hidden','true');
+  bird.innerHTML=`<div class="seagull-body${reverse?' reverse':''}"><img src="image/stoneweir-seagull-3d-261025.webp" alt=""><svg class="bird-catch" viewBox="0 0 80 60"><use href="#fishIcon" x="0" y="0" width="80" height="60" style="color:#94dce5"/></svg></div>`;
+  document.body.appendChild(bird);
+  // 固定以目標魚的實際螢幕座標俯衝，與縮放後的石滬對齊。
+  const targetX=rect.left+rect.width/2-(reverse?24:78),targetY=rect.top+rect.height/2-48;
+  const startX=reverse?window.innerWidth+110:-110,endX=reverse?-130:window.innerWidth+130;
+  const reduced=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const motion=bird.animate([
+    {transform:`translate(${reduced?targetX:startX}px,${targetY-85}px) scale(.8)`,opacity:0},
+    {transform:`translate(${targetX}px,${targetY}px) scale(1.1)`,opacity:1,offset:.48},
+    {transform:`translate(${reduced?targetX:endX}px,${targetY-130}px) scale(.8)`,opacity:0}
+  ],{duration:1600,easing:'linear',fill:'forwards'});
+  motion.onfinish=()=>bird.remove();
+  SoundFX.birdSwoop();SoundFX.birdCall();
   setTimeout(()=>{
-    if(!state || state.over) return;
-    const stillThere = state.fishList.find(f=>f.id === targetFish.id);
-    if(!stillThere) return; // 這條魚可能已經因退潮先逃走了
-    state.fishList = state.fishList.filter(f=>f.id !== targetFish.id);
-    state.fishCaught = Math.max(0, state.fishCaught - 1);
-    document.getElementById('statFish').textContent = state.fishCaught;
-    const el = document.getElementById(targetFish.id);
-    if(el){
-      el.style.transition = 'transform .25s ease, opacity .25s ease';
-      el.style.transform += ' scale(.2)';
-      el.style.opacity = '0';
-      setTimeout(()=>{ if(el.parentNode) el.remove(); }, 260);
-    }
-    updateLiveScore();
-    showFishDelta(-1);
-  }, 768); // 對應 birdSwoop 動畫 1.6s 的 48% 進度
-
-  setTimeout(()=>{ if(bird.parentNode) bird.remove(); }, 1650);
+    if(state!==eventState || state.over || assistantTicketActive) return;
+    const stillThere=state.fishList.find(f=>f.id===targetFish.id);
+    if(!stillThere) return; // 已收好、被偷走或隨退潮離開，就不重複扣魚。
+    state.fishList=state.fishList.filter(f=>f.id!==targetFish.id);
+    state.fishCaught=Math.max(0,state.fishCaught-1);
+    document.getElementById('statFish').textContent=state.fishCaught;
+    document.getElementById(targetFish.id)?.remove();
+    bird.classList.add('has-catch');
+    updateLiveScore();showFishDelta(-1);
+  },768);
+  setTimeout(()=>bird.remove(),1650);
 }
+
 
 /* ============ 工具故障事件（隨機 5%） ============ */
 const TOOL_BREAK_CHANCE = 0.05;
